@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   check:
+    name: Frontend CI / check (pull_request)
     runs-on: ubuntu-latest
     defaults:
       run:
