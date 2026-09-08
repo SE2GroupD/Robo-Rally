@@ -3,6 +3,7 @@ import { FrontPage } from './features/front-page/FrontPage';
 import { LoginPage } from './features/login-page/LoginPage';
 import type { LoginRequestDto } from './features/login-page/types';
 import { MainMenuPage } from './features/main-menu/MainMenuPage';
+import { ProgramRegisterSite } from './features/registerTest/testSite';
 
 type AppView = 'front-page' | 'login';
 
@@ -23,6 +24,10 @@ function App() {
     const randomGuestNumber = Math.floor(Math.random() * 9000) + 1000;
     setPlayerInfo({ username: `Guest_${randomGuestNumber}` });
   };
+
+  if (window.location.pathname === '/test') {
+    return <ProgramRegisterSite />;
+  }
 
   if (!playerInfo) {
     if (view === 'front-page') {
