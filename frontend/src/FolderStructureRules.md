@@ -10,4 +10,3 @@ A typical modern React `src` directory looks like this:
 - `features/`: Page-specific component groupings (e.g., `login-page/LoginPage`, `game-page/GamePage`).
 - `hooks/`: Custom, reusable React logic (like the `useGameSocket` hook).
 - `utils/`: Pure JavaScript/TypeScript helper functions.
-
