@@ -1,0 +1,20 @@
+{
+  description = "Robo Rally Game Environment";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  };
+
+  outputs = { self, nixpkgs }: let
+    system = "x86_64-linux";
+    pkgs = nixpkgs.legacyPackages.${system};
+  in {
+    devShells.${system}.default = pkgs.mkShell {
+      buildInputs = with pkgs; [
+        jdk21
+        maven # or gradle
+        nodejs_22
+      ];
+    };
+  };
+}
