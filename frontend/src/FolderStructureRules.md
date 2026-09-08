@@ -2,7 +2,6 @@
 
 Instead of grouping by file type, standard React applications group by feature or route. This is called **co-location**. If a component needs a specific CSS file, a TypeScript interface, and a test file, they all live together in the same folder.
 
-
 A typical modern React `src` directory looks like this:
 
 - `assets/`: Global images, icons, and global CSS reset files.
