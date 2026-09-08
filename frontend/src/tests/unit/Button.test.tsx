@@ -68,6 +68,6 @@ describe('Button', () => {
 
     const button = screen.getByRole('button');
     expect(button).toHaveClass('bg-transparent');
-    expect(button).toHaveClass('px-510');
+    expect(button).toHaveClass('px-5');
   });
 });
