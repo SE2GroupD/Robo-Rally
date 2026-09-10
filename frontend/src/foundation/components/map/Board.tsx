@@ -1,5 +1,6 @@
 import type { Tile } from './Tile';
 import { Robot } from '../robot/Robot';
+import { Checkpoint } from './Checkpoint';
 
 export function Board() {
   const width = 8;
@@ -9,11 +10,27 @@ export function Board() {
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
+      let currentRobot = undefined;
+      let currentCheckpoint = undefined;
+
+      if (x === 0 && y === 0) {
+        currentRobot = { hue: 0, direction: 90 };
+      }
+      if (x === 7 && y === 0) {
+        currentRobot = { hue: 90, direction: 180 };
+      }
+      if (x === 7 && y === 7) {
+        currentCheckpoint = 1;
+      }
+      if (x === 4 && y === 4) {
+        currentCheckpoint = 2;
+      }
+
       tiles.push({
         x,
         y,
-        hasRobot: x === 0 && y === 0,
-        isCheckpoint: x === 7 && y === 7,
+        robot: currentRobot,
+        checkpointNumber: currentCheckpoint,
       });
     }
   }
@@ -34,7 +51,7 @@ export function Board() {
             height: '50px',
             border: '1px solid #555',
 
-            backgroundColor: tile.hasRobot ? '#87CEEB' : tile.isCheckpoint ? '#90EE90' : '#d9d9d9',
+            backgroundColor: tile.robot ? '#87CEEB' : tile.checkpointNumber ? '#90EE90' : '#d9d9d9',
 
             color: 'black',
 
@@ -43,9 +60,15 @@ export function Board() {
             justifyContent: 'center',
           }}
         >
-          {tile.hasRobot ? <Robot /> : tile.isCheckpoint ? 'C' : ''}
+          {tile.robot ? (
+            <Robot hueRotation={tile.robot.hue} rotation={tile.robot.direction} />
+          ) : tile.checkpointNumber !== undefined ? (
+            <Checkpoint num={tile.checkpointNumber} />
+          ) : (
+            ''
+          )}
         </div>
       ))}
-    </div>
+    </div> 
   );
 }
