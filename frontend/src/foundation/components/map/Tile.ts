@@ -4,4 +4,3 @@ export type Tile = {
   hasRobot: boolean;
   isCheckpoint: boolean;
 };
-
