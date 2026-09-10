@@ -69,6 +69,6 @@ export function Board() {
           )}
         </div>
       ))}
-    </div> 
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import tankImage from '../../../assets/tank.png'; 
+import tankImage from '../../../assets/tank.png';
 
 interface RobotProps {
   hueRotation?: number;
@@ -8,16 +8,16 @@ interface RobotProps {
 
 export function Robot({ hueRotation = 0, rotation = 0 }: RobotProps) {
   return (
-    <img 
-      src={tankImage} 
-      alt="Robot Player" 
-      style={{ 
-        width: "40px", 
-        height: "40px", 
-        filter: `hue-rotate(${hueRotation}deg)`, 
-        transform: `rotate(${rotation}deg)`, 
-        transition: "all 0.3s ease" 
-      }} 
+    <img
+      src={tankImage}
+      alt="Robot Player"
+      style={{
+        width: '40px',
+        height: '40px',
+        filter: `hue-rotate(${hueRotation}deg)`,
+        transform: `rotate(${rotation}deg)`,
+        transition: 'all 0.3s ease',
+      }}
     />
   );
 }
