@@ -5,18 +5,21 @@ import { MenuScreen } from '../../shared/components/menu-screen/MenuScreen';
 interface MainMenuPageProps {
   username: string;
   onLogout: () => void;
+  onStartGame: () => void;
 }
 
-export function MainMenuPage({ onLogout, username }: MainMenuPageProps) {
+export function MainMenuPage({ onLogout, onStartGame, username }: MainMenuPageProps) {
   return (
     <MenuScreen img={roboRallyImage} subtitle={`Pilot ${username}`} title="Main Menu">
       <div className="flex flex-col gap-3">
-        <Button className="w-full" disabled size="large">
+        <Button className="w-full" onClick={onStartGame} size="large">
           Start Training Run
         </Button>
+
         <Button className="w-full" disabled size="large" variant="secondary">
           Host Battle
         </Button>
+
         <Button className="w-full" disabled size="large" variant="secondary">
           Join Battle
         </Button>
