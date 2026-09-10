@@ -1,4 +1,3 @@
-import React from 'react';
 import flagImage from '../../../assets/flag.png';
 
 interface CheckpointProps {

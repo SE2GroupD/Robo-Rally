@@ -1,4 +1,3 @@
-import React from 'react';
 import tankImage from '../../../assets/tank.png';
 
 interface RobotProps {
