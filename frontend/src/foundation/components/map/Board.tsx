@@ -1,4 +1,5 @@
 import type { Tile } from './Tile';
+import { Robot } from '../robot/Robot';
 
 export function Board() {
   const width = 8;
@@ -42,7 +43,7 @@ export function Board() {
             justifyContent: 'center',
           }}
         >
-          {tile.hasRobot ? 'R' : tile.isCheckpoint ? 'C' : ''}{' '}
+          {tile.hasRobot ? <Robot /> : tile.isCheckpoint ? 'C' : ''}
         </div>
       ))}
     </div>
