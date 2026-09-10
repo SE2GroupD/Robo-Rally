@@ -3,8 +3,9 @@ import { FrontPage } from './features/front-page/FrontPage';
 import { LoginPage } from './features/login-page/LoginPage';
 import type { LoginRequestDto } from './features/login-page/types';
 import { MainMenuPage } from './features/main-menu/MainMenuPage';
+import { Board } from './foundation/components/map/Board';
 
-type AppView = 'front-page' | 'login';
+type AppView = 'front-page' | 'login' | 'main-menu' | 'game';
 
 function App() {
   const [view, setView] = useState<AppView>('front-page');
@@ -32,8 +33,13 @@ function App() {
     return <LoginPage onBack={() => setView('front-page')} onLogin={handleLogin} onGuestLogin={handleGuestLogin} />;
   }
 
+  if (view === 'game') {
+    return <Board />;
+  }
+
   return (
     <MainMenuPage
+      onStartGame={() => setView('game')}
       onLogout={() => {
         setPlayerInfo(null);
         setView('front-page');
