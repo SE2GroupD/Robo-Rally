@@ -6,28 +6,9 @@ interface CheckpointProps {
 
 export function Checkpoint({ num }: CheckpointProps) {
   return (
-    <div
-      style={{
-        position: 'relative',
-        width: '40px',
-        height: '40px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <img src={flagImage} alt={`Checkpoint ${num}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-      <span
-        style={{
-          position: 'absolute',
-          fontWeight: '900',
-          color: '#000',
-          fontSize: '14px',
-          top: '27%',
-          left: '65%',
-          transform: 'translate(-50%, -50%)',
-        }}
-      >
+    <div className="relative w-[40px] h-[40px] flex items-center justify-center">
+      <img src={flagImage} alt={`Checkpoint ${num}`} className="w-full h-full object-contain" />
+      <span className="absolute font-black text-black text-[14px] top-[27%] left-[65%] -translate-x-1/2 -translate-y-1/2">
         {num}
       </span>
     </div>

@@ -36,29 +36,14 @@ export function Board() {
   }
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${width}, 50px)`,
-        gap: '2px',
-      }}
-    >
+    <div className="grid grid-cols-[repeat(8,50px)] gap-[2px] w-max">
       {tiles.map((tile) => (
         <div
           key={`${tile.x}-${tile.y}`}
-          style={{
-            width: '50px',
-            height: '50px',
-            border: '1px solid #555',
-
-            backgroundColor: tile.robot ? '#87CEEB' : tile.checkpointNumber ? '#90EE90' : '#d9d9d9',
-
-            color: 'black',
-
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+          className={`
+            w-[50px] h-[50px] border border-[#555] text-black flex items-center justify-center
+            ${tile.robot ? 'bg-[#87CEEB]' : tile.checkpointNumber ? 'bg-[#90EE90]' : 'bg-[#d9d9d9]'}
+          `}
         >
           {tile.robot ? (
             <Robot hueRotation={tile.robot.hue} rotation={tile.robot.direction} />
