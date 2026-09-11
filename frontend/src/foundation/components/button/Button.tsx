@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { cn } from '../../../utils/cn';
 
 type ButtonVariant = 'primary' | 'secondary';
 type ButtonSize = 'small' | 'medium' | 'large';
@@ -53,7 +54,7 @@ export function Button({
   disabled,
   onClick,
 }: ButtonProps) {
-  const classNames = [baseClasses, sizeClasses[size], variantClasses[variant], className].filter(Boolean).join(' ');
+  const classNames = cn(baseClasses, sizeClasses[size], variantClasses[variant], className);
 
   if (type === 'submit') {
     return (
