@@ -8,6 +8,7 @@ export default defineConfig({
   envDir: '../',
   test: {
     environment: 'jsdom',
+    pool: 'vmThreads',
     globals: true,
     setupFiles: './src/tests/setup.ts',
   },
