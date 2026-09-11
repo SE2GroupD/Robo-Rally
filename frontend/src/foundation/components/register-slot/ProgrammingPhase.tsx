@@ -14,7 +14,14 @@ export function ProgrammingPhase({ roomId, playerId }: ProgrammingPhaseProps) {
 
   // 2. Map the data for the UI
   const registerCards = registers.map((card, idx) =>
-    card ? <ProgrammingCard type={card} onClick={() => removeFromRegister(card, idx)} disabled={isLockedIn} /> : null,
+    card ? (
+      <ProgrammingCard
+        key={`register-slot-${idx}`}
+        type={card}
+        onClick={() => removeFromRegister(card, idx)}
+        disabled={isLockedIn}
+      />
+    ) : null,
   ) as [
     React.ReactElement | null,
     React.ReactElement | null,
@@ -35,6 +42,7 @@ export function ProgrammingPhase({ roomId, playerId }: ProgrammingPhaseProps) {
 
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={clearRegisters}
             disabled={isLockedIn}
             className="rounded bg-slate-600 px-4 py-2 font-bold text-white hover:bg-slate-500 disabled:opacity-50"
@@ -42,6 +50,7 @@ export function ProgrammingPhase({ roomId, playerId }: ProgrammingPhaseProps) {
             Clear
           </button>
           <button
+            type="button"
             onClick={lockIn}
             disabled={isLockedIn || registers.includes(null)}
             className="rounded bg-green-600 px-6 py-2 font-bold text-white hover:bg-green-500 disabled:opacity-50"

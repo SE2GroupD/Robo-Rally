@@ -37,7 +37,11 @@ function App() {
     // We'll pass a mock roomId for now since room creation isn't built yet.
     return (
       <div className="flex min-h-screen flex-col items-center bg-slate-950 p-4">
-        <button onClick={() => setView('main-menu')} className="self-start mb-4 text-slate-400 hover:text-white underline">
+        <button
+          type="button"
+          onClick={() => setView('main-menu')}
+          className="self-start mb-4 text-slate-400 hover:text-white underline"
+        >
           &larr; Back to Menu
         </button>
 

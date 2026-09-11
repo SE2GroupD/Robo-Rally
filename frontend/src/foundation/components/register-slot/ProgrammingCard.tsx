@@ -29,6 +29,7 @@ export function ProgrammingCard({ type, onClick, disabled }: ProgrammingCardProp
 
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       className={cn(

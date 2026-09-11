@@ -52,7 +52,7 @@ export function useProgramming(roomId: string, playerId: string) {
 
   const lockIn = async () => {
     if (registers.includes(null)) {
-      alert('You must fill all 5 registers before locking in!');
+      console.warn('You must fill all 5 registers before locking in!');
       return;
     }
     try {
@@ -63,7 +63,7 @@ export function useProgramming(roomId: string, playerId: string) {
       setIsLockedIn(true);
     } catch (err) {
       console.error(err);
-      alert('Failed to lock in registers.');
+      console.warn('Failed to lock in registers.');
     }
   };
 
