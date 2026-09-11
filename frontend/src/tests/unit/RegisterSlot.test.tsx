@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import registerBackground from '../../assets/register.png';
-import { RegisterSlot } from '../../foundation/components/register-slot/registerSlot';
+import { RegisterSlot } from '../../foundation/components/register-slot/RegisterSlot';
 
 describe('RegisterSlot', () => {
   it('uses the register image as the background', () => {

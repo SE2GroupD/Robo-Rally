@@ -3,20 +3,18 @@ import { FrontPage } from './features/front-page/FrontPage';
 import { LoginPage } from './features/login-page/LoginPage';
 import type { LoginRequestDto } from './features/login-page/types';
 import { MainMenuPage } from './features/main-menu/MainMenuPage';
-import { ProgramRegisterSite } from './features/registerTest/testSite';
 import { Board } from './foundation/components/map/Board';
+import { ProgrammingPhase } from './foundation/components/register-slot/ProgrammingPhase';
 
 type AppView = 'front-page' | 'login' | 'main-menu' | 'game';
 
 function App() {
   const [view, setView] = useState<AppView>('front-page');
-  // We'll store the logged-in player's info here. Null means they are at the login screen.
   const [playerInfo, setPlayerInfo] = useState<{ username: string; email?: string } | null>(null);
 
-  // For now, we mock a successful login by setting the state directly
   const handleLogin = (dto: LoginRequestDto) => {
     setPlayerInfo({
-      username: dto.email.split('@')[0], // Just grabbing the first part of the email as a mock username
+      username: dto.email.split('@')[0],
       email: dto.email,
     });
   };
@@ -25,10 +23,6 @@ function App() {
     const randomGuestNumber = Math.floor(Math.random() * 9000) + 1000;
     setPlayerInfo({ username: `Guest_${randomGuestNumber}` });
   };
-
-  if (window.location.pathname === '/test') {
-    return <ProgramRegisterSite />;
-  }
 
   if (!playerInfo) {
     if (view === 'front-page') {
@@ -39,7 +33,23 @@ function App() {
   }
 
   if (view === 'game') {
-    return <Board />;
+    // 2. Render both the Board and the Programming Phase in the game view!
+    // We'll pass a mock roomId for now since room creation isn't built yet.
+    return (
+      <div className="flex min-h-screen flex-col items-center bg-slate-950 p-4">
+        <button onClick={() => setView('main-menu')} className="self-start mb-4 text-slate-400 hover:text-white underline">
+          &larr; Back to Menu
+        </button>
+
+        {/* Your 2D grid/map */}
+        <Board />
+
+        {/* The new card interface */}
+        <div className="mt-8 w-full max-w-5xl">
+          <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" playerId={playerInfo.username} />
+        </div>
+      </div>
+    );
   }
 
   return (

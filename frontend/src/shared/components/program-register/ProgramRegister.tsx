@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { RegisterSlot } from '../../../foundation/components/register-slot/registerSlot';
+import { RegisterSlot } from '../../../foundation/components/register-slot/RegisterSlot';
 import { cn } from '../../../utils/cn';
 
 type Card = ReactElement | null;
