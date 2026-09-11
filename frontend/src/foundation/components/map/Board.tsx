@@ -1,6 +1,7 @@
 import type { Tile } from './Tile';
 import { Robot } from '../robot/Robot';
 import { Checkpoint } from './Checkpoint';
+import steelTileImage from '../../../assets/steel.png';
 
 export function Board() {
   const width = 8;
@@ -41,10 +42,15 @@ export function Board() {
         <div
           key={`${tile.x}-${tile.y}`}
           className={`
-            w-[50px] h-[50px] border border-[#555] text-black flex items-center justify-center
-            ${tile.robot ? 'bg-[#87CEEB]' : tile.checkpointNumber ? 'bg-[#90EE90]' : 'bg-[#d9d9d9]'}
+            relative w-[50px] h-[50px] border border-[#555] text-black flex items-center justify-center overflow-hidden
+            ${tile.robot ? 'bg-[#87CEEB]' : tile.checkpointNumber ? 'bg-[#90EE90]' : ''}
           `}
         >
+          {/* L'image d'acier s'affiche uniquement sur les cases vides */}
+          {!tile.robot && tile.checkpointNumber === undefined && (
+            <img src={steelTileImage} alt="Steel Tile" className="absolute inset-0 w-full h-full object-cover" />
+          )}
+
           {tile.robot ? (
             <Robot hueRotation={tile.robot.hue} rotation={tile.robot.direction} />
           ) : tile.checkpointNumber !== undefined ? (
