@@ -50,10 +50,15 @@ public class GameServiceImpl implements GameService {
             throw new IllegalStateException("Player deck not found. Cannot submit registers.");
         }
 
-        // The remaining unplayed cards in the player's hand are placed into their
-        // discard pile
-        // We pass the list of cards the player actually locked into their registers
-        deck.discardRemainingHand(request.registers());
+        // Synchronize on the same deck monitor to ensure thread safety
+        // against concurrent getPlayerHand requests
+        synchronized (deck) {
+            // The remaining unplayed cards in the player's hand are placed into their
+            // discard pile
+            // We pass a copy of the list of cards the player actually locked into their
+            // registers
+            deck.discardRemainingHand(new ArrayList<>(request.registers()));
+        }
 
         System.out.println("Player " + playerId + " successfully locked in registers: " + request.registers());
 
