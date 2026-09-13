@@ -45,7 +45,15 @@ public class GameServiceImpl implements GameService {
     public PlayerHandDto getPlayerHand(UUID roomId, String playerId) {
         GameRoom room = getOrCreateRoom(roomId);
         ProgrammingDeck deck = room.getOrCreateDeck(playerId);
-        List<CardType> hand = deck.drawCards(DEFAULT_HAND_SIZE);
+
+        // Check if the player already has an active hand
+        List<CardType> hand = deck.getCurrentHand();
+
+        // Only draw new cards if their hand is empty
+        if (hand.isEmpty()) {
+            hand = deck.drawCards(DEFAULT_HAND_SIZE);
+        }
+
         return new PlayerHandDto(playerId, hand, deck.getDrawPileSize(), deck.getDiscardPileSize());
     }
 
