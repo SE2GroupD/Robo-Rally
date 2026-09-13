@@ -1,9 +1,17 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.BoardStateDto;
 import com.example.demo.dto.PlayerHandDto;
 import com.example.demo.dto.ProgramRegisterDto;
+import com.example.demo.dto.RobotStateDto;
+import com.example.demo.game.GameBoard;
+import com.example.demo.game.GameRoom;
+import com.example.demo.game.MovementResolver;
 import com.example.demo.game.ProgrammingDeck;
 import com.example.demo.model.CardType;
+import com.example.demo.game.Robot;
+import com.example.demo.model.Direction;
+import com.example.demo.model.Position;
 
 import org.springframework.stereotype.Service;
 
@@ -19,6 +27,12 @@ public class GameServiceImpl implements GameService {
     private record DeckKey(UUID roomId, String playerId) {
     }
 
+    private static final int DEFAULT_HAND_SIZE = 9;
+    private static final int DEFAULT_BOARD_WIDTH = 12;
+    private static final int DEFAULT_BOARD_HEIGHT = 12;
+
+    private final Map<UUID, GameRoom> rooms = new ConcurrentHashMap<>();
+    private final MovementResolver movementResolver = new MovementResolver();
     private final Map<DeckKey, ProgrammingDeck> activeDecks = new ConcurrentHashMap<>();
 
     @Override
@@ -32,7 +46,7 @@ public class GameServiceImpl implements GameService {
             if (deck.isLockedIn()) {
                 safeHand = new ArrayList<>();
             } else if (deck.getCurrentHand().isEmpty()) {
-                safeHand = deck.drawCards(9);
+                safeHand = deck.drawCards(DEFAULT_HAND_SIZE);
             } else {
                 safeHand = new ArrayList<>(deck.getCurrentHand());
             }
@@ -92,5 +106,61 @@ public class GameServiceImpl implements GameService {
 
         System.out.println("Player " + playerId + " completed the activation phase in room " + roomId
                 + " and is ready for the next round.");
+    }
+
+    @Override
+    public RobotStateDto joinRoom(UUID roomId, String playerId) {
+        GameRoom room = getOrCreateRoom(roomId);
+        // Placeholder spawn logic, robots along the top row.
+        Position spawnPosition = new Position(room.getRobots().size(), 0);
+        Robot robot = room.getOrCreateRobot(playerId, spawnPosition, Direction.SOUTH);
+        return toRobotStateDto(robot);
+    }
+
+    @Override
+    public BoardStateDto resolveTurn(UUID roomId) {
+        GameRoom room = rooms.get(roomId);
+        if (room == null) {
+            throw new IllegalStateException("Room " + roomId + " does not exist.");
+        }
+        if (!room.allPlayersHaveSubmitted()) {
+            throw new IllegalStateException("Not every player has submitted registers yet.");
+        }
+
+        Map<Robot, List<CardType>> resolutionInput = room.buildResolutionInput();
+        movementResolver.resolveRound(room.getBoard(), resolutionInput);
+
+        for (Map.Entry<Robot, List<CardType>> entry : resolutionInput.entrySet()) {
+            room.getOrCreateDeck(entry.getKey().getPlayerId()).discardPlayedCards(entry.getValue());
+        }
+        room.clearSubmittedRegisters();
+
+        return toBoardStateDto(roomId, room);
+    }
+
+    @Override
+    public BoardStateDto getBoardState(UUID roomId) {
+        GameRoom room = rooms.get(roomId);
+        if (room == null) {
+            throw new IllegalStateException("Room " + roomId + " does not exist.");
+        }
+        return toBoardStateDto(roomId, room);
+    }
+
+    private GameRoom getOrCreateRoom(UUID roomId) {
+        return rooms.computeIfAbsent(roomId,
+                id -> new GameRoom(new GameBoard(DEFAULT_BOARD_WIDTH, DEFAULT_BOARD_HEIGHT)));
+    }
+
+    private RobotStateDto toRobotStateDto(Robot robot) {
+        return new RobotStateDto(robot.getPlayerId(), robot.getPosition().x(),
+                robot.getPosition().y(), robot.getDirection());
+    }
+
+    private BoardStateDto toBoardStateDto(UUID roomId, GameRoom room) {
+        List<RobotStateDto> robotStates = room.getRobots().values().stream()
+                .map(this::toRobotStateDto)
+                .toList();
+        return new BoardStateDto(roomId, room.getBoard().getWidth(), room.getBoard().getHeight(), robotStates);
     }
 }

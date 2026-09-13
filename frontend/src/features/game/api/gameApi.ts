@@ -32,7 +32,7 @@ export interface CreatedRoom {
 export async function createRoom(playerName: string): Promise<CreatedRoom> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
 
-  const token = await getValidToken(); // <-- Fetch the token
+  const token = await getValidToken();
 
   const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/games`, {
     method: 'POST',
@@ -83,7 +83,7 @@ export interface JoinedRoom {
 export async function joinRoom(roomCode: string, playerName: string): Promise<JoinedRoom> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
 
-  const token = await getValidToken(); // <-- Fetch the token
+  const token = await getValidToken();
 
   let response: Response;
   try {
@@ -169,10 +169,10 @@ export class RoomRequestError extends Error {
 async function roomRequest(room: JoinedRoom, action?: 'start' | 'leave', signal?: AbortSignal): Promise<Response> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable.');
 
-  const token = await getValidToken(); // <-- Fetch the token
+  const token = await getValidToken();
 
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${token}`, // <-- Apply Auth to all room requests
+    Authorization: `Bearer ${token}`,
   };
 
   if (action) {
@@ -183,7 +183,7 @@ async function roomRequest(room: JoinedRoom, action?: 'start' | 'leave', signal?
   const url = action ? `${base}/${action}` : `${base}?playerId=${encodeURIComponent(room.playerId)}`;
   const response = await fetch(url, {
     method: action ? 'POST' : 'GET',
-    headers,
+    headers: headers,
     body: action ? JSON.stringify({ playerId: room.playerId }) : undefined,
     signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
   });

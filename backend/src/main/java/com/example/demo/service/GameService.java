@@ -1,7 +1,10 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.BoardStateDto;
 import com.example.demo.dto.PlayerHandDto;
 import com.example.demo.dto.ProgramRegisterDto;
+import com.example.demo.dto.RobotStateDto;
+
 import java.util.UUID;
 
 public interface GameService {
@@ -21,4 +24,18 @@ public interface GameService {
      * Completes the current round for a specific player in a specific room.
      */
     void completeRound(UUID roomId, String playerId);
+
+    /**
+     * Places a robot for this player in the room (creating the room if it doesn't
+     * exist yet).
+     */
+    RobotStateDto joinRoom(UUID roomId, String playerId);
+
+    /**
+     * Resolves the current round's movement once every robot in the room has
+     * submitted registers.
+     */
+    BoardStateDto resolveTurn(UUID roomId);
+
+    BoardStateDto getBoardState(UUID roomId);
 }

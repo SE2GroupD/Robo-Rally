@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.PlayerHandDto;
 import com.example.demo.dto.ProgramRegisterDto;
+import com.example.demo.dto.RobotStateDto;
 import com.example.demo.service.GameService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,15 +22,23 @@ public class GameController {
         this.gameService = gameService;
     }
 
+    @PostMapping("/{roomId}/join")
+    public ResponseEntity<RobotStateDto> joinRoom(
+            @PathVariable UUID roomId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        // Use secure JWT subject instead of trusting @RequestParam String playerId
+        String authenticatedUserId = jwt.getSubject();
+        return ResponseEntity.ok(gameService.joinRoom(roomId, authenticatedUserId));
+    }
+
     @GetMapping("/{roomId}/hand")
     public ResponseEntity<PlayerHandDto> getPlayerHand(
             @PathVariable UUID roomId,
             @AuthenticationPrincipal Jwt jwt) {
 
-        // Rely purely on the cryptographic JWT subject
         String authenticatedUserId = jwt.getSubject();
         PlayerHandDto hand = gameService.getPlayerHand(roomId, authenticatedUserId);
-
         return ResponseEntity.ok(hand);
     }
 
@@ -45,7 +54,6 @@ public class GameController {
 
         String authenticatedUserId = jwt.getSubject();
         gameService.submitPlayerRegisters(roomId, authenticatedUserId, request);
-
         return ResponseEntity.ok("Registers locked in successfully.");
     }
 
@@ -56,22 +64,40 @@ public class GameController {
 
         String authenticatedUserId = jwt.getSubject();
         gameService.completeRound(roomId, authenticatedUserId);
-
         return ResponseEntity.ok("Round completed successfully.");
+    }
+
+    @PostMapping("/{roomId}/resolve")
+    public ResponseEntity<?> resolveTurn(
+            @PathVariable UUID roomId,
+            @AuthenticationPrincipal Jwt jwt) {
+        try {
+            return ResponseEntity.ok(gameService.resolveTurn(roomId));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{roomId}/state")
+    public ResponseEntity<?> getBoardState(
+            @PathVariable UUID roomId,
+            @AuthenticationPrincipal Jwt jwt) {
+        try {
+            return ResponseEntity.ok(gameService.getBoardState(roomId));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
+        }
     }
 
     // --- Exception Handlers ---
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException ex) {
-        // 400 Bad Request for forged/invalid cards
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<String> handleIllegalState(IllegalStateException ex) {
-        // 409 Conflict for state violations (already locked in, or completing before
-        // lock)
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 }
