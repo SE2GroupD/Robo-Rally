@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.dto.PlayerHandDto;
 import com.example.demo.dto.ProgramRegisterDto;
 import com.example.demo.game.ProgrammingDeck;
+
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -20,8 +21,12 @@ public class GameServiceImpl implements GameService {
     public PlayerHandDto getPlayerHand(UUID roomId, String playerId) {
         ProgrammingDeck deck = activeDecks.computeIfAbsent(playerId, id -> new ProgrammingDeck());
 
-        // Draw 9 cards
-        var drawnCards = deck.drawCards(9);
+        var drawnCards = deck.getCurrentHand();
+
+        if (drawnCards.isEmpty()) {
+            // Draw 9 cards
+            drawnCards = deck.drawCards(9);
+        }
 
         // Return the hand along with the current pile sizes
         return new PlayerHandDto(
