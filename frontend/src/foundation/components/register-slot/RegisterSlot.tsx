@@ -10,7 +10,7 @@ interface RegisterSlotProps {
 export function RegisterSlot({ className = '', children }: RegisterSlotProps) {
   return (
     <div
-      className={cn('grid aspect-2/3 place-items-center bg-cover p-3', className)}
+      className={cn('grid aspect-2/3 w-24 place-items-center overflow-hidden bg-cover', className)}
       style={{ backgroundImage: `url(${registerBackground})` }}
     >
       {children}
