@@ -71,7 +71,7 @@ export function LoginForm() {
         <button
           type="button"
           className="cursor-pointer border-none bg-transparent text-sm text-slate-400 underline hover:text-white"
-          onClick={() => navigate('/login/register')}
+          onClick={() => navigate('/register')}
         >
           Need an account? Register here
         </button>
