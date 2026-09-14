@@ -16,6 +16,6 @@ public record RoomResponse(
     public static RoomResponse forPlayer(GameRoom room, UUID playerId) {
         return new RoomResponse(
                 room.gameId(), room.roomCode(), playerId,
-                room.hostPlayerId(), "WAITING", room.players());
+                room.hostPlayerId(), room.status().name(), room.players());
     }
 }

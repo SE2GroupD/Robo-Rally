@@ -9,7 +9,7 @@ export interface CreatedRoom {
   roomCode: string;
   playerId: string;
   hostPlayerId: string;
-  status: 'WAITING';
+  status: 'WAITING' | 'STARTED';
   players: { playerId: string; playerName: string }[];
 }
 
@@ -28,15 +28,20 @@ export async function createRoom(playerName: string): Promise<CreatedRoom> {
   const room = await response.json();
   if (
     !room ||
-    typeof room.gameId !== 'string' || !room.gameId ||
-    typeof room.roomCode !== 'string' || !room.roomCode ||
-    typeof room.playerId !== 'string' || !room.playerId ||
+    typeof room.gameId !== 'string' ||
+    !room.gameId ||
+    typeof room.roomCode !== 'string' ||
+    !room.roomCode ||
+    typeof room.playerId !== 'string' ||
+    !room.playerId ||
     typeof room.hostPlayerId !== 'string' ||
     room.hostPlayerId !== room.playerId ||
     room.status !== 'WAITING' ||
     !Array.isArray(room.players) ||
-    !room.players.every((player: CreatedRoom['players'][number]) =>
-      player && typeof player.playerId === 'string' && typeof player.playerName === 'string') ||
+    !room.players.every(
+      (player: CreatedRoom['players'][number]) =>
+        player && typeof player.playerId === 'string' && typeof player.playerName === 'string',
+    ) ||
     !room.players.some((player: CreatedRoom['players'][number]) => player.playerId === room.playerId)
   ) {
     throw new Error('The room service returned an unexpected response.');
@@ -50,7 +55,7 @@ export interface JoinedRoom {
   roomCode: string;
   playerId: string;
   hostPlayerId: string;
-  status: 'WAITING';
+  status: 'WAITING' | 'STARTED';
   players: { playerId: string; playerName: string }[];
 }
 
@@ -77,14 +82,20 @@ export async function joinRoom(roomCode: string, playerName: string): Promise<Jo
   const room = await response.json();
   if (
     !room ||
-    typeof room.gameId !== 'string' || !room.gameId ||
-    typeof room.roomCode !== 'string' || !room.roomCode ||
-    typeof room.playerId !== 'string' || !room.playerId ||
-    typeof room.hostPlayerId !== 'string' || !room.hostPlayerId ||
+    typeof room.gameId !== 'string' ||
+    !room.gameId ||
+    typeof room.roomCode !== 'string' ||
+    !room.roomCode ||
+    typeof room.playerId !== 'string' ||
+    !room.playerId ||
+    typeof room.hostPlayerId !== 'string' ||
+    !room.hostPlayerId ||
     room.status !== 'WAITING' ||
     !Array.isArray(room.players) ||
-    !room.players.every((player: JoinedRoom['players'][number]) =>
-      player && typeof player.playerId === 'string' && typeof player.playerName === 'string') ||
+    !room.players.every(
+      (player: JoinedRoom['players'][number]) =>
+        player && typeof player.playerId === 'string' && typeof player.playerName === 'string',
+    ) ||
     !room.players.some((player: JoinedRoom['players'][number]) => player.playerId === room.playerId) ||
     !room.players.some((player: JoinedRoom['players'][number]) => player.playerId === room.hostPlayerId)
   ) {
@@ -107,4 +118,60 @@ export async function submitProgramRegister(roomId: string, payload: ProgramRegi
   });
 
   if (!response.ok) throw new Error('Failed to submit registers');
+}
+
+export class RoomRequestError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+async function roomRequest(room: JoinedRoom, action?: 'start' | 'leave', signal?: AbortSignal): Promise<Response> {
+  if (!API_BASE_URL) throw new Error('Room service is unavailable.');
+  const base = `${API_BASE_URL.replace(/\/$/, '')}/games/${encodeURIComponent(room.gameId)}`;
+  const url = action ? `${base}/${action}` : `${base}?playerId=${encodeURIComponent(room.playerId)}`;
+  const response = await fetch(url, {
+    method: action ? 'POST' : 'GET',
+    headers: action ? { 'Content-Type': 'application/json' } : undefined,
+    body: action ? JSON.stringify({ playerId: room.playerId }) : undefined,
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
+  });
+  if (!response.ok) throw new RoomRequestError('Room request failed.', response.status);
+  return response;
+}
+
+async function readRoom(response: Response, expected: JoinedRoom): Promise<JoinedRoom> {
+  const room = await response.json();
+  if (
+    !room ||
+    room.gameId !== expected.gameId ||
+    room.playerId !== expected.playerId ||
+    room.hostPlayerId !== expected.hostPlayerId ||
+    room.roomCode !== expected.roomCode ||
+    !['WAITING', 'STARTED'].includes(room.status) ||
+    !Array.isArray(room.players) ||
+    !room.players.every(
+      (player: JoinedRoom['players'][number]) =>
+        player && typeof player.playerId === 'string' && typeof player.playerName === 'string',
+    ) ||
+    !room.players.some((player: JoinedRoom['players'][number]) => player.playerId === room.playerId)
+  ) {
+    throw new Error('Unexpected room response.');
+  }
+  return room;
+}
+
+export async function fetchRoom(room: JoinedRoom, signal: AbortSignal): Promise<JoinedRoom> {
+  return readRoom(await roomRequest(room, undefined, signal), room);
+}
+
+export async function startRoom(room: JoinedRoom): Promise<JoinedRoom> {
+  return readRoom(await roomRequest(room, 'start'), room);
+}
+
+export async function leaveRoom(room: JoinedRoom): Promise<void> {
+  await roomRequest(room, 'leave');
 }

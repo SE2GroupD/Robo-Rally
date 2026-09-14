@@ -1,3 +1,4 @@
+import { RoomSession } from '../../shared/components/room-session/RoomSession';
 import { useRef, useState, type FormEvent } from 'react';
 import roboRallyImage from '../../assets/hero.png';
 import { Button } from '../../foundation/components/button/Button';
@@ -33,8 +34,9 @@ export function JoinBattlePage({ username, room, onJoined, onBack }: JoinBattleP
     try {
       onJoined(await joinRoom(code, username));
     } catch (cause) {
-      setError(cause instanceof Error && !(cause instanceof SyntaxError)
-        ? cause.message : 'Could not join the room. Please try again.');
+      setError(
+        cause instanceof Error && !(cause instanceof SyntaxError) ? cause.message : 'Could not join the room. Please try again.',
+      );
     } finally {
       joining.current = false;
       setIsJoining(false);
@@ -44,27 +46,7 @@ export function JoinBattlePage({ username, room, onJoined, onBack }: JoinBattleP
   return (
     <MenuScreen img={roboRallyImage} subtitle={`Pilot ${username}`} title={room ? 'Battle Room' : 'Join Battle'}>
       {room ? (
-        <>
-          <section className="rounded border border-metal-light p-4 text-center">
-            <h2 className="m-0 text-sm font-bold text-text-muted">Room code</h2>
-            <p className="my-3 select-text text-3xl font-bold tracking-widest">{room.roomCode}</p>
-          </section>
-          <section className="rounded border border-metal-light p-4">
-            <h2 className="mb-3 mt-0 text-lg font-bold">Players</h2>
-            <ul className="m-0 flex list-none flex-col gap-2 p-0">
-              {room.players.map((player) => (
-                <li key={player.playerId} className="flex items-center justify-between gap-3">
-                  <span>{player.playerName}</span>
-                  <span className="text-sm font-bold text-text-muted">
-                    {player.playerId === room.hostPlayerId ? 'Host' : 'Guest'}
-                    {player.playerId === room.playerId ? ' · You' : ''}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-          <p className="m-0 text-center text-text-muted">Only the host can play this run.</p>
-        </>
+        <RoomSession initialRoom={room} onLeft={onBack} />
       ) : (
         <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
           <p className="m-0 text-center text-text-muted">Enter the room code shared by your host.</p>
@@ -72,7 +54,10 @@ export function JoinBattlePage({ username, room, onJoined, onBack }: JoinBattleP
             label="Room code"
             name="roomCode"
             value={roomCode}
-            onChange={(event) => { setRoomCode(event.target.value); setError(''); }}
+            onChange={(event) => {
+              setRoomCode(event.target.value);
+              setError('');
+            }}
             disabled={isJoining}
             autoComplete="off"
             spellCheck={false}
@@ -80,16 +65,22 @@ export function JoinBattlePage({ username, room, onJoined, onBack }: JoinBattleP
             aria-invalid={Boolean(error)}
             aria-describedby={error ? 'join-error' : undefined}
           />
-          {error && <p id="join-error" role="alert" className="m-0 text-sm text-hazard">{error}</p>}
-          {isJoining && <p role="status" className="m-0 text-center">Joining room…</p>}
+          {error && (
+            <p id="join-error" role="alert" className="m-0 text-sm text-hazard">
+              {error}
+            </p>
+          )}
+          {isJoining && <output className="m-0 text-center">Joining room…</output>}
           <Button className="w-full" type="submit" size="large" disabled={isJoining}>
             {error ? 'Try Again' : 'Join Room'}
           </Button>
         </form>
       )}
-      <Button className="w-full" onClick={onBack} disabled={isJoining} variant="secondary">
-        Back to Menu
-      </Button>
+      {!room && (
+        <Button className="w-full" onClick={onBack} disabled={isJoining} variant="secondary">
+          Back to Menu
+        </Button>
+      )}
     </MenuScreen>
   );
 }

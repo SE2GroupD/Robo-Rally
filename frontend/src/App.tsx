@@ -66,7 +66,11 @@ function App() {
         isCreating={isCreatingRoom}
         error={roomError}
         onRetry={handleHostBattle}
-        onBack={() => setView('main-menu')}
+        onBack={() => {
+          setHostRoom(null);
+          setJoinedRoom(null);
+          setView('main-menu');
+        }}
       />
     );
   }
@@ -77,7 +81,11 @@ function App() {
         username={playerInfo.username}
         room={joinedRoom}
         onJoined={setJoinedRoom}
-        onBack={() => setView('main-menu')}
+        onBack={() => {
+          setHostRoom(null);
+          setJoinedRoom(null);
+          setView('main-menu');
+        }}
       />
     );
   }
