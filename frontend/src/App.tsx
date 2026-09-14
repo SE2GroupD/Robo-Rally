@@ -10,20 +10,20 @@ import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
 import roboRallyImage from './assets/hero.png';
 import { neon } from './lib/neon';
 
-function GameScreen({ username }: { username: string }) {
+function GameScreen({ username, playerId }: { username: string; playerId: string }) {
   const navigate = useNavigate();
   return (
     <div className="flex min-h-screen flex-col items-center bg-slate-950 p-4">
-      <button
-        type="button"
-        onClick={() => navigate('/menu')}
-        className="mb-4 self-start text-slate-400 underline hover:text-white"
-      >
-        &larr; Back to Menu
-      </button>
+      <div className="mb-4 flex w-full max-w-5xl justify-between text-slate-400">
+        <button type="button" onClick={() => navigate('/menu')} className="underline hover:text-white">
+          &larr; Back to Menu
+        </button>
+        <span className="font-bold text-robot-orange">Pilot: {username}</span>
+      </div>
+
       <Board />
       <div className="mt-8 w-full max-w-5xl">
-        <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" playerId={username} />
+        <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" playerId={playerId} />
       </div>
     </div>
   );
@@ -39,6 +39,9 @@ export default function App() {
   }
 
   const pilotName = user?.name || user?.email?.split('@')[0] || 'Unknown Pilot';
+
+  // 3. Extract the true cryptographic user ID from Neon (fallback to empty string if undefined)
+  const pilotId = user?.id || '';
 
   return (
     <Routes>
@@ -114,7 +117,11 @@ export default function App() {
         }
       />
 
-      <Route path="/game" element={user ? <GameScreen username={pilotName} /> : <Navigate to="/login" replace />} />
+      {/* 4. Inject both the display name and the true ID into the game screen */}
+      <Route
+        path="/game"
+        element={user ? <GameScreen username={pilotName} playerId={pilotId} /> : <Navigate to="/login" replace />}
+      />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
