@@ -1,46 +1,75 @@
-import roboRallyImage from '../../../assets/hero.png';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../foundation/components/button/Button';
-import { MenuScreen } from '../../../shared/components/menu-screen/MenuScreen';
-import { LoginForm } from '../components/LoginForm';
-import type { LoginRequestDto } from '../types/auth';
+import { neon } from '../../../lib/neon';
 
-interface LoginPageProps {
-  onBack: () => void;
-  onRegister: () => void;
-  onGuestLogin: () => void;
-  onLogin: (dto: LoginRequestDto) => void;
-}
+export function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const navigate = useNavigate();
 
-export function LoginPage({ onBack, onGuestLogin, onLogin, onRegister }: LoginPageProps) {
+  const handleLogin = async (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = await neon.signIn.email({ email, password });
+      if (error) throw error;
+      navigate('/menu');
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Invalid credentials');
+    }
+  };
+
   return (
-    <MenuScreen img={roboRallyImage} subtitle="Choose Your Pilot" title="Pilot Login">
-      <LoginForm onLogin={onLogin} />
-
-      <div className="text-center">
-        <p className="m-0 text-sm text-text-muted">
-          Don't have an account?{' '}
-          <button
-            className="cursor-pointer border-0 bg-transparent p-0 font-bold text-robot-orange underline"
-            onClick={onRegister}
-            type="button"
-          >
-            Register here
-          </button>
-        </p>
-        <div className="my-5 flex items-center">
-          <span className="h-px flex-1 bg-panel-border"></span>
-          <span className="mx-4 text-sm font-bold text-text-muted">OR</span>
-          <span className="h-px flex-1 bg-panel-border"></span>
+    <>
+      <form onSubmit={handleLogin} className="flex flex-col gap-4 text-left">
+        <div>
+          <label className="mb-1 block text-sm font-bold text-slate-300">Email Address</label>
+          <input
+            type="email"
+            required
+            className="w-full rounded border border-slate-700 bg-slate-800 p-2 text-white focus:border-robot-orange focus:outline-none"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
         </div>
 
-        <Button className="w-full" onClick={onGuestLogin} size="large" variant="secondary">
-          Play as Guest
-        </Button>
-      </div>
+        <div>
+          <div className="flex items-center justify-between">
+            <label className="mb-1 block text-sm font-bold text-slate-300">Password</label>
+            <button
+              type="button"
+              className="cursor-pointer border-none bg-transparent p-0 text-xs text-slate-400 hover:text-white"
+              onClick={() => navigate('/forgot-password')}
+            >
+              Forgot your password?
+            </button>
+          </div>
+          <input
+            type="password"
+            required
+            className="w-full rounded border border-slate-700 bg-slate-800 p-2 text-white focus:border-robot-orange focus:outline-none"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
 
-      <Button className="w-full" onClick={onBack} size="small" variant="secondary">
-        Back
-      </Button>
-    </MenuScreen>
+        {errorMsg && <p className="text-sm font-bold text-red-500">{errorMsg}</p>}
+
+        <Button type="submit" className="mt-2 w-full" size="large" variant="primary">
+          Log In
+        </Button>
+      </form>
+
+      <div className="mt-4 text-center">
+        <button
+          type="button"
+          className="cursor-pointer border-none bg-transparent text-sm text-slate-400 underline hover:text-white"
+          onClick={() => navigate('/register')}
+        >
+          Need an account? Register here
+        </button>
+      </div>
+    </>
   );
 }

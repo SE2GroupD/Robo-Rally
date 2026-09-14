@@ -14,9 +14,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-<<<<<<<HEAD=======
 // Nimbus imports for dynamic key selection and manual EdDSA verification
->>>>>>>1 a6b88e(feat:enhance game state management with locked registers and JWT configuration updates)
 import com.nimbusds.jose.crypto.Ed25519Verifier;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKMatcher;
