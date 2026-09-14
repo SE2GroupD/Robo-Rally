@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
@@ -26,9 +27,10 @@ public class GameController {
             @PathVariable UUID roomId,
             @AuthenticationPrincipal Jwt jwt) {
 
+        // Extract the verified user ID directly from the JWT token
         String authenticatedUserId = jwt.getSubject();
-        PlayerHandDto hand = gameService.getPlayerHand(roomId, authenticatedUserId);
 
+        PlayerHandDto hand = gameService.getPlayerHand(roomId, authenticatedUserId);
         return ResponseEntity.ok(hand);
     }
 
