@@ -1,6 +1,6 @@
-import { Robot } from './Robot';
+import { Robot } from '../robot/Robot';
 import { Checkpoint } from './Checkpoint';
-import steelTileImage from '../../../../../assets/steel.png';
+import steelTileImage from '../../../assets/steel.png';
 
 export type TileData = {
   x: number;
