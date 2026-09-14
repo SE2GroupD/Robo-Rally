@@ -5,12 +5,15 @@ import type { LoginRequestDto } from './features/login-page/types';
 import { MainMenuPage } from './features/main-menu/MainMenuPage';
 import { Board } from './foundation/components/map/Board';
 import { ProgrammingPhase } from './foundation/components/register-slot/ProgrammingPhase';
+import { JoinBattlePage } from './features/join-battle/JoinBattlePage';
+import type { JoinedRoom } from './features/api/gameApi';
 
-type AppView = 'front-page' | 'login' | 'main-menu' | 'game';
+type AppView = 'front-page' | 'login' | 'main-menu' | 'game' | 'join-battle';
 
 function App() {
   const [view, setView] = useState<AppView>('front-page');
   const [playerInfo, setPlayerInfo] = useState<{ username: string; email?: string } | null>(null);
+  const [joinedRoom, setJoinedRoom] = useState<JoinedRoom | null>(null);
 
   const handleLogin = (dto: LoginRequestDto) => {
     setPlayerInfo({
@@ -30,6 +33,17 @@ function App() {
     }
 
     return <LoginPage onBack={() => setView('front-page')} onLogin={handleLogin} onGuestLogin={handleGuestLogin} />;
+  }
+
+  if (view === 'join-battle') {
+    return (
+      <JoinBattlePage
+        username={playerInfo.username}
+        room={joinedRoom}
+        onJoined={setJoinedRoom}
+        onBack={() => setView('main-menu')}
+      />
+    );
   }
 
   if (view === 'game') {
@@ -59,8 +73,10 @@ function App() {
   return (
     <MainMenuPage
       onStartGame={() => setView('game')}
+      onJoinBattle={() => setView('join-battle')}
       onLogout={() => {
         setPlayerInfo(null);
+        setJoinedRoom(null);
         setView('front-page');
       }}
       username={playerInfo.username}
