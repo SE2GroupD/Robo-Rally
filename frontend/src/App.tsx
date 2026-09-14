@@ -10,7 +10,6 @@ import { useRobotMovement } from './hooks/game/useRobotMovement';
 import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
 import roboRallyImage from './assets/hero.png';
 import { neon } from './lib/neon';
-import { useRobotMovement } from './hooks/game/useRobotMovement';
 import { VerifyEmailForm } from './features/login-page/VerifyEmailForm';
 
 function GameScreen({ username }: { username: string }) {
@@ -132,19 +131,6 @@ export default function App() {
       <Route path="/game" element={user ? <GameScreen username={pilotName} /> : <Navigate to="/login" replace />} />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
-
-      <Route
-        path="/verify-email"
-        element={
-          user ? (
-            <Navigate to="/menu" replace />
-          ) : (
-            <MenuScreen img={roboRallyImage} subtitle="Account Security" title="Verify Email" panelClassName="max-w-md w-full">
-              <VerifyEmailForm />
-            </MenuScreen>
-          )
-        }
-      />
     </Routes>
   );
 }
