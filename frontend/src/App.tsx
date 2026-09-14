@@ -14,7 +14,11 @@ function GameScreen({ username }: { username: string }) {
   const navigate = useNavigate();
   return (
     <div className="flex min-h-screen flex-col items-center bg-slate-950 p-4">
-      <button onClick={() => navigate('/menu')} className="mb-4 self-start text-slate-400 underline hover:text-white">
+      <button
+        type="button"
+        onClick={() => navigate('/menu')}
+        className="mb-4 self-start text-slate-400 underline hover:text-white"
+      >
         &larr; Back to Menu
       </button>
       <Board />
