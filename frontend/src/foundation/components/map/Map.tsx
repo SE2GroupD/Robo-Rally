@@ -51,7 +51,7 @@ export function Map({ robot }: MapProps) {
       </div>
 
       <div
-        className="flex flex-row items-start justify-center gap-[2px] p-16 min-w-max origin-top transition-transform duration-200 ease-out"
+        className="flex flex-row items-start justify-center gap-2 p-16 min-w-max origin-top transition-transform duration-200 ease-out"
         style={{ transform: `scale(${scale})` }}
       >
         <div className="mt-[260px]">
