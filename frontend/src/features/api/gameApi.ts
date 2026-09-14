@@ -10,12 +10,23 @@ export async function fetchPlayerHand(roomId: string, playerId: string): Promise
   return response.json();
 }
 
+export async function joinRoom(roomId: string, playerId: string) {
+  const response = await fetch(`${API_BASE_URL}/game/${roomId}/join?playerId=${encodeURIComponent(playerId)}`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to join room');
+  }
+  return response.json();
+}
+
 export async function submitProgramRegister(roomId: string, payload: ProgramRegisterDto): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/game/${roomId}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
+
 
   if (!response.ok) throw new Error('Failed to submit registers');
 }

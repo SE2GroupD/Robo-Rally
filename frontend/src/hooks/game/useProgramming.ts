@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchPlayerHand, submitProgramRegister } from '../../features/api/gameApi';
+import { fetchPlayerHand, joinRoom, submitProgramRegister } from '../../features/api/gameApi';
 import type { CardType } from '../../features/types/CardType';
 
 export function useProgramming(roomId: string, playerId: string) {
@@ -12,13 +12,22 @@ export function useProgramming(roomId: string, playerId: string) {
   const [discardPileCount, setDiscardPileCount] = useState(0);
 
   useEffect(() => {
-    fetchPlayerHand(roomId, playerId)
-      .then((data) => {
+    async function initPlayer() {
+      try {
+        await joinRoom(roomId, playerId);
+
+        const data = await fetchPlayerHand(roomId, playerId);
         setHand(data.cards);
         setDrawPileCount(data.drawPileCount);
         setDiscardPileCount(data.discardPileCount);
-      })
-      .catch((err) => console.error(err));
+      } catch (err) {
+        console.error('Failed to initialize player in room:', err);
+      }
+    }
+
+    if (roomId && playerId) {
+      initPlayer();
+    }
   }, [roomId, playerId]);
 
   const selectCard = (card: CardType, indexInHand: number) => {
