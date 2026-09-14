@@ -16,7 +16,7 @@ import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
 import roboRallyImage from './assets/hero.png';
 import { neon } from './lib/neon';
 
-function GameScreen({ username }: { username: string }) {
+function GameScreen({ username, playerId }: { username: string; playerId: string }) {
   const navigate = useNavigate();
   const { robot, runProgram } = useRobotMovement();
 
@@ -29,8 +29,7 @@ function GameScreen({ username }: { username: string }) {
         <span className="font-bold text-robot-orange">Pilot: {username}</span>
       </div>
 
-      <Map robot={robot} />
-
+      <Board />
       <div className="mt-8 w-full max-w-5xl">
         <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" onLockIn={runProgram} />
       </div>
@@ -170,7 +169,11 @@ export default function App() {
         }
       />
 
-      <Route path="/game" element={user ? <GameScreen username={pilotName} /> : <Navigate to="/login" replace />} />
+      {/* 4. Inject both the display name and the true ID into the game screen */}
+      <Route
+        path="/game"
+        element={user ? <GameScreen username={pilotName} playerId={pilotId} /> : <Navigate to="/login" replace />}
+      />
 
       <Route
         path="/host-battle"
