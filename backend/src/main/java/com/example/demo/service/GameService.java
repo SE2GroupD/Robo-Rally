@@ -4,6 +4,7 @@ import com.example.demo.dto.BoardStateDto;
 import com.example.demo.dto.PlayerHandDto;
 import com.example.demo.dto.ProgramRegisterDto;
 import com.example.demo.dto.RobotStateDto;
+import com.example.demo.dto.TurnResolutionDto;
 
 import java.util.UUID;
 
@@ -33,9 +34,11 @@ public interface GameService {
 
     /**
      * Resolves the current round's movement once every robot in the room has
-     * submitted registers.
+     * submitted registers. Returns the full step-by-step trace (a snapshot
+     * after each of the 5 registers) so the frontend can animate the reveal
+     * without re-implementing movement rules itself.
      */
-    BoardStateDto resolveTurn(UUID roomId);
+    TurnResolutionDto resolveTurn(UUID roomId);
 
     BoardStateDto getBoardState(UUID roomId);
 }
