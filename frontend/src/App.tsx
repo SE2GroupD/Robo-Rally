@@ -12,7 +12,7 @@ import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
 import roboRallyImage from './assets/hero.png';
 import { neon } from './lib/neon';
 
-function GameScreen({ username }: { username: string }) {
+function GameScreen({ username, playerId }: { username: string; playerId: string }) {
   const navigate = useNavigate();
   const { robot, runProgram } = useRobotMovement();
 
@@ -27,7 +27,7 @@ function GameScreen({ username }: { username: string }) {
 
       <Map robot={robot} />
       <div className="mt-8 w-full max-w-5xl">
-        <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" playerId={username} onLockIn={runProgram} />
+        <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" playerId={playerId} onLockIn={runProgram} />
       </div>
     </div>
   );
@@ -43,6 +43,7 @@ export default function App() {
   }
 
   const pilotName = user?.name || user?.email?.split('@')[0] || 'Unknown Pilot';
+  const pilotId = user?.id || '';
 
   return (
     <Routes>
@@ -131,7 +132,22 @@ export default function App() {
         }
       />
 
-      <Route path="/game" element={user ? <GameScreen username={pilotName} /> : <Navigate to="/login" replace />} />
+      <Route
+        path="/verify-email"
+        element={
+          user ? (
+            <Navigate to="/menu" replace />
+          ) : (
+            <MenuScreen img={roboRallyImage} subtitle="Account Security" title="Verify Email" panelClassName="max-w-md w-full">
+              <VerifyEmailForm />
+            </MenuScreen>
+          )
+        }
+      />
+      <Route
+        path="/game"
+        element={user ? <GameScreen username={pilotName} playerId={pilotId} /> : <Navigate to="/login" replace />}
+      />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
