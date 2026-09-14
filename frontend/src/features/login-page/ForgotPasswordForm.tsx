@@ -3,26 +3,29 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../../foundation/components/button/Button';
 import { neon } from '../../lib/neon';
 
-export function LoginPage() {
+export function ForgotPasswordForm() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.SyntheticEvent) => {
+  const handleSendReset = async (e: React.SyntheticEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
-      const { error } = await neon.signIn.email({ email, password });
+      const { error } = await neon.forgetPassword.emailOtp({ email });
       if (error) throw error;
-      navigate('/menu');
+      // Updated to clean root path
+      navigate('/reset-password', { state: { email } });
     } catch (err: any) {
-      setErrorMsg(err.message || 'Invalid credentials');
+      setErrorMsg(err.message || 'Failed to send reset code');
+      setIsLoading(false);
     }
   };
 
   return (
     <>
-      <form onSubmit={handleLogin} className="flex flex-col gap-4 text-left">
+      <form onSubmit={handleSendReset} className="flex flex-col gap-4 text-left">
         <div>
           <label className="mb-1 block text-sm font-bold text-slate-300">Email Address</label>
           <input
@@ -34,30 +37,10 @@ export function LoginPage() {
           />
         </div>
 
-        <div>
-          <div className="flex items-center justify-between">
-            <label className="mb-1 block text-sm font-bold text-slate-300">Password</label>
-            <button
-              type="button"
-              className="cursor-pointer border-none bg-transparent p-0 text-xs text-slate-400 hover:text-white"
-              onClick={() => navigate('/forgot-password')}
-            >
-              Forgot your password?
-            </button>
-          </div>
-          <input
-            type="password"
-            required
-            className="w-full rounded border border-slate-700 bg-slate-800 p-2 text-white focus:border-robot-orange focus:outline-none"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-
         {errorMsg && <p className="text-sm font-bold text-red-500">{errorMsg}</p>}
 
         <Button type="submit" className="mt-2 w-full" size="large" variant="primary">
-          Log In
+          {isLoading ? 'Sending...' : 'Send Reset Code'}
         </Button>
       </form>
 
@@ -65,9 +48,9 @@ export function LoginPage() {
         <button
           type="button"
           className="cursor-pointer border-none bg-transparent text-sm text-slate-400 underline hover:text-white"
-          onClick={() => navigate('/register')}
+          onClick={() => navigate('/login')}
         >
-          Need an account? Register here
+          Back to Login
         </button>
       </div>
     </>

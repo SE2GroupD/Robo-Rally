@@ -3,26 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../../foundation/components/button/Button';
 import { neon } from '../../lib/neon';
 
-export function LoginPage() {
+export function RegisterForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.SyntheticEvent) => {
+  const handleRegister = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     try {
-      const { error } = await neon.signIn.email({ email, password });
+      const { error } = await neon.signUp.email({
+        email,
+        password,
+        name: email.split('@')[0],
+      });
       if (error) throw error;
       navigate('/menu');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Invalid credentials');
+      setErrorMsg(err.message || 'Registration failed');
     }
   };
 
   return (
     <>
-      <form onSubmit={handleLogin} className="flex flex-col gap-4 text-left">
+      <form onSubmit={handleRegister} className="flex flex-col gap-4 text-left">
         <div>
           <label className="mb-1 block text-sm font-bold text-slate-300">Email Address</label>
           <input
@@ -35,16 +39,7 @@ export function LoginPage() {
         </div>
 
         <div>
-          <div className="flex items-center justify-between">
-            <label className="mb-1 block text-sm font-bold text-slate-300">Password</label>
-            <button
-              type="button"
-              className="cursor-pointer border-none bg-transparent p-0 text-xs text-slate-400 hover:text-white"
-              onClick={() => navigate('/forgot-password')}
-            >
-              Forgot your password?
-            </button>
-          </div>
+          <label className="mb-1 block text-sm font-bold text-slate-300">Password</label>
           <input
             type="password"
             required
@@ -57,7 +52,7 @@ export function LoginPage() {
         {errorMsg && <p className="text-sm font-bold text-red-500">{errorMsg}</p>}
 
         <Button type="submit" className="mt-2 w-full" size="large" variant="primary">
-          Log In
+          Register
         </Button>
       </form>
 
@@ -65,9 +60,9 @@ export function LoginPage() {
         <button
           type="button"
           className="cursor-pointer border-none bg-transparent text-sm text-slate-400 underline hover:text-white"
-          onClick={() => navigate('/register')}
+          onClick={() => navigate('/login')}
         >
-          Need an account? Register here
+          Already have an account? Log In
         </button>
       </div>
     </>

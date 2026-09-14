@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../../foundation/components/button/Button';
 import { neon } from '../../lib/neon';
 
-export function LoginPage() {
+export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -40,7 +40,7 @@ export function LoginPage() {
             <button
               type="button"
               className="cursor-pointer border-none bg-transparent p-0 text-xs text-slate-400 hover:text-white"
-              onClick={() => navigate('/forgot-password')}
+              onClick={() => navigate('/login/forgot-password')}
             >
               Forgot your password?
             </button>
@@ -65,7 +65,7 @@ export function LoginPage() {
         <button
           type="button"
           className="cursor-pointer border-none bg-transparent text-sm text-slate-400 underline hover:text-white"
-          onClick={() => navigate('/register')}
+          onClick={() => navigate('/login/register')}
         >
           Need an account? Register here
         </button>
