@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Locale;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,31 @@ public class RoomService {
         GameRoom room = new GameRoom(UUID.randomUUID(), code, host.playerId(), List.of(host));
         roomsByCode.put(code, room);
         return room;
+    }
+
+    public synchronized GameRoom joinRoom(String roomCode, String playerName) {
+        if (playerName == null || playerName.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Player name is required.");
+        }
+        if (roomCode == null || roomCode.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Room code is required.");
+        }
+        String code = roomCode.strip().toUpperCase(Locale.ROOT);
+        if (!code.matches("[A-HJ-NP-Z2-9]{6}")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid room code format.");
+        }
+        GameRoom room = roomsByCode.get(code);
+        if (room == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found.");
+        }
+
+        // Return an immutable snapshot containing this guest as the last player.
+        // Holding the lock across lookup and replacement prevents lost joins.
+        var players = new ArrayList<>(room.players());
+        players.add(new RoomPlayer(UUID.randomUUID(), playerName.strip()));
+        GameRoom updated = new GameRoom(room.gameId(), code, room.hostPlayerId(), players);
+        roomsByCode.put(code, updated);
+        return updated;
     }
 
     private String generateCode() {
