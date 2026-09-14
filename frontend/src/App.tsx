@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { useRef, useState } from 'react';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { RegisterForm } from './features/login-page/RegisterForm';
 import { ForgotPasswordForm } from './features/login-page/ForgotPasswordForm';
@@ -8,6 +9,8 @@ import { MainMenuPage } from './features/menu/pages/MainMenuPage';
 import { Map } from './features/game/components/map/Map';
 import { ProgrammingPhase } from './features/game/components/programming/ProgrammingPhase';
 import { useRobotMovement } from './features/game/hooks/useRobotMovement';
+import { createRoom, type CreatedRoom } from './features/game/api/gameApi';
+import { HostBattlePage } from './features/game/pages/HostBattlePage';
 import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
 import roboRallyImage from './assets/hero.png';
 import { neon } from './lib/neon';
@@ -39,11 +42,41 @@ export default function App() {
   const { data: session, isPending } = neon.useSession();
   const user = session?.user;
 
+  const [hostRoom, setHostRoom] = useState<CreatedRoom | null>(null);
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [roomError, setRoomError] = useState('');
+  const creatingRoom = useRef(false);
+
   if (isPending) {
     return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">Loading...</div>;
   }
 
   const pilotName = user?.name || user?.email?.split('@')[0] || 'Unknown Pilot';
+
+  const handleHostBattle = async () => {
+    if (!user || creatingRoom.current) return;
+    navigate('/host-battle');
+    if (hostRoom) return;
+
+    creatingRoom.current = true;
+    setIsCreatingRoom(true);
+    setRoomError('');
+
+    try {
+      setHostRoom(await createRoom(pilotName));
+    } catch {
+      setRoomError('Could not create a room. Please try again.');
+    } finally {
+      creatingRoom.current = false;
+      setIsCreatingRoom(false);
+    }
+  };
+
+  const handleRoomBack = () => {
+    setHostRoom(null);
+    setRoomError('');
+    navigate('/menu');
+  };
 
   return (
     <Routes>
@@ -121,6 +154,7 @@ export default function App() {
             <MainMenuPage
               username={pilotName}
               onStartGame={() => navigate('/game')}
+              onHostBattle={handleHostBattle}
               onLogout={async () => {
                 await neon.signOut();
                 navigate('/login');
@@ -133,6 +167,24 @@ export default function App() {
       />
 
       <Route path="/game" element={user ? <GameScreen username={pilotName} /> : <Navigate to="/login" replace />} />
+
+      <Route
+        path="/host-battle"
+        element={
+          user ? (
+            <HostBattlePage
+              username={pilotName}
+              room={hostRoom}
+              isCreating={isCreatingRoom}
+              error={roomError}
+              onRetry={handleHostBattle}
+              onBack={handleRoomBack}
+            />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
