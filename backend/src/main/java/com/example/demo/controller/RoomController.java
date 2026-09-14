@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.CreateRoomRequest;
+import com.example.demo.dto.JoinRoomRequest;
 import com.example.demo.dto.RoomResponse;
 import com.example.demo.model.GameRoom;
 import com.example.demo.service.RoomService;
@@ -25,5 +26,11 @@ public class RoomController {
         GameRoom room = roomService.createRoom(request.playerName());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(RoomResponse.forPlayer(room, room.hostPlayerId()));
+    }
+
+    @PostMapping("/join")
+    public ResponseEntity<RoomResponse> joinRoom(@RequestBody JoinRoomRequest request) {
+        GameRoom room = roomService.joinRoom(request.roomCode(), request.playerName());
+        return ResponseEntity.ok(RoomResponse.forPlayer(room, room.players().getLast().playerId()));
     }
 }
