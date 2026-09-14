@@ -14,6 +14,51 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class RoomServiceTests {
     @Test
+    void hostStartsAloneAndRepeatedStartIsSafe() {
+        RoomService service = new RoomService();
+        GameRoom room = service.createRoom("Host");
+        assertEquals(com.example.demo.model.RoomStatus.STARTED, service.startRoom(room.gameId(), room.hostPlayerId()).status());
+        assertEquals(com.example.demo.model.RoomStatus.STARTED, service.startRoom(room.gameId(), room.hostPlayerId()).status());
+        var error = assertThrows(ResponseStatusException.class, () -> service.joinRoom(room.roomCode(), "Late guest"));
+        assertEquals(409, error.getStatusCode().value());
+    }
+
+    @Test
+    void guestLeavesWithoutClosingRoomAndHostClosesIt() {
+        RoomService service = new RoomService();
+        GameRoom room = service.createRoom("Host");
+        var joined = service.joinRoom(room.roomCode(), "Guest");
+        var guestId = joined.players().getLast().playerId();
+        assertEquals(2, service.getRoom(room.gameId(), room.hostPlayerId()).players().size());
+        assertEquals(403, assertThrows(ResponseStatusException.class,
+                () -> service.startRoom(room.gameId(), guestId)).getStatusCode().value());
+        service.leaveRoom(room.gameId(), guestId);
+        assertEquals(1, service.getRoom(room.gameId(), room.hostPlayerId()).players().size());
+        assertEquals(403, assertThrows(ResponseStatusException.class,
+                () -> service.getRoom(room.gameId(), guestId)).getStatusCode().value());
+        service.startRoom(room.gameId(), room.hostPlayerId());
+        service.leaveRoom(room.gameId(), room.hostPlayerId());
+        assertEquals(404, assertThrows(ResponseStatusException.class,
+                () -> service.getRoom(room.gameId(), room.hostPlayerId())).getStatusCode().value());
+        assertEquals(404, assertThrows(ResponseStatusException.class,
+                () -> service.joinRoom(room.roomCode(), "Guest")).getStatusCode().value());
+    }
+
+    @Test
+    void unknownPlayersCannotReadStartOrLeave() {
+        RoomService service = new RoomService();
+        GameRoom room = service.createRoom("Host");
+        var outsider = java.util.UUID.randomUUID();
+        assertEquals(403, assertThrows(ResponseStatusException.class,
+                () -> service.getRoom(room.gameId(), outsider)).getStatusCode().value());
+        assertEquals(403, assertThrows(ResponseStatusException.class,
+                () -> service.startRoom(room.gameId(), outsider)).getStatusCode().value());
+        assertEquals(403, assertThrows(ResponseStatusException.class,
+                () -> service.leaveRoom(room.gameId(), outsider)).getStatusCode().value());
+        assertEquals(com.example.demo.model.RoomStatus.WAITING, service.getRoom(room.gameId(), room.hostPlayerId()).status());
+    }
+
+    @Test
     void joinsExistingRoomWithNormalizedCodeAndPreservesHost() {
         RoomService service = new RoomService();
         GameRoom original = service.createRoom("Host");

@@ -11,6 +11,25 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class RoomControllerTests {
+    @Test
+    void roomLifecycleEndpointsReturnUpdatedState() throws Exception {
+        var room = service.createRoom("Host");
+        String action = "{\"playerId\":\"" + room.hostPlayerId() + "\"}";
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/games/" + room.gameId())
+                        .param("playerId", room.hostPlayerId().toString()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("WAITING"));
+        mvc.perform(post("/api/games/" + room.gameId() + "/start").contentType(MediaType.APPLICATION_JSON).content(action))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("STARTED"));
+        mvc.perform(post("/api/games/join").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"roomCode\":\"" + room.roomCode() + "\",\"playerName\":\"Guest\"}"))
+                .andExpect(status().isConflict());
+        mvc.perform(post("/api/games/" + room.gameId() + "/leave").contentType(MediaType.APPLICATION_JSON).content(action))
+                .andExpect(status().isNoContent());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/games/" + room.gameId())
+                        .param("playerId", room.hostPlayerId().toString()))
+                .andExpect(status().isNotFound());
+    }
+
     private MockMvc mvc;
     private RoomService service;
 

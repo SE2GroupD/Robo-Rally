@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.model.GameRoom;
+import com.example.demo.model.RoomStatus;
 import com.example.demo.model.RoomPlayer;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -33,7 +34,7 @@ public class RoomService {
         } while (roomsByCode.containsKey(code));
 
         RoomPlayer host = new RoomPlayer(UUID.randomUUID(), playerName.strip());
-        GameRoom room = new GameRoom(UUID.randomUUID(), code, host.playerId(), List.of(host));
+        GameRoom room = new GameRoom(UUID.randomUUID(), code, host.playerId(), List.of(host), RoomStatus.WAITING);
         roomsByCode.put(code, room);
         return room;
     }
@@ -54,13 +55,48 @@ public class RoomService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found.");
         }
 
+        if (room.status() != RoomStatus.WAITING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This room has already started.");
+        }
+
         // Return an immutable snapshot containing this guest as the last player.
         // Holding the lock across lookup and replacement prevents lost joins.
         var players = new ArrayList<>(room.players());
         players.add(new RoomPlayer(UUID.randomUUID(), playerName.strip()));
-        GameRoom updated = new GameRoom(room.gameId(), code, room.hostPlayerId(), players);
+        GameRoom updated = new GameRoom(room.gameId(), code, room.hostPlayerId(), players, room.status());
         roomsByCode.put(code, updated);
         return updated;
+    }
+
+    public synchronized GameRoom getRoom(UUID gameId, UUID playerId) {
+        GameRoom room = roomsByCode.values().stream()
+                .filter(candidate -> candidate.gameId().equals(gameId))
+                .findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room closed or not found."));
+        if (playerId == null || room.players().stream().noneMatch(player -> player.playerId().equals(playerId))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Player is not in this room.");
+        }
+        return room;
+    }
+
+    public synchronized GameRoom startRoom(UUID gameId, UUID playerId) {
+        GameRoom room = getRoom(gameId, playerId);
+        if (!room.hostPlayerId().equals(playerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can start.");
+        }
+        // Repeating start safely returns the same started room.
+        GameRoom started = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), room.players(), RoomStatus.STARTED);
+        roomsByCode.put(room.roomCode(), started);
+        return started;
+    }
+
+    public synchronized void leaveRoom(UUID gameId, UUID playerId) {
+        GameRoom room = getRoom(gameId, playerId);
+        if (room.hostPlayerId().equals(playerId)) {
+            roomsByCode.remove(room.roomCode());
+        } else {
+            var remaining = room.players().stream().filter(player -> !player.playerId().equals(playerId)).toList();
+            roomsByCode.put(room.roomCode(), new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), remaining, room.status()));
+        }
     }
 
     private String generateCode() {

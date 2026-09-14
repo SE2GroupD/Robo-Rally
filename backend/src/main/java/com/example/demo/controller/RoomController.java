@@ -1,6 +1,11 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.CreateRoomRequest;
+import com.example.demo.dto.RoomActionRequest;
+import java.util.UUID;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import com.example.demo.dto.JoinRoomRequest;
 import com.example.demo.dto.RoomResponse;
 import com.example.demo.model.GameRoom;
@@ -32,5 +37,20 @@ public class RoomController {
     public ResponseEntity<RoomResponse> joinRoom(@RequestBody JoinRoomRequest request) {
         GameRoom room = roomService.joinRoom(request.roomCode(), request.playerName());
         return ResponseEntity.ok(RoomResponse.forPlayer(room, room.players().getLast().playerId()));
+    }
+    @GetMapping("/{gameId}")
+    public RoomResponse getRoom(@PathVariable UUID gameId, @RequestParam UUID playerId) {
+        return RoomResponse.forPlayer(roomService.getRoom(gameId, playerId), playerId);
+    }
+
+    @PostMapping("/{gameId}/start")
+    public RoomResponse startRoom(@PathVariable UUID gameId, @RequestBody RoomActionRequest request) {
+        return RoomResponse.forPlayer(roomService.startRoom(gameId, request.playerId()), request.playerId());
+    }
+
+    @PostMapping("/{gameId}/leave")
+    public ResponseEntity<Void> leaveRoom(@PathVariable UUID gameId, @RequestBody RoomActionRequest request) {
+        roomService.leaveRoom(gameId, request.playerId());
+        return ResponseEntity.noContent().build();
     }
 }
