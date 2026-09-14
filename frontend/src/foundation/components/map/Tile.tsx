@@ -45,17 +45,17 @@ interface TileProps {
 
 export function Tile({ tile }: TileProps) {
   return (
-    <div className="relative w-[50px] h-[50px] border border-[#555] text-black flex items-center justify-center overflow-hidden">
+    <div className="relative w-12.5 h-12.5 border border-[#555] text-black flex items-center justify-center overflow-hidden">
       {tile.hasPit ? (
         <div className="absolute inset-0 bg-neutral-950 w-full h-full" />
       ) : (
         <img src={steelTileImage} alt="Steel Tile" className="absolute inset-0 w-full h-full object-cover" />
       )}
 
-      {tile.walls?.north && <div className="absolute top-0 left-0 right-0 h-[5px] bg-yellow-400 z-20 shadow-md" />}
-      {tile.walls?.east && <div className="absolute top-0 right-0 bottom-0 w-[5px] bg-yellow-400 z-20 shadow-md" />}
-      {tile.walls?.south && <div className="absolute bottom-0 left-0 right-0 h-[5px] bg-yellow-400 z-20 shadow-md" />}
-      {tile.walls?.west && <div className="absolute top-0 left-0 bottom-0 w-[5px] bg-yellow-400 z-20 shadow-md" />}
+      {tile.walls?.north && <div className="absolute top-0 left-0 right-0 h-1.25 bg-yellow-400 z-20 shadow-md" />}
+      {tile.walls?.east && <div className="absolute top-0 right-0 bottom-0 w-1.25 bg-yellow-400 z-20 shadow-md" />}
+      {tile.walls?.south && <div className="absolute bottom-0 left-0 right-0 h-1.25 bg-yellow-400 z-20 shadow-md" />}
+      {tile.walls?.west && <div className="absolute top-0 left-0 bottom-0 w-1.25 bg-yellow-400 z-20 shadow-md" />}
 
       {tile.hasAntenna && (
         <div className="absolute z-10 w-7 h-7 rounded-full bg-emerald-500 border border-white flex items-center justify-center shadow-lg text-xs">
