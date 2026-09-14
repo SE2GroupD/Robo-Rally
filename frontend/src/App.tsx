@@ -1,5 +1,6 @@
+import { JoinBattlePage } from './features/join-battle/JoinBattlePage';
 import { useRef, useState } from 'react';
-import { createRoom, type CreatedRoom } from './features/api/gameApi';
+import { createRoom, type CreatedRoom, type JoinedRoom } from './features/api/gameApi';
 import { FrontPage } from './features/front-page/FrontPage';
 import { LoginPage } from './features/login-page/LoginPage';
 import { HostBattlePage } from './features/host-battle/HostBattlePage';
@@ -8,11 +9,12 @@ import { MainMenuPage } from './features/main-menu/MainMenuPage';
 import { Board } from './foundation/components/map/Board';
 import { ProgrammingPhase } from './foundation/components/register-slot/ProgrammingPhase';
 
-type AppView = 'front-page' | 'login' | 'main-menu' | 'game' | 'host-battle';
+type AppView = 'front-page' | 'login' | 'main-menu' | 'game' | 'host-battle' | 'join-battle';
 
 function App() {
   const [view, setView] = useState<AppView>('front-page');
   const [playerInfo, setPlayerInfo] = useState<{ username: string; email?: string } | null>(null);
+  const [joinedRoom, setJoinedRoom] = useState<JoinedRoom | null>(null);
   const [hostRoom, setHostRoom] = useState<CreatedRoom | null>(null);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [roomError, setRoomError] = useState('');
@@ -69,6 +71,17 @@ function App() {
     );
   }
 
+  if (view === 'join-battle') {
+    return (
+      <JoinBattlePage
+        username={playerInfo.username}
+        room={joinedRoom}
+        onJoined={setJoinedRoom}
+        onBack={() => setView('main-menu')}
+      />
+    );
+  }
+
   if (view === 'game') {
     // 2. Render both the Board and the Programming Phase in the game view!
     // We'll pass a mock roomId for now since room creation isn't built yet.
@@ -99,10 +112,12 @@ function App() {
       onLogout={() => {
         setPlayerInfo(null);
         setHostRoom(null);
+        setJoinedRoom(null);
         setRoomError('');
         setView('front-page');
       }}
       onHostBattle={handleHostBattle}
+      onJoinBattle={() => setView('join-battle')}
       username={playerInfo.username}
     />
   );
