@@ -9,8 +9,9 @@ import { MainMenuPage } from './features/menu/pages/MainMenuPage';
 import { Map } from './features/game/components/map/Map';
 import { ProgrammingPhase } from './features/game/components/programming/ProgrammingPhase';
 import { useRobotMovement } from './features/game/hooks/useRobotMovement';
-import { createRoom, type CreatedRoom } from './features/game/api/gameApi';
+import { createRoom, type CreatedRoom, type JoinedRoom } from './features/game/api/gameApi';
 import { HostBattlePage } from './features/game/pages/HostBattlePage';
+import { JoinBattlePage } from './features/game/pages/JoinBattlePage';
 import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
 import roboRallyImage from './assets/hero.png';
 import { neon } from './lib/neon';
@@ -43,6 +44,7 @@ export default function App() {
   const user = session?.user;
 
   const [hostRoom, setHostRoom] = useState<CreatedRoom | null>(null);
+  const [joinedRoom, setJoinedRoom] = useState<JoinedRoom | null>(null);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [roomError, setRoomError] = useState('');
   const creatingRoom = useRef(false);
@@ -74,6 +76,7 @@ export default function App() {
 
   const handleRoomBack = () => {
     setHostRoom(null);
+    setJoinedRoom(null);
     setRoomError('');
     navigate('/menu');
   };
@@ -155,6 +158,7 @@ export default function App() {
               username={pilotName}
               onStartGame={() => navigate('/game')}
               onHostBattle={handleHostBattle}
+              onJoinBattle={() => navigate('/join-battle')}
               onLogout={async () => {
                 await neon.signOut();
                 navigate('/login');
@@ -180,6 +184,17 @@ export default function App() {
               onRetry={handleHostBattle}
               onBack={handleRoomBack}
             />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+
+      <Route
+        path="/join-battle"
+        element={
+          user ? (
+            <JoinBattlePage username={pilotName} room={joinedRoom} onJoined={setJoinedRoom} onBack={handleRoomBack} />
           ) : (
             <Navigate to="/login" replace />
           )
