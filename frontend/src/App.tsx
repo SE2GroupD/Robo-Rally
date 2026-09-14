@@ -4,14 +4,14 @@ import { RegisterForm } from './features/login-page/RegisterForm';
 import { ForgotPasswordForm } from './features/login-page/ForgotPasswordForm';
 import { ResetPasswordForm } from './features/login-page/ResetPasswordForm';
 import { MainMenuPage } from './features/main-menu/MainMenuPage';
-import { Board } from './foundation/components/map/Board';
+import { Map } from './foundation/components/map/Map';
 import { ProgrammingPhase } from './foundation/components/register-slot/ProgrammingPhase';
 import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
 import roboRallyImage from './assets/hero.png';
 import { neon } from './lib/neon';
 import { VerifyEmailForm } from './features/login-page/VerifyEmailForm';
 
-function GameScreen({ username }: { username: string; playerId: string }) {
+function GameScreen({ username }: { username: string }) {
   const navigate = useNavigate();
   return (
     <div className="flex min-h-screen flex-col items-center bg-slate-950 p-4">
@@ -22,7 +22,7 @@ function GameScreen({ username }: { username: string; playerId: string }) {
         <span className="font-bold text-robot-orange">Pilot: {username}</span>
       </div>
 
-      <Board />
+      <Map />
       <div className="mt-8 w-full max-w-5xl">
         <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" />
       </div>
@@ -40,9 +40,6 @@ export default function App() {
   }
 
   const pilotName = user?.name || user?.email?.split('@')[0] || 'Unknown Pilot';
-
-  // 3. Extract the true cryptographic user ID from Neon (fallback to empty string if undefined)
-  const pilotId = user?.id || '';
 
   return (
     <Routes>
@@ -118,11 +115,7 @@ export default function App() {
         }
       />
 
-      {/* 4. Inject both the display name and the true ID into the game screen */}
-      <Route
-        path="/game"
-        element={user ? <GameScreen username={pilotName} playerId={pilotId} /> : <Navigate to="/login" replace />}
-      />
+      <Route path="/game" element={user ? <GameScreen username={pilotName} /> : <Navigate to="/login" replace />} />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
 
