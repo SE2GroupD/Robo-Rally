@@ -24,8 +24,11 @@ export function LoginPage() {
     <>
       <form onSubmit={handleLogin} className="flex flex-col gap-4 text-left">
         <div>
-          <label className="mb-1 block text-sm font-bold text-slate-300">Email Address</label>
+          <label htmlFor="login-email" className="mb-1 block text-sm font-bold text-slate-300">
+            Email Address
+          </label>
           <input
+            id="login-email"
             type="email"
             required
             className="w-full rounded border border-slate-700 bg-slate-800 p-2 text-white focus:border-robot-orange focus:outline-none"
@@ -36,7 +39,9 @@ export function LoginPage() {
 
         <div>
           <div className="flex items-center justify-between">
-            <label className="mb-1 block text-sm font-bold text-slate-300">Password</label>
+            <label htmlFor="login-password" className="mb-1 block text-sm font-bold text-slate-300">
+              Password
+            </label>
             <button
               type="button"
               className="cursor-pointer border-none bg-transparent p-0 text-xs text-slate-400 hover:text-white"
@@ -46,6 +51,7 @@ export function LoginPage() {
             </button>
           </div>
           <input
+            id="login-password"
             type="password"
             required
             className="w-full rounded border border-slate-700 bg-slate-800 p-2 text-white focus:border-robot-orange focus:outline-none"
