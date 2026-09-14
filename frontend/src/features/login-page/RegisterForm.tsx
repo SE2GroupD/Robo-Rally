@@ -28,8 +28,11 @@ export function RegisterForm() {
     <>
       <form onSubmit={handleRegister} className="flex flex-col gap-4 text-left">
         <div>
-          <label className="mb-1 block text-sm font-bold text-slate-300">Email Address</label>
+          <label htmlFor="register-email" className="mb-1 block text-sm font-bold text-slate-300">
+            Email Address
+          </label>
           <input
+            id="register-email"
             type="email"
             required
             className="w-full rounded border border-slate-700 bg-slate-800 p-2 text-white focus:border-robot-orange focus:outline-none"
@@ -39,8 +42,11 @@ export function RegisterForm() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-bold text-slate-300">Password</label>
+          <label htmlFor="register-password" className="mb-1 block text-sm font-bold text-slate-300">
+            Password
+          </label>
           <input
+            id="register-password"
             type="password"
             required
             className="w-full rounded border border-slate-700 bg-slate-800 p-2 text-white focus:border-robot-orange focus:outline-none"

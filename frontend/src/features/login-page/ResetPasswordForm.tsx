@@ -35,8 +35,11 @@ export function ResetPasswordForm() {
 
       <form onSubmit={handleReset} className="flex flex-col gap-4 text-left">
         <div>
-          <label className="mb-1 block text-sm font-bold text-slate-300">Email Address</label>
+          <label htmlFor="reset-email" className="mb-1 block text-sm font-bold text-slate-300">
+            Email Address
+          </label>
           <input
+            id="reset-email"
             type="email"
             disabled
             className="w-full rounded border border-slate-700 bg-slate-800 p-2 text-slate-500 focus:outline-none opacity-50"
@@ -45,8 +48,11 @@ export function ResetPasswordForm() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-bold text-slate-300">Recovery Code (OTP)</label>
+          <label htmlFor="reset-otp" className="mb-1 block text-sm font-bold text-slate-300">
+            Recovery Code (OTP)
+          </label>
           <input
+            id="reset-otp"
             type="text"
             required
             className="w-full rounded border border-slate-700 bg-slate-800 p-2 text-white focus:border-robot-orange focus:outline-none"
@@ -57,8 +63,11 @@ export function ResetPasswordForm() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-bold text-slate-300">New Password</label>
+          <label htmlFor="reset-new-password" className="mb-1 block text-sm font-bold text-slate-300">
+            New Password
+          </label>
           <input
+            id="reset-new-password"
             type="password"
             required
             className="w-full rounded border border-slate-700 bg-slate-800 p-2 text-white focus:border-robot-orange focus:outline-none"

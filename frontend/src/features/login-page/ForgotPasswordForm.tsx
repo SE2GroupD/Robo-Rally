@@ -27,8 +27,11 @@ export function ForgotPasswordForm() {
     <>
       <form onSubmit={handleSendReset} className="flex flex-col gap-4 text-left">
         <div>
-          <label className="mb-1 block text-sm font-bold text-slate-300">Email Address</label>
+          <label htmlFor="forgot-email" className="mb-1 block text-sm font-bold text-slate-300">
+            Email Address
+          </label>
           <input
+            id="forgot-email"
             type="email"
             required
             className="w-full rounded border border-slate-700 bg-slate-800 p-2 text-white focus:border-robot-orange focus:outline-none"
