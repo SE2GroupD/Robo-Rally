@@ -4,19 +4,14 @@ import { LoginPage } from './features/auth/pages/LoginPage';
 import { RegisterForm } from './features/login-page/RegisterForm';
 import { ForgotPasswordForm } from './features/login-page/ForgotPasswordForm';
 import { ResetPasswordForm } from './features/login-page/ResetPasswordForm';
-import { VerifyEmailForm } from './features/login-page/VerifyEmailForm';
-import { MainMenuPage } from './features/menu/pages/MainMenuPage';
-import { Map } from './features/game/components/map/Map';
-import { ProgrammingPhase } from './features/game/components/programming/ProgrammingPhase';
-import { useRobotMovement } from './features/game/hooks/useRobotMovement';
-import { createRoom, type CreatedRoom, type JoinedRoom } from './features/game/api/gameApi';
-import { HostBattlePage } from './features/game/pages/HostBattlePage';
-import { JoinBattlePage } from './features/game/pages/JoinBattlePage';
+import { MainMenuPage } from './features/main-menu/MainMenuPage';
+import { Map } from './foundation/components/map/Map';
+import { ProgrammingPhase } from './foundation/components/register-slot/ProgrammingPhase';
 import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
 import roboRallyImage from './assets/hero.png';
 import { neon } from './lib/neon';
 
-function GameScreen({ username }: { username: string; playerId: string }) {
+function GameScreen({ username }: { username: string }) {
   const navigate = useNavigate();
   const { robot, runProgram } = useRobotMovement();
 
@@ -29,7 +24,7 @@ function GameScreen({ username }: { username: string; playerId: string }) {
         <span className="font-bold text-robot-orange">Pilot: {username}</span>
       </div>
 
-      <Board />
+      <Map />
       <div className="mt-8 w-full max-w-5xl">
         <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" onLockIn={runProgram} />
       </div>
@@ -53,32 +48,6 @@ export default function App() {
   }
 
   const pilotName = user?.name || user?.email?.split('@')[0] || 'Unknown Pilot';
-
-  const handleHostBattle = async () => {
-    if (!user || creatingRoom.current) return;
-    navigate('/host-battle');
-    if (hostRoom) return;
-
-    creatingRoom.current = true;
-    setIsCreatingRoom(true);
-    setRoomError('');
-
-    try {
-      setHostRoom(await createRoom(pilotName));
-    } catch {
-      setRoomError('Could not create a room. Please try again.');
-    } finally {
-      creatingRoom.current = false;
-      setIsCreatingRoom(false);
-    }
-  };
-
-  const handleRoomBack = () => {
-    setHostRoom(null);
-    setJoinedRoom(null);
-    setRoomError('');
-    navigate('/menu');
-  };
 
   return (
     <Routes>
@@ -169,11 +138,7 @@ export default function App() {
         }
       />
 
-      {/* 4. Inject both the display name and the true ID into the game screen */}
-      <Route
-        path="/game"
-        element={user ? <GameScreen username={pilotName} playerId={pilotId} /> : <Navigate to="/login" replace />}
-      />
+      <Route path="/game" element={user ? <GameScreen username={pilotName} /> : <Navigate to="/login" replace />} />
 
       <Route
         path="/host-battle"
