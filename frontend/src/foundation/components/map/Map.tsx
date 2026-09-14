@@ -9,11 +9,16 @@ export function Map() {
   const handleZoomOut = () => setScale((prev) => Math.max(prev - 0.1, 0.5));
 
   const startboard1Layout: TileData[] = [
-    { x: 1, y: 1, robot: { hue: 0, direction: 90 } },
-    { x: 2, y: 6, robot: { hue: 300, direction: 90 } },
+    { x: 1, y: 1, robot: { hue: 0, direction: 'EAST' } },
+    { x: 2, y: 6, robot: { hue: 300, direction: 'EAST' } },
   ];
 
-  const gameboard1Layout: TileData[] = [{ x: 5, y: 5, checkpointNumber: 1 }];
+  const gameboard1Layout: TileData[] = [
+    { x: 0, y: 0, walls: { north: true, east: true } },
+    { x: 2, y: 2, hasPit: true },
+    { x: 5, y: 5, hasAntenna: true },
+    { x: 3, y: 4, conveyor: { direction: 'NORTH', isExpress: true } },
+  ];
 
   const gameboard2Layout: TileData[] = [{ x: 2, y: 2, checkpointNumber: 2 }];
 
