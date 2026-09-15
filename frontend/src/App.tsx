@@ -53,33 +53,6 @@ export default function App() {
   }
 
   const pilotName = user?.name || user?.email?.split('@')[0] || 'Unknown Pilot';
-
-  const handleHostBattle = async () => {
-    if (!user || creatingRoom.current) return;
-    navigate('/host-battle');
-    if (hostRoom) return;
-
-    creatingRoom.current = true;
-    setIsCreatingRoom(true);
-    setRoomError('');
-
-    try {
-      setHostRoom(await createRoom(pilotName));
-    } catch {
-      setRoomError('Could not create a room. Please try again.');
-    } finally {
-      creatingRoom.current = false;
-      setIsCreatingRoom(false);
-    }
-  };
-
-  const handleRoomBack = () => {
-    setHostRoom(null);
-    setJoinedRoom(null);
-    setRoomError('');
-    navigate('/menu');
-  };
-
   return (
     <Routes>
       <Route path="/" element={user ? <Navigate to="/menu" replace /> : <Navigate to="/login" replace />} />
@@ -188,17 +161,7 @@ export default function App() {
           )
         }
       />
-
-      <Route
-        path="/join-battle"
-        element={
-          user ? (
-            <JoinBattlePage username={pilotName} room={joinedRoom} onJoined={setJoinedRoom} onBack={handleRoomBack} />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
+      <Route path="/game" element={user ? <GameScreen username={pilotName} /> : <Navigate to="/login" replace />} />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
