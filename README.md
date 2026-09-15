@@ -56,14 +56,24 @@ The backend connects to a managed Neon PostgreSQL database. Secrets are kept out
 
 
 3. Open `.env` in your editor, ask the project lead for the credentials, and paste them in:
-```env
-# backend/.env
-DB_HOST=your-neon-endpoint.neon.tech
-DB_NAME=roborally
-DB_USER=your_neon_username
-DB_PASSWORD=your_neon_password
+### Environment Setup
 
-```
+Create a `.env` file in the root directory based on `.env.example`. You will need to configure the following variables:
+
+**Database Configuration**
+* `DB_HOST`: Your Neon PostgreSQL host URL.
+* `DB_NAME`: The database name (default: `neondb`).
+* `DB_USER`: Your Neon database role.
+* `DB_PASSWORD`: Your database password.
+
+**Authentication Configuration (Neon Auth)**
+* `SPRING_JWT_ISSUER`: The expected issuer claim inside the JWT.
+* `SPRING_JWK_SET_URI`: The endpoint Spring uses to download the public Ed25519 keys to verify token signatures.
+* `VITE_NEON_AUTH_URL`: The frontend routing URL for the Neon Auth interface.
+
+**Local Server Configuration**
+* `SPRING_JPA_HIBERNATE_DDL_AUTO`: Set to `update` for development to auto-sync entity schemas.
+* `APP_CORS_ALLOWED_ORIGINS`: The URL of your local React dev server (usually `http://localhost:5173`).
 
 
 4. Allow `direnv` to read the new secrets:
