@@ -18,7 +18,6 @@ import com.example.demo.model.CardType;
 import com.example.demo.model.Direction;
 import com.example.demo.model.Position;
 
-import com.example.demo.model.CardType;
 
 import org.springframework.stereotype.Service;
 
@@ -80,7 +79,10 @@ public class GameServiceImpl implements GameService {
         requirePlayerHasJoined(room, playerId);
         ProgrammingDeck deck = room.getOrCreateDeck(playerId);
 
-        deck.discardRemainingHand(new ArrayList<>(registerDto.registers()));
+        // Synchronize on the deck so hand/discard pile modifications remain thread-safe
+        synchronized (deck) {
+            deck.discardRemainingHand(new ArrayList<>(registerDto.registers()));
+        }
 
         room.submitRegisters(playerId, registerDto.registers());
     }
@@ -121,15 +123,6 @@ public class GameServiceImpl implements GameService {
         return toBoardStateDto(roomId, room);
     }
 
-        // Synchronize on the same deck monitor to ensure thread safety
-        // against concurrent getPlayerHand requests
-        synchronized (deck) {
-            // The remaining unplayed cards in the player's hand are placed into their
-            // discard pile
-            // We pass a copy of the list of cards the player actually locked into their
-            // registers
-            deck.discardRemainingHand(new ArrayList<>(request.registers()));
-        }
     private GameRoom getOrCreateRoom(UUID roomId) {
         return rooms.computeIfAbsent(roomId,
                 id -> new GameRoom(new GameBoard(DEFAULT_BOARD_WIDTH, DEFAULT_BOARD_HEIGHT)));
