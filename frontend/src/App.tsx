@@ -9,6 +9,7 @@ import { ProgrammingPhase } from './foundation/components/register-slot/Programm
 import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
 import roboRallyImage from './assets/hero.png';
 import { neon } from './lib/neon';
+import { VerifyEmailForm } from './features/login-page/VerifyEmailForm';
 
 function GameScreen({ username }: { username: string; playerId: string }) {
   const navigate = useNavigate();
@@ -124,6 +125,19 @@ export default function App() {
       />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
+
+      <Route
+        path="/verify-email"
+        element={
+          user ? (
+            <Navigate to="/menu" replace />
+          ) : (
+            <MenuScreen img={roboRallyImage} subtitle="Account Security" title="Verify Email" panelClassName="max-w-md w-full">
+              <VerifyEmailForm />
+            </MenuScreen>
+          )
+        }
+      />
     </Routes>
   );
 }

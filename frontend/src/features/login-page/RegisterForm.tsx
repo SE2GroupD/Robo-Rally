@@ -18,7 +18,9 @@ export function RegisterForm() {
         name: email.split('@')[0],
       });
       if (error) throw error;
-      navigate('/menu');
+
+      // Redirect to the verification screen, passing email as a query param
+      navigate(`/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err: any) {
       setErrorMsg(err.message || 'Registration failed');
     }
