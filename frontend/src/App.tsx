@@ -6,6 +6,7 @@ import { ResetPasswordForm } from './features/login-page/ResetPasswordForm';
 import { MainMenuPage } from './features/main-menu/MainMenuPage';
 import { Map } from './foundation/components/map/Map';
 import { ProgrammingPhase } from './foundation/components/register-slot/ProgrammingPhase';
+import { useRobotMovement } from './hooks/game/useRobotMovement';
 import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
 import roboRallyImage from './assets/hero.png';
 import { neon } from './lib/neon';
@@ -13,6 +14,8 @@ import { VerifyEmailForm } from './features/login-page/VerifyEmailForm';
 
 function GameScreen({ username }: { username: string }) {
   const navigate = useNavigate();
+  const { robot, runProgram } = useRobotMovement();
+
   return (
     <div className="flex min-h-screen flex-col items-center bg-slate-950 p-4">
       <div className="mb-4 flex w-full max-w-5xl justify-between text-slate-400">
@@ -22,9 +25,9 @@ function GameScreen({ username }: { username: string }) {
         <span className="font-bold text-robot-orange">Pilot: {username}</span>
       </div>
 
-      <Map />
+      <Map robot={robot} />
       <div className="mt-8 w-full max-w-5xl">
-        <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" />
+        <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" onLockIn={runProgram} />
       </div>
     </div>
   );
