@@ -21,7 +21,7 @@ export function GameBoard({ layoutData = [] }: GameBoardProps) {
   }
 
   return (
-    <div className="grid grid-cols-[repeat(10,50px)] gap-[2px] w-max bg-neutral-800 p-1 rounded-md">
+    <div className="grid grid-cols-[repeat(10,50px)] gap-[2px] w-max bg-neutral-800 rounded-md">
       {' '}
       {tiles.map((tile) => (
         <Tile key={`game-${tile.x}-${tile.y}`} tile={tile} />
