@@ -6,6 +6,7 @@ import { ResetPasswordForm } from './features/login-page/ResetPasswordForm';
 import { MainMenuPage } from './features/main-menu/MainMenuPage';
 import { Map } from './foundation/components/map/Map';
 import { ProgrammingPhase } from './foundation/components/register-slot/ProgrammingPhase';
+import { useRobotMovement } from './hooks/game/useRobotMovement';
 import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
 import roboRallyImage from './assets/hero.png';
 import { neon } from './lib/neon';
