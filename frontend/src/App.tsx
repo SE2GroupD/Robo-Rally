@@ -27,7 +27,7 @@ function GameScreen({ username }: { username: string }) {
 
       <Map robot={robot} />
       <div className="mt-8 w-full max-w-5xl">
-        <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" onLockIn={runProgram} />
+        <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" playerId={username} onLockIn={runProgram} />
       </div>
     </div>
   );
