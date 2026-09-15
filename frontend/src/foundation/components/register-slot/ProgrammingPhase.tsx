@@ -2,18 +2,20 @@ import { useState } from 'react';
 //import { ProgramRegister } from '../../../features/types/ProgramRegisterDto';
 import { ProgrammingCard } from '../../../features/game/components/programming/ProgrammingCard';
 import { useProgramming } from '../../../hooks/game/useProgramming';
-import type { CardType } from '../../../features/game/types/CardType';
+import type { CardType } from '../../../features/types/CardType';
 
 interface ProgrammingPhaseProps {
   roomId: string;
+  playerId: string;
+  onLockIn?: (registers: CardType[]) => void;
 }
 
-export function ProgrammingPhase({ roomId }: ProgrammingPhaseProps) {
+export function ProgrammingPhase({ roomId, playerId, onLockIn }: ProgrammingPhaseProps) {
   // 1. Use React State to track visibility instead of DOM manipulation
   const [isOpen, setIsOpen] = useState(true);
 
   const { hand, registers, isLockedIn, drawPileCount, discardPileCount, selectCard, removeFromRegister, clearRegisters, lockIn } =
-    useProgramming(roomId);
+    useProgramming(roomId, playerId, onLockIn);
 
   const registerCards = registers.map((card, idx) =>
     card ? (
