@@ -18,6 +18,8 @@ import com.example.demo.model.CardType;
 import com.example.demo.model.Direction;
 import com.example.demo.model.Position;
 
+import com.example.demo.model.CardType;
+
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -52,9 +54,19 @@ public class GameServiceImpl implements GameService {
     public PlayerHandDto getPlayerHand(UUID roomId, String playerId) {
         GameRoom room = getExistingRoom(roomId);
         requirePlayerHasJoined(room, playerId);
+
         ProgrammingDeck deck = room.getOrCreateDeck(playerId);
-        List<CardType> hand = deck.drawCards(DEFAULT_HAND_SIZE);
-        return new PlayerHandDto(playerId, hand, deck.getDrawPileSize(), deck.getDiscardPileSize());
+
+        List<CardType> safeHand;
+        synchronized (deck) {
+            if (deck.getCurrentHand().isEmpty()) {
+                safeHand = deck.drawCards(DEFAULT_HAND_SIZE);
+            } else {
+                safeHand = new ArrayList<>(deck.getCurrentHand());
+            }
+        }
+
+        return new PlayerHandDto(playerId, safeHand, deck.getDrawPileSize(), deck.getDiscardPileSize());
     }
 
     @Override
@@ -109,6 +121,15 @@ public class GameServiceImpl implements GameService {
         return toBoardStateDto(roomId, room);
     }
 
+        // Synchronize on the same deck monitor to ensure thread safety
+        // against concurrent getPlayerHand requests
+        synchronized (deck) {
+            // The remaining unplayed cards in the player's hand are placed into their
+            // discard pile
+            // We pass a copy of the list of cards the player actually locked into their
+            // registers
+            deck.discardRemainingHand(new ArrayList<>(request.registers()));
+        }
     private GameRoom getOrCreateRoom(UUID roomId) {
         return rooms.computeIfAbsent(roomId,
                 id -> new GameRoom(new GameBoard(DEFAULT_BOARD_WIDTH, DEFAULT_BOARD_HEIGHT)));
