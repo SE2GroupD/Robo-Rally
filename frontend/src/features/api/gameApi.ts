@@ -27,6 +27,5 @@ export async function submitProgramRegister(roomId: string, payload: ProgramRegi
     body: JSON.stringify(payload),
   });
 
-
   if (!response.ok) throw new Error('Failed to submit registers');
 }
