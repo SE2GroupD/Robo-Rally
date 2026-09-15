@@ -3,7 +3,7 @@ import { FrontPage } from './features/front-page/FrontPage';
 import { LoginPage } from './features/login-page/LoginPage';
 import type { LoginRequestDto } from './features/login-page/types';
 import { MainMenuPage } from './features/main-menu/MainMenuPage';
-import { Board } from './foundation/components/map/Board';
+import { Map } from './foundation/components/map/Map';
 import { ProgrammingPhase } from './foundation/components/register-slot/ProgrammingPhase';
 
 type AppView = 'front-page' | 'login' | 'main-menu' | 'game';
@@ -46,7 +46,7 @@ function App() {
         </button>
 
         {/* Your 2D grid/map */}
-        <Board />
+        <Map />
 
         {/* The new card interface */}
         <div className="mt-8 w-full max-w-5xl">
