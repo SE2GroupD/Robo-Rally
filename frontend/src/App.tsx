@@ -24,7 +24,6 @@ function GameScreen({ username }: { username: string }) {
         </button>
         <span className="font-bold text-robot-orange">Pilot: {username}</span>
       </div>
-
       <Map robot={robot} />
       <div className="mt-8 w-full max-w-5xl">
         <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" onLockIn={runProgram} />
