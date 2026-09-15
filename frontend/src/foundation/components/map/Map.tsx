@@ -28,14 +28,14 @@ export function Map() {
       </div>
 
       <div
-        className="flex flex-row items-start justify-center gap-2 p-16 min-w-max origin-top transition-transform duration-200 ease-out"
+        className="flex flex-row items-start justify-center gap-[2px] p-16 min-w-max origin-top transition-transform duration-200 ease-out"
         style={{ transform: `scale(${scale})` }}
       >
         <div className="mt-[260px]">
           <StartBoard layoutData={startboard1Layout} />
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-[2px]">
           <GameBoard layoutData={gameboard1Layout} />
           <GameBoard layoutData={gameboard2Layout} />
         </div>
