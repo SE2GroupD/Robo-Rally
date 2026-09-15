@@ -52,11 +52,7 @@ function App() {
 
         {/* The new card interface */}
         <div className="mt-8 w-full max-w-5xl">
-          <ProgrammingPhase
-            roomId="123e4567-e89b-12d3-a456-426614174000"
-            playerId={playerInfo.username}
-            onLockIn={runProgram}
-          />
+          <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" playerId={playerInfo.username} onLockIn={runProgram} />
         </div>
       </div>
     );
