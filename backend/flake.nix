@@ -11,8 +11,8 @@
   in {
     devShells.${system}.default = pkgs.mkShell {
       buildInputs = with pkgs; [
-        jdk21
-        maven # or gradle
+        jdk25
+        maven
         nodejs_22
       ];
     };

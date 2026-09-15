@@ -16,21 +16,19 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class GameServiceImpl implements GameService {
 
-    // A lightweight record to act as a composite key for the map
     private record DeckKey(UUID roomId, String playerId) {
     }
 
-    // Key: DeckKey (Room + Player) -> Value: ProgrammingDeck
     private final Map<DeckKey, ProgrammingDeck> activeDecks = new ConcurrentHashMap<>();
 
     @Override
     public PlayerHandDto getPlayerHand(UUID roomId, String playerId) {
         DeckKey key = new DeckKey(roomId, playerId);
-        List<CardType> safeHand = new ArrayList<>();
-
         ProgrammingDeck deck = activeDecks.computeIfAbsent(key, k -> new ProgrammingDeck());
 
+        // Snapshot all state atomically while holding the deck monitor
         synchronized (deck) {
+            List<CardType> safeHand;
             if (deck.isLockedIn()) {
                 safeHand = new ArrayList<>();
             } else if (deck.getCurrentHand().isEmpty()) {
@@ -38,15 +36,21 @@ public class GameServiceImpl implements GameService {
             } else {
                 safeHand = new ArrayList<>(deck.getCurrentHand());
             }
-        }
 
-        return new PlayerHandDto(
-                playerId,
-                safeHand,
-                deck.getDrawPileSize(),
-                deck.getDiscardPileSize(),
-                deck.getLockedRegisters(),
-                deck.isLockedIn());
+            // Create defensive copies of live lists and snapshot primitive values
+            int drawPileSize = deck.getDrawPileSize();
+            int discardPileSize = deck.getDiscardPileSize();
+            List<CardType> safeLockedRegisters = new ArrayList<>(deck.getLockedRegisters());
+            boolean isLockedIn = deck.isLockedIn();
+
+            return new PlayerHandDto(
+                    playerId,
+                    safeHand,
+                    drawPileSize,
+                    discardPileSize,
+                    safeLockedRegisters,
+                    isLockedIn);
+        }
     }
 
     @Override

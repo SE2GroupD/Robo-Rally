@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.dto.PlayerHandDto;
 import com.example.demo.dto.ProgramRegisterDto;
 import com.example.demo.service.GameService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -25,7 +26,6 @@ public class GameController {
             @PathVariable UUID roomId,
             @AuthenticationPrincipal Jwt jwt) {
 
-        // Rely purely on the cryptographic JWT subject
         String authenticatedUserId = jwt.getSubject();
         PlayerHandDto hand = gameService.getPlayerHand(roomId, authenticatedUserId);
 
@@ -57,5 +57,20 @@ public class GameController {
         gameService.completeRound(roomId, authenticatedUserId);
 
         return ResponseEntity.ok("Round completed successfully.");
+    }
+
+    // --- Exception Handlers ---
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException ex) {
+        // 400 Bad Request for forged/invalid cards
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<String> handleIllegalState(IllegalStateException ex) {
+        // 409 Conflict for state violations (already locked in, or completing before
+        // lock)
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 }
