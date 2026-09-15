@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { fetchPlayerHand, submitProgramRegister } from '../../features/api/gameApi';
 import type { CardType } from '../../features/types/CardType';
 
-export function useProgramming(roomId: string, playerId: string) {
+export function useProgramming(roomId: string, playerId: string, onLockIn?: (registers: CardType[]) => void) {
   const [hand, setHand] = useState<CardType[]>([]);
   const [registers, setRegisters] = useState<(CardType | null)[]>([null, null, null, null, null]);
   const [isLockedIn, setIsLockedIn] = useState(false);
@@ -56,11 +56,13 @@ export function useProgramming(roomId: string, playerId: string) {
       return;
     }
     try {
+      const lockedRegisters = registers as [CardType, CardType, CardType, CardType, CardType];
       await submitProgramRegister(roomId, {
         playerId,
-        registers: registers as [CardType, CardType, CardType, CardType, CardType],
+        registers: lockedRegisters,
       });
       setIsLockedIn(true);
+      onLockIn?.(lockedRegisters);
     } catch (err) {
       console.error(err);
       console.warn('Failed to lock in registers.');

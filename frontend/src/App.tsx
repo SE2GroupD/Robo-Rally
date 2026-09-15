@@ -5,12 +5,14 @@ import type { LoginRequestDto } from './features/login-page/types';
 import { MainMenuPage } from './features/main-menu/MainMenuPage';
 import { Map } from './foundation/components/map/Map';
 import { ProgrammingPhase } from './foundation/components/register-slot/ProgrammingPhase';
+import { useRobotMovement } from './hooks/game/useRobotMovement';
 
 type AppView = 'front-page' | 'login' | 'main-menu' | 'game';
 
 function App() {
   const [view, setView] = useState<AppView>('front-page');
   const [playerInfo, setPlayerInfo] = useState<{ username: string; email?: string } | null>(null);
+  const { robot, runProgram } = useRobotMovement();
 
   const handleLogin = (dto: LoginRequestDto) => {
     setPlayerInfo({
@@ -46,11 +48,11 @@ function App() {
         </button>
 
         {/* Your 2D grid/map */}
-        <Map />
+        <Map robot={robot} />
 
         {/* The new card interface */}
         <div className="mt-8 w-full max-w-5xl">
-          <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" playerId={playerInfo.username} />
+          <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" playerId={playerInfo.username} onLockIn={runProgram} />
         </div>
       </div>
     );
