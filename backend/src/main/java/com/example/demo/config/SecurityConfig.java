@@ -14,10 +14,15 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-// Nimbus imports for direct manual verification
+// Nimbus imports for dynamic key selection and manual EdDSA verification
 import com.nimbusds.jose.crypto.Ed25519Verifier;
-import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKMatcher;
+import com.nimbusds.jose.jwk.JWKSelector;
 import com.nimbusds.jose.jwk.OctetKeyPair;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
+import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
@@ -54,28 +59,50 @@ public class SecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder() throws Exception {
-        JWKSet jwkSet = JWKSet.load(URI.create(jwkSetUri).toURL());
-        OctetKeyPair okp = (OctetKeyPair) jwkSet.getKeys().get(0);
-        Ed25519Verifier verifier = new Ed25519Verifier(okp);
+        // 1. JWKSourceBuilder handles caching and automatic background refreshing of
+        // the JWKS
+        JWKSource<SecurityContext> jwkSource = JWKSourceBuilder
+                .create(URI.create(jwkSetUri).toURL())
+                .build();
 
         return token -> {
             try {
                 SignedJWT signedJWT = SignedJWT.parse(token);
+                String kid = signedJWT.getHeader().getKeyID();
 
+                // 2. Dynamically select the correct key from the cached JWKS using the token's
+                // 'kid'
+                JWKSelector selector = new JWKSelector(new JWKMatcher.Builder().keyID(kid).build());
+                List<JWK> jwks = jwkSource.get(selector, null);
+
+                if (jwks.isEmpty()) {
+                    throw new BadJwtException("No matching key found for kid: " + kid);
+                }
+
+                JWK jwk = jwks.get(0);
+                if (!(jwk instanceof OctetKeyPair okp)) {
+                    throw new BadJwtException("Expected OctetKeyPair for EdDSA signature verification");
+                }
+
+                // 3. Verify Cryptographic Signature
+                Ed25519Verifier verifier = new Ed25519Verifier(okp);
                 if (!signedJWT.verify(verifier)) {
                     throw new BadJwtException("Invalid EdDSA signature");
                 }
 
                 JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
 
-                if (claims.getExpirationTime() != null && claims.getExpirationTime().before(new Date())) {
-                    throw new BadJwtException("Token has expired");
+                // 4. Strict Expiration Validation: Must exist AND must be in the future
+                if (claims.getExpirationTime() == null || !claims.getExpirationTime().after(new Date())) {
+                    throw new BadJwtException("Token is missing expiration claim or has expired");
                 }
 
+                // 5. Verify Issuer
                 if (!issuer.equals(claims.getIssuer())) {
                     throw new BadJwtException("Invalid issuer");
                 }
 
+                // 6. Map to Spring Security Context with explicit Date -> Instant mapping
                 return Jwt.withTokenValue(token)
                         .headers(h -> h.putAll(signedJWT.getHeader().toJSONObject()))
                         .claims(c -> claims.getClaims().forEach((key, value) -> {

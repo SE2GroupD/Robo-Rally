@@ -17,6 +17,18 @@ export function useProgramming(roomId: string, playerId: string) {
         setHand(data.cards);
         setDrawPileCount(data.drawPileCount);
         setDiscardPileCount(data.discardPileCount);
+
+        // If the backend says we are locked in, restore the UI state
+        if (data.isLockedIn) {
+          setIsLockedIn(true);
+
+          // Pad with nulls just in case, though it should be exactly 5
+          const restoredRegisters = [...data.lockedRegisters];
+          while (restoredRegisters.length < 5) {
+            restoredRegisters.push(null as any);
+          }
+          setRegisters(restoredRegisters);
+        }
       })
       .catch((err) => console.error(err));
   }, [roomId, playerId]);

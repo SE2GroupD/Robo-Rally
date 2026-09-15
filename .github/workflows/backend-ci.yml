@@ -38,7 +38,6 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          VITE_NEON_AUTH_URL: ${{ secrets.VITE_NEON_AUTH_URL }}
           SPRING_JPA_HIBERNATE_DDL_AUTO: update 
           SPRING_JWT_ISSUER: ${{ secrets.SPRING_JWT_ISSUER }}
           SPRING_JWK_SET_URI: ${{ secrets.SPRING_JWK_SET_URI }}

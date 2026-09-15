@@ -10,19 +10,18 @@ public class ProgrammingDeck {
     private List<CardType> drawPile;
     private List<CardType> discardPile;
     private List<CardType> currentHand;
+    private boolean lockedIn;
+    private List<CardType> lockedRegisters;
 
     public ProgrammingDeck() {
         this.drawPile = new ArrayList<>();
         this.discardPile = new ArrayList<>();
         this.currentHand = new ArrayList<>();
+        this.lockedRegisters = new ArrayList<>();
+        this.lockedIn = false;
         initializeStandardDeck();
     }
 
-    /**
-     * Initializes the standard 20-card starting deck for a player.
-     * Note: The exact 20-card distribution varies slightly by edition,
-     * but this is a balanced standard loadout.
-     */
     private void initializeStandardDeck() {
         addCards(CardType.MOVE_1, 4);
         addCards(CardType.MOVE_2, 3);
@@ -43,55 +42,49 @@ public class ProgrammingDeck {
         }
     }
 
-    /**
-     * Draws a hand of cards (usually 9). If the draw pile empties,
-     * the discard pile is shuffled back in to replenish it.
-     */
     public List<CardType> drawCards(int amount) {
-        currentHand.clear(); // Clear previous hand
+        currentHand.clear();
+        lockedRegisters.clear();
+        lockedIn = false;
 
         for (int i = 0; i < amount; i++) {
             if (drawPile.isEmpty()) {
                 reshuffleDiscardIntoDraw();
             }
 
-            // If it is still empty after reshuffling, the player literally has no cards
-            // left
             if (!drawPile.isEmpty()) {
                 currentHand.add(drawPile.remove(0));
             }
         }
-        return new ArrayList<>(currentHand); // Return a copy of the hand
+        return new ArrayList<>(currentHand);
     }
 
-    /**
-     * Called when a player takes damage (e.g., from a laser).
-     * The damage card goes directly into their discard pile.
-     */
     public void addDamageCard(CardType damageType) {
         discardPile.add(damageType);
     }
 
-    /**
-     * After a player locks in their 5 registers, the remaining cards
-     * in their hand go to the discard pile.
-     */
     public void discardRemainingHand(List<CardType> playedCards) {
-        for (CardType card : currentHand) {
-            if (!playedCards.contains(card)) {
-                discardPile.add(card);
-            } else {
-                // Remove one instance of the played card from the tracker so we don't discard
-                // it
-                playedCards.remove(card);
-            }
+        // Save the exact registers submitted by the player FIRST
+        this.lockedRegisters = new ArrayList<>(playedCards);
+
+        // Create a temporary list of the current hand to calculate discards
+        List<CardType> remainingToDiscard = new ArrayList<>(currentHand);
+
+        // Remove the exact cards they played from the temporary list
+        // (Using .remove(Object) safely removes exactly one instance per loop, handling
+        // duplicates perfectly)
+        for (CardType playedCard : playedCards) {
+            remainingToDiscard.remove(playedCard);
         }
+
+        // Move whatever is left over into the discard pile
+        discardPile.addAll(remainingToDiscard);
+
+        // Clear the hand and lock in
         currentHand.clear();
+        lockedIn = true;
     }
 
-    /**
-     * When the 5 registers finish executing, those cards are discarded.
-     */
     public void discardPlayedCards(List<CardType> executedCards) {
         discardPile.addAll(executedCards);
     }
@@ -113,5 +106,13 @@ public class ProgrammingDeck {
 
     public int getDiscardPileSize() {
         return discardPile.size();
+    }
+
+    public List<CardType> getLockedRegisters() {
+        return lockedRegisters;
+    }
+
+    public boolean isLockedIn() {
+        return lockedIn;
     }
 }
