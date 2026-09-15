@@ -26,7 +26,6 @@ public class GameController {
             @PathVariable UUID roomId,
             @AuthenticationPrincipal Jwt jwt) {
 
-        // Extract the verified user ID directly from the JWT token
         String authenticatedUserId = jwt.getSubject();
         PlayerHandDto hand = gameService.getPlayerHand(roomId, authenticatedUserId);
 

@@ -16,11 +16,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class GameServiceImpl implements GameService {
 
-    // A lightweight record to act as a composite key for the map
     private record DeckKey(UUID roomId, String playerId) {
     }
 
-    // Key: DeckKey (Room + Player) -> Value: ProgrammingDeck
     private final Map<DeckKey, ProgrammingDeck> activeDecks = new ConcurrentHashMap<>();
 
     @Override
