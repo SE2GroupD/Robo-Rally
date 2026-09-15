@@ -6,6 +6,7 @@ import type { CardType } from '../../../features/types/CardType';
 
 interface ProgrammingPhaseProps {
   roomId: string;
+  playerId: string;
   onLockIn?: (registers: CardType[]) => void;
 }
 
