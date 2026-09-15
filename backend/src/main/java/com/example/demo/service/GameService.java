@@ -12,7 +12,7 @@ public interface GameService {
     PlayerHandDto getPlayerHand(UUID roomId, String playerId);
 
     /**
-     * Processes the 1 to 5 cards submitted by a player, locking them in for the
+     * Processes the 5 registers submitted by a player, locking them in for the
      * round.
      */
     void submitPlayerRegisters(UUID roomId, String playerId, ProgramRegisterDto request);

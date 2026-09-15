@@ -5,14 +5,3 @@ import java.util.List;
 
 public record ProgramRegisterDto(List<CardType> registers) {
 }
-
-/*
- * Record automatically generates:
- * - private final String playerId;
- * - private final List<CardType> registers;
- * - public ProgramRegisterDto(String playerId, List<CardType> registers) { ...
- * }
- * - public List<CardType> registers() { return registers; }
- * - public String playerId() { return playerId; }
- * - public boolean equals(Object o) { ... }
- */

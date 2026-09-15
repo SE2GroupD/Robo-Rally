@@ -16,7 +16,7 @@ import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
 import roboRallyImage from './assets/hero.png';
 import { neon } from './lib/neon';
 
-function GameScreen({ username, playerId }: { username: string; playerId: string }) {
+function GameScreen({ username }: { username: string; playerId: string }) {
   const navigate = useNavigate();
   const { robot, runProgram } = useRobotMovement();
 

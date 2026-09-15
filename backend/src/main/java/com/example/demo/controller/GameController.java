@@ -26,6 +26,7 @@ public class GameController {
             @PathVariable UUID roomId,
             @AuthenticationPrincipal Jwt jwt) {
 
+        // Rely purely on the cryptographic JWT subject
         String authenticatedUserId = jwt.getSubject();
         PlayerHandDto hand = gameService.getPlayerHand(roomId, authenticatedUserId);
 
@@ -38,10 +39,8 @@ public class GameController {
             @RequestBody ProgramRegisterDto request,
             @AuthenticationPrincipal Jwt jwt) {
 
-        if (request.registers() == null || request.registers().isEmpty()
-                || request.registers().size() > 5
-                || request.registers().stream().anyMatch(java.util.Objects::isNull)) {
-            return ResponseEntity.badRequest().body("Must submit 1 to 5 non-null cards.");
+        if (request.registers().size() != 5) {
+            return ResponseEntity.badRequest().body("Must submit exactly 5 register slots.");
         }
 
         String authenticatedUserId = jwt.getSubject();
