@@ -1,16 +1,42 @@
-import { useState } from 'react';
+import { JoinBattlePage } from './features/join-battle/JoinBattlePage';
+import { useRef, useState } from 'react';
+import { createRoom, type CreatedRoom, type JoinedRoom } from './features/api/gameApi';
 import { FrontPage } from './features/front-page/FrontPage';
 import { LoginPage } from './features/login-page/LoginPage';
+import { HostBattlePage } from './features/host-battle/HostBattlePage';
 import type { LoginRequestDto } from './features/login-page/types';
 import { MainMenuPage } from './features/main-menu/MainMenuPage';
 import { Map } from './foundation/components/map/Map';
 import { ProgrammingPhase } from './foundation/components/register-slot/ProgrammingPhase';
 
-type AppView = 'front-page' | 'login' | 'main-menu' | 'game';
+type AppView = 'front-page' | 'login' | 'main-menu' | 'game' | 'host-battle' | 'join-battle';
 
 function App() {
   const [view, setView] = useState<AppView>('front-page');
   const [playerInfo, setPlayerInfo] = useState<{ username: string; email?: string } | null>(null);
+  const [joinedRoom, setJoinedRoom] = useState<JoinedRoom | null>(null);
+  const [hostRoom, setHostRoom] = useState<CreatedRoom | null>(null);
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [roomError, setRoomError] = useState('');
+  const creatingRoom = useRef(false);
+
+  const handleHostBattle = async () => {
+    if (!playerInfo || creatingRoom.current) return;
+    setView('host-battle');
+    if (hostRoom) return;
+
+    creatingRoom.current = true;
+    setIsCreatingRoom(true);
+    setRoomError('');
+    try {
+      setHostRoom(await createRoom(playerInfo.username));
+    } catch {
+      setRoomError('Could not create a room. Please try again.');
+    } finally {
+      creatingRoom.current = false;
+      setIsCreatingRoom(false);
+    }
+  };
 
   const handleLogin = (dto: LoginRequestDto) => {
     setPlayerInfo({
@@ -30,6 +56,38 @@ function App() {
     }
 
     return <LoginPage onBack={() => setView('front-page')} onLogin={handleLogin} onGuestLogin={handleGuestLogin} />;
+  }
+
+  if (view === 'host-battle') {
+    return (
+      <HostBattlePage
+        username={playerInfo.username}
+        room={hostRoom}
+        isCreating={isCreatingRoom}
+        error={roomError}
+        onRetry={handleHostBattle}
+        onBack={() => {
+          setHostRoom(null);
+          setJoinedRoom(null);
+          setView('main-menu');
+        }}
+      />
+    );
+  }
+
+  if (view === 'join-battle') {
+    return (
+      <JoinBattlePage
+        username={playerInfo.username}
+        room={joinedRoom}
+        onJoined={setJoinedRoom}
+        onBack={() => {
+          setHostRoom(null);
+          setJoinedRoom(null);
+          setView('main-menu');
+        }}
+      />
+    );
   }
 
   if (view === 'game') {
@@ -61,8 +119,13 @@ function App() {
       onStartGame={() => setView('game')}
       onLogout={() => {
         setPlayerInfo(null);
+        setHostRoom(null);
+        setJoinedRoom(null);
+        setRoomError('');
         setView('front-page');
       }}
+      onHostBattle={handleHostBattle}
+      onJoinBattle={() => setView('join-battle')}
       username={playerInfo.username}
     />
   );
