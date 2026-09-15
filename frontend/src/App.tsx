@@ -26,7 +26,14 @@ function GameScreen({ username }: { username: string }) {
         <button type="button" onClick={() => navigate('/menu')} className="underline hover:text-white">
           &larr; Back to Menu
         </button>
-        <span className="font-bold text-robot-orange">Pilot: {username}</span>
+
+        {/* Your 2D grid/map */}
+        <Map robot={robot} />
+
+        {/* The new card interface */}
+        <div className="mt-8 w-full max-w-5xl">
+          <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" onLockIn={runProgram} />
+        </div>
       </div>
 
       <Map robot={robot} />
