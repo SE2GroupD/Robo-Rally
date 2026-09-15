@@ -131,6 +131,19 @@ export default function App() {
       <Route path="/game" element={user ? <GameScreen username={pilotName} /> : <Navigate to="/login" replace />} />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
+
+      <Route
+        path="/verify-email"
+        element={
+          user ? (
+            <Navigate to="/menu" replace />
+          ) : (
+            <MenuScreen img={roboRallyImage} subtitle="Account Security" title="Verify Email" panelClassName="max-w-md w-full">
+              <VerifyEmailForm />
+            </MenuScreen>
+          )
+        }
+      />
     </Routes>
   );
 }
