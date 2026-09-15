@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { fetchPlayerHand, submitProgramRegister } from '../../features/api/gameApi';
 import type { CardType } from '../../features/types/CardType';
 
-export function useProgramming(roomId: string, playerId: string) {
+export function useProgramming(roomId: string) {
   const [hand, setHand] = useState<CardType[]>([]);
   const [registers, setRegisters] = useState<(CardType | null)[]>([null, null, null, null, null]);
   const [isLockedIn, setIsLockedIn] = useState(false);
@@ -12,7 +12,7 @@ export function useProgramming(roomId: string, playerId: string) {
   const [discardPileCount, setDiscardPileCount] = useState(0);
 
   useEffect(() => {
-    fetchPlayerHand(roomId, playerId)
+    fetchPlayerHand(roomId)
       .then((data) => {
         setHand(data.cards);
         setDrawPileCount(data.drawPileCount);
@@ -31,7 +31,7 @@ export function useProgramming(roomId: string, playerId: string) {
         }
       })
       .catch((err) => console.error(err));
-  }, [roomId, playerId]);
+  }, [roomId]);
 
   const selectCard = (card: CardType, indexInHand: number) => {
     if (isLockedIn) return;
@@ -69,7 +69,6 @@ export function useProgramming(roomId: string, playerId: string) {
     }
     try {
       await submitProgramRegister(roomId, {
-        playerId,
         registers: registers as [CardType, CardType, CardType, CardType, CardType],
       });
       setIsLockedIn(true);
@@ -84,7 +83,7 @@ export function useProgramming(roomId: string, playerId: string) {
     registers,
     isLockedIn,
     drawPileCount,
-    discardPileCount, // Export the new state
+    discardPileCount,
     selectCard,
     removeFromRegister,
     clearRegisters,

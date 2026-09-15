@@ -5,15 +5,14 @@ import { useProgramming } from '../../../hooks/game/useProgramming';
 
 interface ProgrammingPhaseProps {
   roomId: string;
-  playerId: string;
 }
 
-export function ProgrammingPhase({ roomId, playerId }: ProgrammingPhaseProps) {
+export function ProgrammingPhase({ roomId }: ProgrammingPhaseProps) {
   // 1. Use React State to track visibility instead of DOM manipulation
   const [isOpen, setIsOpen] = useState(true);
 
   const { hand, registers, isLockedIn, drawPileCount, discardPileCount, selectCard, removeFromRegister, clearRegisters, lockIn } =
-    useProgramming(roomId, playerId);
+    useProgramming(roomId);
 
   const registerCards = registers.map((card, idx) =>
     card ? (

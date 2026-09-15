@@ -19,10 +19,10 @@ async function getValidToken(): Promise<string> {
   return token;
 }
 
-export async function fetchPlayerHand(roomId: string, playerId: string): Promise<PlayerHandDto> {
+export async function fetchPlayerHand(roomId: string): Promise<PlayerHandDto> {
   const token = await getValidToken();
 
-  const response = await fetch(`${API_BASE_URL}/game/${roomId}/player/${playerId}/hand`, {
+  const response = await fetch(`${API_BASE_URL}/game/${roomId}/hand`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

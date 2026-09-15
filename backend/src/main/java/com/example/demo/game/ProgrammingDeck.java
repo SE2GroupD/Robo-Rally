@@ -64,23 +64,26 @@ public class ProgrammingDeck {
     }
 
     public void discardRemainingHand(List<CardType> playedCards) {
-        // Save the exact registers submitted by the player FIRST
-        this.lockedRegisters = new ArrayList<>(playedCards);
-
-        // Create a temporary list of the current hand to calculate discards
+        // 1. Create a temporary working copy to validate against
         List<CardType> remainingToDiscard = new ArrayList<>(currentHand);
 
-        // Remove the exact cards they played from the temporary list
-        // (Using .remove(Object) safely removes exactly one instance per loop, handling
-        // duplicates perfectly)
+        // 2. Validate every submitted card
         for (CardType playedCard : playedCards) {
-            remainingToDiscard.remove(playedCard);
+            // .remove(Object) returns false if the item was not in the list
+            boolean wasInHand = remainingToDiscard.remove(playedCard);
+
+            if (!wasInHand) {
+                // If a card is missing, reject the entire submission immediately.
+                // No state changes (like lockedRegisters or discardPile) occur.
+                throw new IllegalArgumentException("Invalid submission: Card " + playedCard
+                        + " is not in the hand or was submitted too many times.");
+            }
         }
 
-        // Move whatever is left over into the discard pile
+        // 3. The submission is cryptographically and logically valid. Commit state
+        // changes.
+        this.lockedRegisters = new ArrayList<>(playedCards);
         discardPile.addAll(remainingToDiscard);
-
-        // Clear the hand and lock in
         currentHand.clear();
         lockedIn = true;
     }
@@ -93,6 +96,12 @@ public class ProgrammingDeck {
         drawPile.addAll(discardPile);
         discardPile.clear();
         Collections.shuffle(drawPile);
+    }
+
+    public void prepareForNextRound() {
+        discardPile.addAll(lockedRegisters);
+        lockedRegisters.clear();
+        lockedIn = false;
     }
 
     // Getters

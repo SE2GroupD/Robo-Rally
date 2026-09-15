@@ -10,7 +10,7 @@ import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
 import roboRallyImage from './assets/hero.png';
 import { neon } from './lib/neon';
 
-function GameScreen({ username, playerId }: { username: string; playerId: string }) {
+function GameScreen({ username }: { username: string; playerId: string }) {
   const navigate = useNavigate();
   return (
     <div className="flex min-h-screen flex-col items-center bg-slate-950 p-4">
@@ -23,7 +23,7 @@ function GameScreen({ username, playerId }: { username: string; playerId: string
 
       <Board />
       <div className="mt-8 w-full max-w-5xl">
-        <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" playerId={playerId} />
+        <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" />
       </div>
     </div>
   );

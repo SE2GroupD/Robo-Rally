@@ -91,10 +91,12 @@ public class SecurityConfig {
                 }
 
                 JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+                Date now = new Date();
 
-                // 4. Strict Expiration Validation: Must exist AND must be in the future
-                if (claims.getExpirationTime() == null || !claims.getExpirationTime().after(new Date())) {
-                    throw new BadJwtException("Token is missing expiration claim or has expired");
+                // 4. Strict Temporal Validation: Enforce exp and nbf
+                if (claims.getExpirationTime() == null || !claims.getExpirationTime().after(now)
+                        || (claims.getNotBeforeTime() != null && claims.getNotBeforeTime().after(now))) {
+                    throw new BadJwtException("Token is missing expiration, is not valid yet, or has expired");
                 }
 
                 // 5. Verify Issuer

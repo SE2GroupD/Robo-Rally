@@ -50,10 +50,8 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public void submitPlayerRegisters(UUID roomId, ProgramRegisterDto request) {
-        String playerId = request.playerId();
+    public void submitPlayerRegisters(UUID roomId, String playerId, ProgramRegisterDto request) {
         DeckKey key = new DeckKey(roomId, playerId);
-
         ProgrammingDeck deck = activeDecks.get(key);
 
         if (deck == null) {
@@ -61,15 +59,34 @@ public class GameServiceImpl implements GameService {
         }
 
         synchronized (deck) {
-            // Check if already locked in to prevent double-submission
             if (deck.isLockedIn()) {
                 throw new IllegalStateException("Registers are already locked in for this round.");
             }
-
             deck.discardRemainingHand(new ArrayList<>(request.registers()));
         }
 
-        System.out.println("Player " + playerId + " successfully locked in registers in room " + roomId + ": "
-                + request.registers());
+        System.out.println("Player " + playerId + " successfully locked in registers in room " + roomId);
+    }
+
+    @Override
+    public void completeRound(UUID roomId, String playerId) {
+        DeckKey key = new DeckKey(roomId, playerId);
+        ProgrammingDeck deck = activeDecks.get(key);
+
+        if (deck == null) {
+            throw new IllegalStateException("Player deck not found.");
+        }
+
+        synchronized (deck) {
+            if (!deck.isLockedIn()) {
+                throw new IllegalStateException("Cannot complete round: player hasn't locked in yet.");
+            }
+
+            // Clean up the executed cards and reset the lock
+            deck.prepareForNextRound();
+        }
+
+        System.out.println("Player " + playerId + " completed the activation phase in room " + roomId
+                + " and is ready for the next round.");
     }
 }
