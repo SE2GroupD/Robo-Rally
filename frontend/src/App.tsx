@@ -26,6 +26,7 @@ function GameScreen({ username }: { username: string }) {
       </div>
 
       <Map robot={robot} />
+
       <div className="mt-8 w-full max-w-5xl">
         <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" onLockIn={runProgram} />
       </div>
@@ -43,6 +44,7 @@ export default function App() {
   }
 
   const pilotName = user?.name || user?.email?.split('@')[0] || 'Unknown Pilot';
+
   return (
     <Routes>
       <Route path="/" element={user ? <Navigate to="/menu" replace /> : <Navigate to="/login" replace />} />
@@ -130,18 +132,6 @@ export default function App() {
         }
       />
 
-      <Route
-        path="/verify-email"
-        element={
-          user ? (
-            <Navigate to="/menu" replace />
-          ) : (
-            <MenuScreen img={roboRallyImage} subtitle="Account Security" title="Verify Email" panelClassName="max-w-md w-full">
-              <VerifyEmailForm />
-            </MenuScreen>
-          )
-        }
-      />
       <Route path="/game" element={user ? <GameScreen username={pilotName} /> : <Navigate to="/login" replace />} />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
