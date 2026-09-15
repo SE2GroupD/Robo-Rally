@@ -3,14 +3,12 @@ import type { TileData } from './Tile';
 export const startboard1Layout: TileData[] = [
   { x: 0, y: 4, hasAntenna: true },
 
-  { x: 1, y: 1, isSpawnPoint: true },
+  { x: 1, y: 1, isSpawnPoint: true, robot: { hue: 0, direction: 'EAST' } },
   { x: 1, y: 2, isSpawnPoint: true },
   { x: 1, y: 3, isSpawnPoint: true },
   { x: 1, y: 6, isSpawnPoint: true },
   { x: 1, y: 7, isSpawnPoint: true },
   { x: 1, y: 8, isSpawnPoint: true },
-
-  { x: 1, y: 1, robot: { hue: 0, direction: 'EAST' }, isSpawnPoint: true },
 ];
 
 export const gameboard1Layout: TileData[] = [
