@@ -14,6 +14,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+<<<<<<<HEAD=======
+// Nimbus imports for dynamic key selection and manual EdDSA verification
+>>>>>>>1 a6b88e(feat:enhance game state management with locked registers and JWT configuration updates)
 import com.nimbusds.jose.crypto.Ed25519Verifier;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKMatcher;
@@ -58,6 +61,8 @@ public class SecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder() throws Exception {
+        // 1. JWKSourceBuilder handles caching and automatic background refreshing of
+        // the JWKS
         JWKSource<SecurityContext> jwkSource = JWKSourceBuilder
                 .create(URI.create(jwkSetUri).toURL())
                 .build();
@@ -101,6 +106,7 @@ public class SecurityConfig {
                     throw new BadJwtException("Invalid issuer");
                 }
 
+                // 6. Map to Spring Security Context with explicit Date -> Instant mapping
                 return Jwt.withTokenValue(token)
                         .headers(h -> h.putAll(signedJWT.getHeader().toJSONObject()))
                         .claims(c -> claims.getClaims().forEach((key, value) -> {
