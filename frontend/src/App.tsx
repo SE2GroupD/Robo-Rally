@@ -7,6 +7,7 @@ import { ResetPasswordForm } from './features/login-page/ResetPasswordForm';
 import { MainMenuPage } from './features/main-menu/MainMenuPage';
 import { Map } from './foundation/components/map/Map';
 import { ProgrammingPhase } from './foundation/components/register-slot/ProgrammingPhase';
+import { useRobotMovement } from './hooks/game/useRobotMovement';
 import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
 import roboRallyImage from './assets/hero.png';
 import { neon } from './lib/neon';
@@ -24,7 +25,7 @@ function GameScreen({ username }: { username: string }) {
         <span className="font-bold text-robot-orange">Pilot: {username}</span>
       </div>
 
-      <Map />
+      <Map robot={robot} />
       <div className="mt-8 w-full max-w-5xl">
         <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" onLockIn={runProgram} />
       </div>
