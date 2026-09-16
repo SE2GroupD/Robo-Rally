@@ -1,8 +1,8 @@
 /* Scrollable map regions need focus for native keyboard scrolling and pointer handlers for panning. */
 /* oxlint-disable jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions */
 import { useState, useRef, useEffect } from 'react';
-import { StartBoard } from './StartBoard';
-import { GameBoard } from './GameBoard';
+import { StartBoard } from './boards/StartBoard';
+import { GameBoard } from './boards/GameBoard';
 import { startboard1Layout, gameboard1Layout, gameboard2Layout, gameboard3Layout } from '../../data/mapLayouts';
 import type { BoardId, RobotState, TileData } from '../../types/board';
 
