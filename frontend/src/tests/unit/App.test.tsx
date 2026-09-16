@@ -63,14 +63,14 @@ describe('application navigation', () => {
     await user.click(screen.getByRole('button', { name: 'Play as Guest' }));
     await user.click(screen.getByRole('button', { name: 'Start Training Run' }));
     expect(screen.getByLabelText('Robot position')).toHaveTextContent('start:1,1');
-    await screen.findByRole('button', { name: 'Lock In' });
+    await screen.findByRole('button', { name: 'Ready' });
     // Select each card from the hand, leaving register cards untouched.
     await waitFor(() => expect(screen.getAllByRole('img', { name: /Move 1|Power Up/ })).toHaveLength(5));
     const hand = within(screen.getByRole('heading', { name: 'Your Hand' }).parentElement!);
     for (let index = 0; index < 5; index++) {
       await user.click(hand.getAllByRole('button')[0]);
     }
-    await user.click(screen.getByRole('button', { name: 'Lock In' }));
+    await user.click(screen.getByRole('button', { name: 'Ready' }));
     await waitFor(() => expect(screen.getByLabelText('Robot position')).toHaveTextContent('start:2,1'));
     await user.click(screen.getByRole('button', { name: /Back to Menu/ }));
     await user.click(screen.getByRole('button', { name: 'Start Training Run' }));
