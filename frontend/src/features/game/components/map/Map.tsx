@@ -69,38 +69,22 @@ export function Map({ robot }: MapProps) {
     <>
       <div className="absolute right-3 top-3 z-20 flex gap-2 rounded bg-slate-950/90 p-1">
         <button
-<<<<<<< HEAD
-          onClick={handleZoomOut}
-          className="w-8 h-8 flex items-center justify-center bg-slate-700 text-white rounded hover:bg-slate-600 font-bold"
-=======
           aria-label="Zoom out"
           type="button"
           onClick={() => zoom(-0.1)}
           className="h-9 w-9 rounded bg-slate-700 text-white focus-visible:outline-2 focus-visible:outline-cyan-300"
->>>>>>> 2525706 (refactor: reorganize folder structure and enhance programming components for better usability)
         >
           −
         </button>
         <button
-<<<<<<< HEAD
-          onClick={handleZoomIn}
-          className="w-8 h-8 flex items-center justify-center bg-slate-700 text-white rounded hover:bg-slate-600 font-bold"
-=======
           aria-label="Zoom in"
           type="button"
           onClick={() => zoom(0.1)}
           className="h-9 w-9 rounded bg-slate-700 text-white focus-visible:outline-2 focus-visible:outline-cyan-300"
->>>>>>> 2525706 (refactor: reorganize folder structure and enhance programming components for better usability)
         >
           +
         </button>
       </div>
-<<<<<<< HEAD
-
-      <div
-        className="flex flex-row items-start justify-center gap-2 p-16 min-w-max origin-top transition-transform duration-200 ease-out"
-        style={{ transform: `scale(${scale})` }}
-=======
       <section
         ref={viewport}
         aria-label="Game map"
@@ -131,7 +115,6 @@ export function Map({ robot }: MapProps) {
           drag.current = null;
         }}
         onDragStart={(event) => event.preventDefault()}
->>>>>>> 2525706 (refactor: reorganize folder structure and enhance programming components for better usability)
       >
         <div className="relative" style={{ width: `calc(100% + ${1196 * scale}px)`, height: `calc(100% + ${1040 * scale}px)` }}>
           <div
