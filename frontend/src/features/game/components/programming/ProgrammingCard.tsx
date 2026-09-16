@@ -57,7 +57,7 @@ export function ProgrammingCard({ type, onClick, disabled, variant = 'program' }
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'pointer-events-auto flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-md shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300',
+        'pointer-events-auto flex h-full w-full min-h-0 min-w-0 flex-col items-center justify-center overflow-hidden rounded-md shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300',
         image ? 'bg-[#848484] p-1' : 'border-2 p-2 text-center font-bold',
         !image && (isDamage ? 'border-red-600 bg-red-100 text-red-800' : 'border-blue-600 bg-slate-100 text-blue-900'),
         'relative transition-transform duration-150 motion-reduce:transition-none enabled:hover:scale-120 enabled:focus-visible:scale-120',

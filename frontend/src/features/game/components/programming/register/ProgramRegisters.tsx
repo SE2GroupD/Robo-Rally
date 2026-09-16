@@ -15,20 +15,26 @@ export function ProgramRegisters({ cards = [], disabled = false, onRemoveCard, c
     <ol
       aria-label="Program Register"
       className={cn(
-        'flex justify-center gap-2 px-[calc(var(--program-height,144px)/15+4px)] pt-[calc(var(--program-height,144px)/5)]',
+        'flex h-full items-end justify-center gap-3 px-3 pb-2 [--program-card-height:min(calc((100cqh-40px)/1.2),calc((100cqw-72px)*0.3))]',
         className,
       )}
     >
       {Array.from({ length: 5 }, (_, index) => (
-        <li className="relative hover:z-20 focus-within:z-20" key={index} aria-label={`Program Register slot ${index + 1}`}>
+        <li
+          className="relative flex w-[calc(var(--program-card-height)*2/3)] shrink-0 flex-col hover:z-20 focus-within:z-20"
+          key={index}
+          aria-label={`Program Register slot ${index + 1}`}
+        >
           <span aria-hidden="true" className="mb-1 block text-center text-xs font-bold text-white">
             <span className="rounded bg-slate-950/90 px-2 py-0.5">{index + 1}</span>
           </span>
-          <RegisterSlot variant="program">
-            {cards[index] ? (
-              <ProgrammingCard type={cards[index]} disabled={disabled} onClick={() => onRemoveCard?.(index)} />
-            ) : null}
-          </RegisterSlot>
+          <div className="h-[var(--program-card-height)]">
+            <RegisterSlot size="fill">
+              {cards[index] ? (
+                <ProgrammingCard type={cards[index]} disabled={disabled} onClick={() => onRemoveCard?.(index)} />
+              ) : null}
+            </RegisterSlot>
+          </div>
         </li>
       ))}
     </ol>

@@ -32,11 +32,8 @@ export function ProgrammingPhase({ roomId, playerId, onLockIn }: ProgrammingPhas
   return (
     <div ref={root} className="pointer-events-none absolute inset-0 text-white">
       <DrawRegister cards={hand} disabled={isDisabled} onSelectCard={(index) => restoreFocus(() => placeCardInRegister(index))} />
-      <footer
-        aria-label="Programming controls"
-        className="absolute bottom-0 right-0 left-(--hand-rail,64px) flex h-[20dvh] items-center-safe gap-2 overflow-auto p-2"
-      >
-        <div className="min-w-max flex-1">
+      <footer aria-label="Programming controls" className="absolute inset-x-0 bottom-0 flex h-[25dvh] justify-center">
+        <div className="h-full w-[calc(100%-22rem)] [container-type:size] max-sm:w-[calc(100%-12rem)]">
           <h2 className="sr-only">Your program</h2>
           <ProgramRegisters
             cards={registers}
@@ -44,7 +41,7 @@ export function ProgrammingPhase({ roomId, playerId, onLockIn }: ProgrammingPhas
             onRemoveCard={(index) => restoreFocus(() => returnCardToHand(index))}
           />
         </div>
-        <div className="grid w-45 min-w-40 grid-cols-2 gap-1 [&>p]:col-span-full [&>p]:text-center">
+        <div className="absolute right-2 bottom-2 grid w-40 grid-cols-2 gap-1 max-sm:bottom-full max-sm:mb-2 [&>p]:col-span-full [&>p]:text-center">
           <button
             data-ready
             type="button"
