@@ -13,7 +13,7 @@ interface GamePageProps {
 export function GamePage({ onBack, playerId, robot, runProgram }: GamePageProps) {
   // Temporary room ID until room creation is implemented.
   return (
-    <div className="relative h-dvh overflow-hidden bg-slate-950 [--hand-height:max(66px,calc((100dvh_-_48px)/9))] [--hand-width:calc(var(--hand-height)*2/3)] [--hand-rail:calc(var(--hand-width)_+_16px)] [--program-height:max(66px,calc(20dvh_-_36px))]">
+    <div className="relative h-dvh overflow-hidden bg-slate-950 [--hand-height:max(48px,calc((100dvh_-_64px)/9))] [--hand-width:calc(var(--hand-height)*2/3)] [--hand-rail:calc(var(--hand-width)*1.2_+_24px)] [--program-height:max(66px,calc((20dvh_-_40px)/1.2))]">
       <button
         type="button"
         onClick={onBack}
