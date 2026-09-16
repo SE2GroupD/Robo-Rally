@@ -1,10 +1,6 @@
-/* Scrollable map regions need focus for native keyboard scrolling and pointer handlers for panning. */
-/* oxlint-disable jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions */
-import { useMapViewport } from '../../hooks/useMapViewport';
-import { MapZoomControls } from './MapZoomControls';
-import { cn } from '../../../../utils/cn';
-import { StartBoard } from './boards/StartBoard';
-import { GameBoard } from './boards/GameBoard';
+import { useState } from 'react';
+import { StartBoard } from './StartBoard';
+import { GameBoard } from './GameBoard';
 import { startboard1Layout, gameboard1Layout, gameboard2Layout, gameboard3Layout } from '../../data/mapLayouts';
 import type { BoardId, RobotState, TileData } from '../../types/board';
 
@@ -30,21 +26,9 @@ function withRobot(layout: TileData[], robot: RobotState | undefined, boardId: B
 }
 
 export function Map({ robot }: MapProps) {
-  const {
-    viewportRef,
-    scale,
-    isDragging,
-    onZoomIn,
-    onZoomOut,
-    canZoomIn,
-    canZoomOut,
-    onPointerDown,
-    onPointerMove,
-    onPointerUp,
-    onPointerCancel,
-    onLostPointerCapture,
-    onDragStart,
-  } = useMapViewport();
+  const [scale, setScale] = useState(1);
+  const handleZoomIn = () => setScale((prev) => Math.min(prev + 0.1, 2));
+  const handleZoomOut = () => setScale((prev) => Math.max(prev - 0.1, 0.5));
 
   const startboard1Layout: TileData[] = [
     { x: 1, y: 1, robot: { hue: 0, direction: 90 } },
@@ -61,43 +45,39 @@ export function Map({ robot }: MapProps) {
   ];
 
   return (
-    <>
-      <MapZoomControls onZoomIn={onZoomIn} onZoomOut={onZoomOut} canZoomIn={canZoomIn} canZoomOut={canZoomOut} />
-      <section
-        ref={viewportRef}
-        aria-label="Game map"
-        tabIndex={0}
-        className={cn(
-          'absolute inset-0 touch-none overflow-auto bg-slate-950 focus-visible:outline-2 focus-visible:outline-cyan-300',
-          isDragging ? 'cursor-grabbing' : 'cursor-grab',
-        )}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerCancel}
-        onLostPointerCapture={onLostPointerCapture}
-        onDragStart={onDragStart}
+    <div className="relative w-full max-w-[1200px] overflow-auto max-h-[60vh] rounded-xl border-4 border-slate-800 shadow-2xl bg-neutral-900">
+      <div className="sticky top-4 right-4 z-50 float-right flex gap-2 bg-black/50 p-2 rounded-lg backdrop-blur-sm">
+        <button
+          onClick={handleZoomOut}
+          className="w-8 h-8 flex items-center justify-center bg-slate-700 text-white rounded hover:bg-slate-600 font-bold"
+        >
+          -
+        </button>
+        <button
+          onClick={handleZoomIn}
+          className="w-8 h-8 flex items-center justify-center bg-slate-700 text-white rounded hover:bg-slate-600 font-bold"
+        >
+          +
+        </button>
+      </div>
+
+      <div
+        className="flex flex-row items-start justify-center gap-2 p-16 min-w-max origin-top transition-transform duration-200 ease-out"
+        style={{ transform: `scale(${scale})` }}
       >
-        <div className="relative" style={{ width: `calc(100% + ${1196 * scale}px)`, height: `calc(100% + ${1040 * scale}px)` }}>
-          <div
-            className="flex flex-row items-start justify-center gap-[2px] absolute min-w-max origin-top-left"
-            style={{ left: '50vw', top: '50dvh', transform: `scale(${scale})` }}
-          >
-            <div className="mt-[260px]">
-              <StartBoard layoutData={withRobot(startboard1Layout, robot, 'start')} />
-            </div>
-
-            <div className="flex flex-col gap-[2px]">
-              <GameBoard layoutData={withRobot(gameboard1Layout, robot, 'game1')} />
-              <GameBoard layoutData={withRobot(gameboard2Layout, robot, 'game2')} />
-            </div>
-
-            <div className="mt-[260px]">
-              <GameBoard layoutData={withRobot(gameboard3Layout, robot, 'game3')} />
-            </div>
-          </div>
+        <div className="mt-[260px]">
+          <StartBoard layoutData={withRobot(startboard1Layout, robot, 'start')} />
         </div>
-      </section>
-    </>
+
+        <div className="flex flex-col gap-[2px]">
+          <GameBoard layoutData={withRobot(gameboard1Layout, robot, 'game1')} />
+          <GameBoard layoutData={withRobot(gameboard2Layout, robot, 'game2')} />
+        </div>
+
+        <div className="mt-[260px]">
+          <GameBoard layoutData={withRobot(gameboard3Layout, robot, 'game3')} />
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,150 +1,83 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchPlayerHand, submitProgramRegister } from '../api/gameApi';
 import type { CardType } from '../types/CardType';
 
-interface SelectedCard {
-  card: CardType;
-  handIndex: number;
-}
-
-function emptySelection() {
-  return {
-    hand: Array<CardType | null>(9).fill(null),
-    registers: Array<SelectedCard | null>(5).fill(null),
-  };
-}
-
-export function useProgramming(roomId: string, onLockIn?: (registers: CardType[]) => void) {
-  const [selection, setSelection] = useState(emptySelection);
+export function useProgramming(roomId: string, playerId: string, onLockIn?: (registers: CardType[]) => void) {
+  const [hand, setHand] = useState<CardType[]>([]);
+  const [registers, setRegisters] = useState<(CardType | null)[]>([null, null, null, null, null]);
   const [isLockedIn, setIsLockedIn] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const submissionPending = useRef(false);
+
+  // New state for the deck counts
   const [drawPileCount, setDrawPileCount] = useState(0);
   const [discardPileCount, setDiscardPileCount] = useState(0);
 
   useEffect(() => {
-    let active = true;
-
-    // playerId is completely removed; the backend handles identity securely via JWT
-    fetchPlayerHand(roomId)
+    fetchPlayerHand(roomId, playerId)
       .then((data) => {
-        if (!active) return;
-
+        setHand(data.cards);
         setDrawPileCount(data.drawPileCount);
         setDiscardPileCount(data.discardPileCount);
-
-        if (data.isLockedIn) {
-          setIsLockedIn(true);
-
-          // Map the restored backend string array into the new SelectedCard state shape
-          const restoredRegisters = data.lockedRegisters.map((card, idx) => ({
-            card,
-            handIndex: idx, // Mock index, as they can't be returned to the hand anyway once locked
-          }));
-
-          while (restoredRegisters.length < 5) {
-            restoredRegisters.push(null as any);
-          }
-
-          setSelection({
-            hand: Array(9).fill(null),
-            registers: restoredRegisters,
-          });
-        } else {
-          setSelection({
-            ...emptySelection(),
-            hand: Array.from({ length: 9 }, (_, index) => data.cards[index] ?? null),
-          });
-        }
       })
-      .catch((err) => {
-        if (active) console.error(err);
-      });
+      .catch((err) => console.error(err));
+  }, [roomId, playerId]);
 
-    return () => {
-      active = false;
-    };
-  }, [roomId]);
+  const selectCard = (card: CardType, indexInHand: number) => {
+    if (isLockedIn) return;
+    const emptyIndex = registers.findIndex((r) => r === null);
+    if (emptyIndex === -1) return; // Registers are full
 
-  const placeCardInRegister = (handIndex: number) => {
-    if (isLockedIn || submissionPending.current) return;
-    setSelection((current) => {
-      const card = current.hand[handIndex];
-      const registerIndex = current.registers.findIndex((slot) => slot === null);
-      if (!card || registerIndex === -1) return current;
+    const newRegisters = [...registers];
+    newRegisters[emptyIndex] = card;
+    setRegisters(newRegisters);
 
-      const hand = [...current.hand];
-      const registers = [...current.registers];
-
-      hand[handIndex] = null;
-      registers[registerIndex] = { card, handIndex };
-
-      return { hand, registers };
-    });
+    const newHand = [...hand];
+    newHand.splice(indexInHand, 1);
+    setHand(newHand);
   };
 
-  const returnCardToHand = (registerIndex: number) => {
-    if (isLockedIn || submissionPending.current) return;
-    setSelection((current) => {
-      const selected = current.registers[registerIndex];
-      if (!selected) return current;
-
-      const hand = [...current.hand];
-      const registers = [...current.registers];
-
-      hand[selected.handIndex] = selected.card;
-      registers[registerIndex] = null;
-
-      return { hand, registers };
-    });
+  const removeFromRegister = (card: CardType, indexInRegister: number) => {
+    if (isLockedIn || card === null) return;
+    const newRegisters = [...registers];
+    newRegisters[indexInRegister] = null;
+    setRegisters(newRegisters);
+    setHand([...hand, card]);
   };
 
-  const clearProgram = () => {
-    if (isLockedIn || submissionPending.current) return;
-    setSelection((current) => {
-      const hand = [...current.hand];
-      current.registers.forEach((selected) => {
-        if (selected) hand[selected.handIndex] = selected.card;
-      });
-      return { hand, registers: emptySelection().registers };
-    });
+  const clearRegisters = () => {
+    if (isLockedIn) return;
+    const cardsToReturn = registers.filter((c): c is CardType => c !== null);
+    setHand([...hand, ...cardsToReturn]);
+    setRegisters([null, null, null, null, null]);
   };
 
-  const submitProgram = async () => {
-    if (isLockedIn || submissionPending.current) return;
-
-    const cards = selection.registers.flatMap((slot) => (slot ? [slot.card] : []));
-    if (cards.length === 0) return;
-
-    submissionPending.current = true;
-    setIsSubmitting(true);
-
+  const lockIn = async () => {
+    if (registers.includes(null)) {
+      console.warn('You must fill all 5 registers before locking in!');
+      return;
+    }
     try {
-      // playerId removed from payload
-      await submitProgramRegister(roomId, { registers: cards });
+      const lockedRegisters = registers as [CardType, CardType, CardType, CardType, CardType];
+      await submitProgramRegister(roomId, {
+        playerId,
+        registers: lockedRegisters,
+      });
+      setIsLockedIn(true);
+      onLockIn?.(lockedRegisters);
     } catch (err) {
       console.error(err);
       console.warn('Failed to lock in registers.');
-      return;
-    } finally {
-      submissionPending.current = false;
-      setIsSubmitting(false);
     }
-
-    setIsLockedIn(true);
-    onLockIn?.(cards);
   };
 
   return {
-    hand: selection.hand,
-    registers: selection.registers.map((slot) => slot?.card ?? null),
+    hand,
+    registers,
     isLockedIn,
-    isSubmitting,
     drawPileCount,
-    discardPileCount,
-    placeCardInRegister,
-    returnCardToHand,
-    clearProgram,
-    submitProgram,
+    discardPileCount, // Export the new state
+    selectCard,
+    removeFromRegister,
+    clearRegisters,
+    lockIn,
   };
 }
