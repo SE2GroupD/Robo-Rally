@@ -68,7 +68,6 @@ it('limits selection to five and executes only the submitted sequence after succ
   await user.click(screen.getByRole('button', { name: 'Ready' }));
   expect(submitProgramRegister).not.toHaveBeenCalled();
   for (const index of [9, 2, 5, 3, 7]) await user.click(handSlot(index).getByRole('button'));
-  expect(handSlot(1).getByRole('button')).toBeDisabled();
   await user.click(handSlot(1).getByRole('button'));
   await user.click(screen.getByRole('button', { name: 'Ready' }));
   const expected = ['U_TURN', 'MOVE_1', 'MOVE_2', 'TURN_LEFT', 'POWER_UP'];
@@ -97,4 +96,32 @@ it('keeps a failed submission editable and does not execute it', async () => {
   expect(onLockIn).not.toHaveBeenCalled();
   await user.click(programSlot(2).getByRole('button'));
   expect(handSlot(2).getByRole('button', { name: 'Move 1' })).toBeInTheDocument();
+});
+
+it.each([1, 2, 3, 4])('submits and executes a %i-card program', async (count) => {
+  const user = userEvent.setup();
+  const onLockIn = vi.fn();
+  render(<ProgrammingPhase roomId="room" playerId="pilot" onLockIn={onLockIn} />);
+  await handSlot(1).findByRole('button');
+  const indexes = [5, 3, 9, 2].slice(0, count);
+  for (const index of indexes) await user.click(handSlot(index).getByRole('button'));
+  await user.click(screen.getByRole('button', { name: 'Ready' }));
+  const expected = indexes.map((index) => cards[index - 1]);
+  expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { playerId: 'pilot', registers: expected });
+  expect(onLockIn).toHaveBeenCalledExactlyOnceWith(expected);
+  expect(screen.getByRole('button', { name: 'Ready ✓' })).toBeDisabled();
+});
+
+it('skips empty slots while preserving the remaining register order', async () => {
+  const user = userEvent.setup();
+  const onLockIn = vi.fn();
+  render(<ProgrammingPhase roomId="room" playerId="pilot" onLockIn={onLockIn} />);
+  await handSlot(1).findByRole('button');
+  for (const index of [5, 3, 9, 2]) await user.click(handSlot(index).getByRole('button'));
+  await user.click(programSlot(1).getByRole('button'));
+  await user.click(programSlot(3).getByRole('button'));
+  await user.click(screen.getByRole('button', { name: 'Ready' }));
+  const expected = ['TURN_LEFT', 'MOVE_1'];
+  expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { playerId: 'pilot', registers: expected });
+  expect(onLockIn).toHaveBeenCalledExactlyOnceWith(expected);
 });

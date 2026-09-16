@@ -38,8 +38,10 @@ public class GameController {
             @RequestBody ProgramRegisterDto request,
             @AuthenticationPrincipal Jwt jwt) {
 
-        if (request.registers().size() != 5) {
-            return ResponseEntity.badRequest().body("Must submit exactly 5 register slots.");
+        if (request.registers() == null || request.registers().isEmpty()
+                || request.registers().size() > 5
+                || request.registers().stream().anyMatch(java.util.Objects::isNull)) {
+            return ResponseEntity.badRequest().body("Must submit 1 to 5 non-null cards.");
         }
 
         String authenticatedUserId = jwt.getSubject();
