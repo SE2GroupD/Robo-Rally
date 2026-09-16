@@ -2,13 +2,13 @@ import { RegisterSlot } from './RegisterSlot';
 import { ProgrammingCard } from '../ProgrammingCard';
 import type { CardType } from '../../../types/CardType';
 
-interface ProgrammingHandProps {
+interface DrawRegisterProps {
   cards: readonly (CardType | null)[];
   disabled: boolean;
   onSelectCard: (handIndex: number) => void;
 }
 
-export function ProgrammingHand({ cards, disabled, onSelectCard }: ProgrammingHandProps) {
+export function DrawRegister({ cards, disabled, onSelectCard }: DrawRegisterProps) {
   return (
     <div className="absolute inset-y-0 left-0 w-[var(--hand-rail,64px)] overflow-y-auto p-2 [scrollbar-width:thin]">
       <h2 className="sr-only">Your Hand</h2>
