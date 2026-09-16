@@ -27,7 +27,7 @@ it('renders nine empty hand slots before fetching and fills only returned positi
   expect(within(screen.getByRole('list', { name: 'Programming Hand' })).getAllByRole('listitem')).toHaveLength(9);
   expect(within(screen.getByRole('list', { name: 'Program Register' })).getAllByRole('listitem')).toHaveLength(5);
   expect(handSlot(1).queryByRole('button')).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Lock In' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Ready' })).toBeDisabled();
   await act(async () => resolveHand({ playerId: 'pilot', cards: ['MOVE_1'], drawPileCount: 0, discardPileCount: 0 }));
   expect(handSlot(1).getByRole('button', { name: 'Move 1' })).toBeInTheDocument();
   for (let i = 2; i <= 9; i++) expect(handSlot(i).queryByRole('button')).not.toBeInTheDocument();
@@ -65,12 +65,12 @@ it('limits selection to five and executes only the submitted sequence after succ
   );
   render(<ProgrammingPhase roomId="room" playerId="pilot" onLockIn={onLockIn} />);
   await handSlot(1).findByRole('button');
-  await user.click(screen.getByRole('button', { name: 'Lock In' }));
+  await user.click(screen.getByRole('button', { name: 'Ready' }));
   expect(submitProgramRegister).not.toHaveBeenCalled();
   for (const index of [9, 2, 5, 3, 7]) await user.click(handSlot(index).getByRole('button'));
   expect(handSlot(1).getByRole('button')).toBeDisabled();
   await user.click(handSlot(1).getByRole('button'));
-  await user.click(screen.getByRole('button', { name: 'Lock In' }));
+  await user.click(screen.getByRole('button', { name: 'Ready' }));
   const expected = ['U_TURN', 'MOVE_1', 'MOVE_2', 'TURN_LEFT', 'POWER_UP'];
   expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { playerId: 'pilot', registers: expected });
   expect(onLockIn).not.toHaveBeenCalled();
@@ -78,7 +78,7 @@ it('limits selection to five and executes only the submitted sequence after succ
   expect(programSlot(1).getByRole('button')).toBeDisabled();
   await act(async () => finish());
   expect(onLockIn).toHaveBeenCalledExactlyOnceWith(expected);
-  expect(screen.getByRole('button', { name: 'Locked In ✓' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Ready ✓' })).toBeDisabled();
   await user.click(programSlot(1).getByRole('button'));
   expect(handSlot(9).queryByRole('button')).not.toBeInTheDocument();
 });
@@ -92,8 +92,8 @@ it('keeps a failed submission editable and does not execute it', async () => {
   render(<ProgrammingPhase roomId="room" playerId="pilot" onLockIn={onLockIn} />);
   await handSlot(1).findByRole('button');
   for (let i = 1; i <= 5; i++) await user.click(handSlot(i).getByRole('button'));
-  await user.click(screen.getByRole('button', { name: 'Lock In' }));
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Lock In' })).toBeEnabled());
+  await user.click(screen.getByRole('button', { name: 'Ready' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Ready' })).toBeEnabled());
   expect(onLockIn).not.toHaveBeenCalled();
   await user.click(programSlot(2).getByRole('button'));
   expect(handSlot(2).getByRole('button', { name: 'Move 1' })).toBeInTheDocument();
