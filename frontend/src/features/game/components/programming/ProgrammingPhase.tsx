@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ProgramRegister } from './ProgramRegister';
-import { ProgrammingCard } from './ProgrammingCard';
+import { ProgramRegisters } from './register/ProgramRegisters';
+import { ProgrammingHand } from './register/ProgrammingHand';
 import { useProgramming } from '../../hooks/useProgramming';
 import type { CardType } from '../../types/CardType';
 
@@ -13,25 +13,21 @@ export function ProgrammingPhase({ roomId, onLockIn }: ProgrammingPhaseProps) {
   // 1. Use React State to track visibility instead of DOM manipulation
   const [isOpen, setIsOpen] = useState(true);
 
-  const { hand, registers, isLockedIn, drawPileCount, discardPileCount, selectCard, removeFromRegister, clearRegisters, lockIn } =
-    useProgramming(roomId, onLockIn);
+  // We omit playerId here to maintain the secure JWT-based backend extraction
+  const {
+    hand,
+    registers,
+    isLockedIn,
+    isSubmitting,
+    drawPileCount,
+    discardPileCount,
+    placeCardInRegister,
+    returnCardToHand,
+    clearProgram,
+    submitProgram,
+  } = useProgramming(roomId, onLockIn);
 
-  const registerCards = registers.map((card, idx) =>
-    card ? (
-      <ProgrammingCard
-        key={`register-slot-${idx}`}
-        type={card}
-        onClick={() => removeFromRegister(card, idx)}
-        disabled={isLockedIn}
-      />
-    ) : null,
-  ) as [
-    React.ReactElement | null,
-    React.ReactElement | null,
-    React.ReactElement | null,
-    React.ReactElement | null,
-    React.ReactElement | null,
-  ];
+  const isDisabled = isLockedIn || isSubmitting;
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col items-center">
@@ -80,16 +76,16 @@ export function ProgrammingPhase({ roomId, onLockIn }: ProgrammingPhaseProps) {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={clearRegisters}
-                  disabled={isLockedIn}
+                  onClick={clearProgram}
+                  disabled={isDisabled}
                   className="rounded bg-slate-600 px-4 py-2 font-bold text-white hover:bg-slate-500 disabled:opacity-50"
                 >
                   Clear
                 </button>
                 <button
                   type="button"
-                  onClick={lockIn}
-                  disabled={isLockedIn || registers.includes(null)}
+                  onClick={submitProgram}
+                  disabled={isDisabled || registers.includes(null)}
                   className="rounded bg-green-600 px-6 py-2 font-bold text-white hover:bg-green-500 disabled:opacity-50"
                 >
                   {isLockedIn ? 'Locked In ✓' : 'Lock In'}
@@ -100,24 +96,11 @@ export function ProgrammingPhase({ roomId, onLockIn }: ProgrammingPhaseProps) {
             {/* Registers */}
             <div className="flex flex-col items-center gap-2">
               <h2 className="text-xl font-bold uppercase tracking-widest text-slate-400">Registers</h2>
-              <ProgramRegister cards={registerCards} />
+              <ProgramRegisters cards={registers} disabled={isDisabled} onRemoveCard={returnCardToHand} />
             </div>
 
             {/* Hand */}
-            <div className="flex w-full flex-col items-center gap-4 rounded-lg bg-slate-900 p-4">
-              <h2 className="text-lg font-bold text-slate-400">Your Hand</h2>
-              <div className="flex min-h-37.5 flex-wrap justify-center gap-3">
-                {hand.map((card, idx) => (
-                  <ProgrammingCard
-                    key={`${card}-${idx}`}
-                    type={card}
-                    onClick={() => selectCard(card, idx)}
-                    disabled={isLockedIn}
-                  />
-                ))}
-                {hand.length === 0 && <span className="mt-10 italic text-slate-500">Hand is empty</span>}
-              </div>
-            </div>
+            <ProgrammingHand cards={hand} disabled={isDisabled || !registers.includes(null)} onSelectCard={placeCardInRegister} />
           </div>
         </div>
       </div>
