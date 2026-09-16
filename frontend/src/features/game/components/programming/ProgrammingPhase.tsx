@@ -16,7 +16,6 @@ export function ProgrammingPhase({ roomId, onLockIn }: ProgrammingPhaseProps) {
   // We omit playerId here to maintain the secure JWT-based backend extraction
   const { hand, registers, isLockedIn, isSubmitting, placeCardInRegister, returnCardToHand, clearProgram, submitProgram } =
     useProgramming(roomId, onLockIn);
-
   const isDisabled = isLockedIn || isSubmitting;
   const selectedCount = registers.filter(Boolean).length;
 

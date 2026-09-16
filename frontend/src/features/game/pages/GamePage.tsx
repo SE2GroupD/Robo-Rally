@@ -5,12 +5,11 @@ import type { CardType } from '../types/CardType';
 
 interface GamePageProps {
   onBack: () => void;
-  playerId: string;
   robot: RobotState;
   runProgram: (cards: readonly CardType[]) => void;
 }
 
-export function GamePage({ onBack, playerId, robot, runProgram }: GamePageProps) {
+export function GamePage({ onBack, robot, runProgram }: GamePageProps) {
   // Temporary room ID until room creation is implemented.
   return (
     <div className="relative h-dvh overflow-hidden bg-slate-950 [--hand-height:max(66px,calc((100dvh_-_48px)/9))] [--hand-width:calc(var(--hand-height)*2/3)] [--hand-rail:calc(var(--hand-width)_+_16px)] [--program-height:max(66px,calc(20dvh_-_36px))]">
@@ -25,7 +24,7 @@ export function GamePage({ onBack, playerId, robot, runProgram }: GamePageProps)
       <Map robot={robot} />
 
       <div className="pointer-events-none absolute inset-0 z-10">
-        <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" playerId={playerId} onLockIn={runProgram} />
+        <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" onLockIn={runProgram} />
       </div>
     </div>
   );
