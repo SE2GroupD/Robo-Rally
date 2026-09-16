@@ -23,11 +23,11 @@ it('renders nine empty hand slots before fetching and fills only returned positi
       resolveHand = resolve;
     }),
   );
-  render(<ProgrammingPhase roomId="room" />);
+  render(<ProgrammingPhase roomId="room" playerId="pilot" />);
   expect(within(screen.getByRole('list', { name: 'Programming Hand' })).getAllByRole('listitem')).toHaveLength(9);
   expect(within(screen.getByRole('list', { name: 'Program Register' })).getAllByRole('listitem')).toHaveLength(5);
   expect(handSlot(1).queryByRole('button')).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Ready' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Lock In' })).toBeDisabled();
   await act(async () => resolveHand({ playerId: 'pilot', cards: ['MOVE_1'], drawPileCount: 0, discardPileCount: 0 }));
   expect(handSlot(1).getByRole('button', { name: 'Move 1' })).toBeInTheDocument();
   for (let i = 2; i <= 9; i++) expect(handSlot(i).queryByRole('button')).not.toBeInTheDocument();
@@ -35,7 +35,7 @@ it('renders nine empty hand slots before fetching and fills only returned positi
 
 it('preserves duplicate card positions, fills the first empty register, and restores the hand on clear', async () => {
   const user = userEvent.setup();
-  render(<ProgrammingPhase roomId="room" />);
+  render(<ProgrammingPhase roomId="room" playerId="pilot" />);
   await handSlot(1).findByRole('button');
   await user.click(handSlot(2).getByRole('button'));
   await user.click(handSlot(1).getByRole('button'));
@@ -63,21 +63,22 @@ it('limits selection to five and executes only the submitted sequence after succ
       finish = resolve;
     }),
   );
-  render(<ProgrammingPhase roomId="room" onLockIn={onLockIn} />);
+  render(<ProgrammingPhase roomId="room" playerId="pilot" onLockIn={onLockIn} />);
   await handSlot(1).findByRole('button');
-  await user.click(screen.getByRole('button', { name: 'Ready' }));
+  await user.click(screen.getByRole('button', { name: 'Lock In' }));
   expect(submitProgramRegister).not.toHaveBeenCalled();
   for (const index of [9, 2, 5, 3, 7]) await user.click(handSlot(index).getByRole('button'));
+  expect(handSlot(1).getByRole('button')).toBeDisabled();
   await user.click(handSlot(1).getByRole('button'));
-  await user.click(screen.getByRole('button', { name: 'Ready' }));
+  await user.click(screen.getByRole('button', { name: 'Lock In' }));
   const expected = ['U_TURN', 'MOVE_1', 'MOVE_2', 'TURN_LEFT', 'POWER_UP'];
-  expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { registers: expected });
+  expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { playerId: 'pilot', registers: expected });
   expect(onLockIn).not.toHaveBeenCalled();
   expect(screen.getByRole('button', { name: 'Clear' })).toBeDisabled();
   expect(programSlot(1).getByRole('button')).toBeDisabled();
   await act(async () => finish());
   expect(onLockIn).toHaveBeenCalledExactlyOnceWith(expected);
-  expect(screen.getByRole('button', { name: 'Ready ✓' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Locked In ✓' })).toBeDisabled();
   await user.click(programSlot(1).getByRole('button'));
   expect(handSlot(9).queryByRole('button')).not.toBeInTheDocument();
 });
@@ -88,40 +89,12 @@ it('keeps a failed submission editable and does not execute it', async () => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   vi.mocked(submitProgramRegister).mockRejectedValue(new Error('offline'));
-  render(<ProgrammingPhase roomId="room" onLockIn={onLockIn} />);
+  render(<ProgrammingPhase roomId="room" playerId="pilot" onLockIn={onLockIn} />);
   await handSlot(1).findByRole('button');
   for (let i = 1; i <= 5; i++) await user.click(handSlot(i).getByRole('button'));
-  await user.click(screen.getByRole('button', { name: 'Ready' }));
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Ready' })).toBeEnabled());
+  await user.click(screen.getByRole('button', { name: 'Lock In' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Lock In' })).toBeEnabled());
   expect(onLockIn).not.toHaveBeenCalled();
   await user.click(programSlot(2).getByRole('button'));
   expect(handSlot(2).getByRole('button', { name: 'Move 1' })).toBeInTheDocument();
-});
-
-it.each([1, 2, 3, 4])('submits and executes a %i-card program', async (count) => {
-  const user = userEvent.setup();
-  const onLockIn = vi.fn();
-  render(<ProgrammingPhase roomId="room" onLockIn={onLockIn} />);
-  await handSlot(1).findByRole('button');
-  const indexes = [5, 3, 9, 2].slice(0, count);
-  for (const index of indexes) await user.click(handSlot(index).getByRole('button'));
-  await user.click(screen.getByRole('button', { name: 'Ready' }));
-  const expected = indexes.map((index) => cards[index - 1]);
-  expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { registers: expected });
-  expect(onLockIn).toHaveBeenCalledExactlyOnceWith(expected);
-  expect(screen.getByRole('button', { name: 'Ready ✓' })).toBeDisabled();
-});
-
-it('skips empty slots while preserving the remaining register order', async () => {
-  const user = userEvent.setup();
-  const onLockIn = vi.fn();
-  render(<ProgrammingPhase roomId="room" onLockIn={onLockIn} />);
-  await handSlot(1).findByRole('button');
-  for (const index of [5, 3, 9, 2]) await user.click(handSlot(index).getByRole('button'));
-  await user.click(programSlot(1).getByRole('button'));
-  await user.click(programSlot(3).getByRole('button'));
-  await user.click(screen.getByRole('button', { name: 'Ready' }));
-  const expected = ['TURN_LEFT', 'MOVE_1'];
-  expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { registers: expected });
-  expect(onLockIn).toHaveBeenCalledExactlyOnceWith(expected);
 });

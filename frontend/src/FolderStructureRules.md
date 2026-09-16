@@ -46,7 +46,7 @@ Production code must never import tests. Features must never import another feat
 4. Is it composed UI already used by at least two features, with no feature-specific behavior or types? Put it in shared.
 5. Otherwise, keep it with its owning feature. Reuse within a feature does not qualify it for shared.
 
-`Map` composes `StartBoard` and `GameBoard`, which render `Tile`. All belong in `features/game/components/map/`, alongside `Robot` and `Checkpoint`. None belongs in foundation. All programming UI, including `RegisterSlot` and `ProgramRegister`, belongs in `features/game/components/programming/`.
+`Map` composes `StartBoard` and `GameBoard`, which render `Tile`. All belong in `features/game/components/map/`, alongside `Robot` and `Checkpoint`. None belongs in foundation. All programming UI, including `RegisterSlot` and `ProgramRegisters`, belongs in `features/game/components/programming/`.
 
 Only application orchestration coordinates features, using props and callbacks. `App.tsx` renders page components. It keeps the robot movement hook mounted while switching pages, preserving the current training position. Game layout belongs in `GamePage`; authentication forms belong in the auth feature.
 
@@ -57,3 +57,9 @@ Only application orchestration coordinates features, using props and callbacks. 
 `npm run lint` includes boundary checks, and CI runs them through `npm run check`. `npm run test:boundaries` verifies the checker. Central test files are exempt as import sources; production imports remain checked.
 
 The checker enforces dependency direction. Reviewers must also enforce semantic placement: a self-contained game component in foundation can have valid imports and still violate this policy. Do not weaken the checker to accommodate misplaced code; move it to its owner.
+
+## Programming layouts
+
+`components/programming/ProgrammingPhase.tsx` connects state and controls. `ProgrammingCard.tsx` renders a card. The `register/` subfolder groups `RegisterSlot.tsx`, `ProgramRegisters.tsx` (five slots), and `ProgrammingHand.tsx` (nine slots). Both layouts use the same slot and card components.
+
+The hand keeps nine positions before and after fetching. Selected cards leave empty hand slots; removing or clearing returns each card to its original position. `useProgramming` owns selection and submission; layout components receive card values and index callbacks. Backend submission contains only the five ordered card types.
