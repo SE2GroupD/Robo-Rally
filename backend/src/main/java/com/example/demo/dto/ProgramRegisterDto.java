@@ -5,7 +5,7 @@ import java.util.List;
 
 public record ProgramRegisterDto(
     String playerId,
-    List<CardType> registers // The frontend will send 5 items
+    List<CardType> registers // One to five non-null cards in register order
 ) {}
 
 /*
