@@ -1,7 +1,7 @@
-import type { Direction, TileData } from '../../types/board';
-import { Robot } from './Robot';
-import { Checkpoint } from './Checkpoint';
-import steelTileImage from '../../../../assets/steel.png';
+import type { Direction, TileData } from '../../../types/board';
+import { Robot } from '../objects/Robot';
+import { Checkpoint } from '../objects/Checkpoint';
+import steelTileImage from '../../../../../assets/steel.png';
 
 const getRotationDegrees = (dir: Direction): number => {
   switch (dir) {
