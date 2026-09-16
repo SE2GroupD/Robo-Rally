@@ -63,3 +63,5 @@ The checker enforces dependency direction. Reviewers must also enforce semantic 
 `components/programming/ProgrammingPhase.tsx` connects state and controls. `ProgrammingCard.tsx` renders a card. The `register/` subfolder groups `RegisterSlot.tsx`, `ProgramRegisters.tsx` (five slots), and `ProgrammingHand.tsx` (nine slots). Both layouts use the same slot and card components.
 
 The hand keeps nine positions before and after fetching. Selected cards leave empty hand slots; removing or clearing returns each card to its original position. `useProgramming` owns selection and submission; layout components receive card values and index callbacks. Backend submission contains only the five ordered card types.
+
+The game page owns the full-viewport map and transparent programming overlay. The hand uses a full-height left column; the program and actions share a footer capped at `20dvh`. Slot/card variants share artwork while sizing for their role. Empty overlay gaps pass pointer input to the map; card previews support keyboard focus and Escape dismissal.
