@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { ProgramRegisters } from './register/ProgramRegisters';
+import { RegisterButtons } from './register/RegisterButtons';
 import { DrawRegister } from './register/DrawRegister';
 import { useProgramming } from '../../hooks/useProgramming';
 import type { CardType } from '../../types/CardType';
@@ -32,8 +33,12 @@ export function ProgrammingPhase({ roomId, playerId, onLockIn }: ProgrammingPhas
   return (
     <div ref={root} className="pointer-events-none absolute inset-0 text-white">
       <DrawRegister cards={hand} disabled={isDisabled} onSelectCard={(index) => restoreFocus(() => placeCardInRegister(index))} />
-      <footer aria-label="Programming controls" className="absolute inset-x-0 bottom-0 flex h-[25dvh] justify-center">
-        <div className="h-full w-[calc(100%-22rem)] [container-type:size] max-sm:w-[calc(100%-12rem)]">
+      <footer
+        aria-label="Programming controls"
+        className="absolute inset-x-0 bottom-0 grid h-[25dvh] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] grid-rows-[minmax(0,1fr)] items-end max-sm:min-h-56 max-sm:grid-rows-[8rem_minmax(0,1fr)]"
+      >
+        <div aria-hidden="true" className="col-start-1 row-start-1" />
+        <div className="col-start-2 row-start-1 h-full w-[min(60vw,calc(100vw-18rem))] [container-type:size] max-sm:col-span-3 max-sm:col-start-1 max-sm:row-start-2 max-sm:w-[calc(100%-12rem)] max-sm:justify-self-center">
           <h2 className="sr-only">Your program</h2>
           <ProgramRegisters
             cards={registers}
@@ -41,24 +46,14 @@ export function ProgrammingPhase({ roomId, playerId, onLockIn }: ProgrammingPhas
             onRemoveCard={(index) => restoreFocus(() => returnCardToHand(index))}
           />
         </div>
-        <div className="absolute right-2 bottom-2 grid w-40 grid-cols-2 gap-1 max-sm:bottom-full max-sm:mb-2 [&>p]:col-span-full [&>p]:text-center">
-          <button
-            data-ready
-            type="button"
-            onClick={submitProgram}
-            disabled={isDisabled || selectedCount === 0}
-            className="pointer-events-auto min-h-11 rounded-md bg-emerald-600 px-5 font-bold text-white shadow-lg hover:bg-emerald-500 focus-visible:outline-2 focus-visible:outline-cyan-300 disabled:opacity-60"
-          >
-            {isSubmitting ? 'Submitting…' : isLockedIn ? 'Ready ✓' : 'Ready'}
-          </button>
-          <button
-            type="button"
-            onClick={clearProgram}
-            disabled={isDisabled || selectedCount === 0}
-            className="pointer-events-auto min-h-11 rounded-md bg-slate-900/95 px-4 text-sm text-white shadow-lg hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-cyan-300 disabled:opacity-60"
-          >
-            Clear
-          </button>
+        <div className="col-start-3 row-start-1 mr-2 mb-2 w-32 justify-self-end">
+          <RegisterButtons
+            onSubmit={submitProgram}
+            onClear={clearProgram}
+            selectedCount={selectedCount}
+            isSubmitting={isSubmitting}
+            isLockedIn={isLockedIn}
+          />
         </div>
       </footer>
     </div>
