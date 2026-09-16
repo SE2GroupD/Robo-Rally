@@ -23,7 +23,7 @@ export function StartBoard({ layoutData = [] }: StartBoardProps) {
   }
 
   return (
-    <div className="grid grid-cols-[repeat(3,50px)] gap-[2px] w-max bg-neutral-800 p-1 border-4 border-[#555] rounded-md">
+    <div className="grid grid-cols-[repeat(3,50px)] gap-0.5 w-max bg-neutral-800 p-1 border-4 border-[#555] rounded-md">
       {tiles.map((tile) => (
         <Tile key={`start-${tile.x}-${tile.y}`} tile={tile} />
       ))}

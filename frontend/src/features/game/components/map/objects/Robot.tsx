@@ -1,4 +1,4 @@
-import tankImage from '../../../../assets/tank.png';
+import tankImage from '../../../../../assets/tank.png';
 
 interface RobotProps {
   hueRotation?: number;

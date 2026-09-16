@@ -1,4 +1,4 @@
-import flagImage from '../../../../assets/checkpoint.png';
+import flagImage from '../../../../../assets/checkpoint.png';
 
 interface CheckpointProps {
   num: number;
