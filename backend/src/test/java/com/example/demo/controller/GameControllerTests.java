@@ -28,10 +28,10 @@ class GameControllerTests {
         void acceptsOneToFiveCards(int count) {
                 var cards = List.of(CardType.MOVE_1, CardType.TURN_LEFT, CardType.MOVE_2,
                                 CardType.TURN_RIGHT, CardType.POWER_UP).subList(0, count);
-                var request = new ProgramRegisterDto(cards);
+                var request = new ProgramRegisterDto("pilot", cards);
 
-                assertEquals(200, controller.submitRegisters(roomId, request, null).getStatusCode().value());
-                verify(service).submitPlayerRegisters(roomId, null, request);
+                assertEquals(200, controller.submitRegisters(roomId, request).getStatusCode().value());
+                verify(service).submitPlayerRegisters(roomId, request);
         }
 
         static Stream<List<CardType>> invalidPrograms() {
@@ -42,7 +42,7 @@ class GameControllerTests {
         @ParameterizedTest
         @MethodSource("invalidPrograms")
         void rejectsInvalidPrograms(List<CardType> cards) {
-                var response = controller.submitRegisters(roomId, new ProgramRegisterDto(cards), null);
+                var response = controller.submitRegisters(roomId, new ProgramRegisterDto("pilot", cards));
 
                 assertEquals(400, response.getStatusCode().value());
                 assertEquals("Must submit 1 to 5 non-null cards.", response.getBody());

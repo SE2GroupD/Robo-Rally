@@ -78,8 +78,9 @@ export function useProgramming(roomId: string, playerId: string, onLockIn?: (reg
   };
 
   const submitProgram = async () => {
-    if (isLockedIn || submissionPending.current || selection.registers.some((slot) => slot === null)) return;
-    const cards = selection.registers.map((slot) => slot!.card) as [CardType, CardType, CardType, CardType, CardType];
+    if (isLockedIn || submissionPending.current) return;
+    const cards = selection.registers.flatMap((slot) => (slot ? [slot.card] : []));
+    if (cards.length === 0) return;
     submissionPending.current = true;
     setIsSubmitting(true);
     try {
