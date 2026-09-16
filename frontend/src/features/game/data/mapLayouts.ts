@@ -1,4 +1,4 @@
-import type { TileData } from './Tile';
+import type { TileData } from '../types/board';
 
 export const startboard1Layout: TileData[] = [
   { x: 0, y: 4, hasAntenna: true },

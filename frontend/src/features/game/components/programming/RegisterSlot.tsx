@@ -1,6 +1,6 @@
 import { type ReactElement } from 'react';
-import registerBackground from '../../../assets/register.png';
-import { cn } from '../../../utils/cn';
+import registerBackground from '../../../../assets/register.png';
+import { cn } from '../../../../utils/cn';
 
 interface RegisterSlotProps {
   className?: string;

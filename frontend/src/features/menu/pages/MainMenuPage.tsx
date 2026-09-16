@@ -1,6 +1,6 @@
-import roboRallyImage from '../../assets/hero.png';
-import { Button } from '../../foundation/components/button/Button';
-import { MenuScreen } from '../../shared/components/menu-screen/MenuScreen';
+import roboRallyImage from '../../../assets/hero.png';
+import { Button } from '../../../foundation/components/button/Button';
+import { MenuScreen } from '../../../shared/components/menu-screen/MenuScreen';
 
 interface MainMenuPageProps {
   username: string;

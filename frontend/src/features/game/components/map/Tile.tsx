@@ -1,8 +1,7 @@
-import { Robot } from '../robot/Robot';
+import type { Direction, TileData } from '../../types/board';
+import { Robot } from './Robot';
 import { Checkpoint } from './Checkpoint';
-import steelTileImage from '../../../assets/steel.png';
-
-export type Direction = 'NORTH' | 'EAST' | 'SOUTH' | 'WEST';
+import steelTileImage from '../../../../assets/steel.png';
 
 const getRotationDegrees = (dir: Direction): number => {
   switch (dir) {
@@ -17,26 +16,6 @@ const getRotationDegrees = (dir: Direction): number => {
     default:
       return 0;
   }
-};
-
-export type WallConfig = {
-  north?: boolean;
-  east?: boolean;
-  south?: boolean;
-  west?: boolean;
-};
-
-export type TileData = {
-  x: number;
-  y: number;
-  robot?: { hue: number; direction: Direction };
-  checkpointNumber?: number;
-  walls?: WallConfig;
-  hasPit?: boolean;
-  hasAntenna?: boolean;
-  isSpawnPoint?: boolean;
-  gear?: 'CLOCKWISE' | 'COUNTER_CLOCKWISE';
-  conveyor?: { direction: Direction; isExpress?: boolean };
 };
 
 interface TileProps {

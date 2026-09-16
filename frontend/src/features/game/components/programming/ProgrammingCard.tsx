@@ -1,14 +1,14 @@
-import { type CardType } from '../../../features/types/CardType'; // Adjust path as needed
-import { cn } from '../../../utils/cn';
-import againImage from '../../../assets/cards/again.png';
-import leftTurnImage from '../../../assets/cards/leftTurn.png';
-import move1Image from '../../../assets/cards/move1.png';
-import move2Image from '../../../assets/cards/move2.png';
-import move3Image from '../../../assets/cards/move3.png';
-import moveBackImage from '../../../assets/cards/moveBack.png';
-import powerUpImage from '../../../assets/cards/powerUp.png';
-import rightTurnImage from '../../../assets/cards/rightTurn.png';
-import uTurnImage from '../../../assets/cards/uturn.png';
+import { type CardType } from '../../types/CardType'; // Adjust path as needed
+import { cn } from '../../../../utils/cn';
+import againImage from '../../../../assets/cards/again.png';
+import leftTurnImage from '../../../../assets/cards/leftTurn.png';
+import move1Image from '../../../../assets/cards/move1.png';
+import move2Image from '../../../../assets/cards/move2.png';
+import move3Image from '../../../../assets/cards/move3.png';
+import moveBackImage from '../../../../assets/cards/moveBack.png';
+import powerUpImage from '../../../../assets/cards/powerUp.png';
+import rightTurnImage from '../../../../assets/cards/rightTurn.png';
+import uTurnImage from '../../../../assets/cards/uturn.png';
 
 interface ProgrammingCardProps {
   type: CardType;

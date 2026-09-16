@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { ProgramRegister } from '../../../shared/components/program-register/ProgramRegister';
+import { ProgramRegister } from './ProgramRegister';
 import { ProgrammingCard } from './ProgrammingCard';
-import { useProgramming } from '../../../hooks/game/useProgramming';
-import type { CardType } from '../../../features/types/CardType';
+import { useProgramming } from '../../hooks/useProgramming';
+import type { CardType } from '../../types/CardType';
 
 interface ProgrammingPhaseProps {
   roomId: string;

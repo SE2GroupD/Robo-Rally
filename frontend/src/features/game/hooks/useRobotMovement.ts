@@ -1,16 +1,6 @@
 import { useCallback, useState } from 'react';
-import type { CardType } from '../../features/types/CardType';
-import type { Direction } from '../../foundation/components/map/Tile';
-
-export type BoardId = 'start' | 'game1' | 'game2' | 'game3';
-
-export interface RobotState {
-  board: BoardId;
-  x: number;
-  y: number;
-  direction: Direction;
-  hue: number;
-}
+import type { CardType } from '../types/CardType';
+import type { Direction, BoardId, RobotState } from '../types/board';
 
 // Where each board sits on one shared global grid, matching how <Map> lays
 // them out visually (StartBoard and GameBoard3 sit beside the GameBoard1/2
