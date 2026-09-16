@@ -14,7 +14,7 @@ function emptySelection() {
   };
 }
 
-export function useProgramming(roomId: string, playerId: string, onLockIn?: (registers: CardType[]) => void) {
+export function useProgramming(roomId: string, onLockIn?: (registers: CardType[]) => void) {
   const [selection, setSelection] = useState(emptySelection);
   const [isLockedIn, setIsLockedIn] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,20 +24,47 @@ export function useProgramming(roomId: string, playerId: string, onLockIn?: (reg
 
   useEffect(() => {
     let active = true;
-    fetchPlayerHand(roomId, playerId)
+
+    // playerId is completely removed; the backend handles identity securely via JWT
+    fetchPlayerHand(roomId)
       .then((data) => {
         if (!active) return;
-        setSelection({ ...emptySelection(), hand: Array.from({ length: 9 }, (_, index) => data.cards[index] ?? null) });
+
         setDrawPileCount(data.drawPileCount);
         setDiscardPileCount(data.discardPileCount);
+
+        if (data.isLockedIn) {
+          setIsLockedIn(true);
+
+          // Map the restored backend string array into the new SelectedCard state shape
+          const restoredRegisters = data.lockedRegisters.map((card: CardType, idx: number) => ({
+            card,
+            handIndex: idx, // Mock index, as they can't be returned to the hand anyway once locked
+          }));
+
+          while (restoredRegisters.length < 5) {
+            restoredRegisters.push(null as any);
+          }
+
+          setSelection({
+            hand: Array(9).fill(null),
+            registers: restoredRegisters,
+          });
+        } else {
+          setSelection({
+            ...emptySelection(),
+            hand: Array.from({ length: 9 }, (_, index) => data.cards[index] ?? null),
+          });
+        }
       })
       .catch((err) => {
         if (active) console.error(err);
       });
+
     return () => {
       active = false;
     };
-  }, [roomId, playerId]);
+  }, [roomId]);
 
   const placeCardInRegister = (handIndex: number) => {
     if (isLockedIn || submissionPending.current) return;
@@ -45,10 +72,13 @@ export function useProgramming(roomId: string, playerId: string, onLockIn?: (reg
       const card = current.hand[handIndex];
       const registerIndex = current.registers.findIndex((slot) => slot === null);
       if (!card || registerIndex === -1) return current;
+
       const hand = [...current.hand];
       const registers = [...current.registers];
+
       hand[handIndex] = null;
       registers[registerIndex] = { card, handIndex };
+
       return { hand, registers };
     });
   };
@@ -58,10 +88,13 @@ export function useProgramming(roomId: string, playerId: string, onLockIn?: (reg
     setSelection((current) => {
       const selected = current.registers[registerIndex];
       if (!selected) return current;
+
       const hand = [...current.hand];
       const registers = [...current.registers];
+
       hand[selected.handIndex] = selected.card;
       registers[registerIndex] = null;
+
       return { hand, registers };
     });
   };
@@ -79,12 +112,16 @@ export function useProgramming(roomId: string, playerId: string, onLockIn?: (reg
 
   const submitProgram = async () => {
     if (isLockedIn || submissionPending.current) return;
+
     const cards = selection.registers.flatMap((slot) => (slot ? [slot.card] : []));
     if (cards.length === 0) return;
+
     submissionPending.current = true;
     setIsSubmitting(true);
+
     try {
-      await submitProgramRegister(roomId, { playerId, registers: cards });
+      // playerId removed from payload
+      await submitProgramRegister(roomId, { registers: cards });
     } catch (err) {
       console.error(err);
       console.warn('Failed to lock in registers.');
@@ -93,6 +130,7 @@ export function useProgramming(roomId: string, playerId: string, onLockIn?: (reg
       submissionPending.current = false;
       setIsSubmitting(false);
     }
+
     setIsLockedIn(true);
     onLockIn?.(cards);
   };
