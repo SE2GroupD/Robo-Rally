@@ -10,14 +10,14 @@ interface ProgrammingHandProps {
 
 export function ProgrammingHand({ cards, disabled, onSelectCard }: ProgrammingHandProps) {
   return (
-    <div className="flex w-full flex-col items-center gap-4 rounded-lg bg-slate-900 p-4">
-      <h2 className="text-lg font-bold text-slate-400">Your Hand</h2>
-      <ol aria-label="Programming Hand" className="flex min-h-37.5 flex-wrap justify-center gap-3">
+    <div className="absolute inset-y-0 left-0 w-[var(--hand-rail,64px)] overflow-y-auto p-2 [scrollbar-width:thin]">
+      <h2 className="sr-only">Your Hand</h2>
+      <ol aria-label="Programming Hand" className="flex flex-col gap-1">
         {Array.from({ length: 9 }, (_, index) => (
-          <li key={index} aria-label={`Hand slot ${index + 1}`}>
-            <RegisterSlot>
+          <li className="pointer-events-auto" key={index} aria-label={`Hand slot ${index + 1}`}>
+            <RegisterSlot variant="hand">
               {cards[index] ? (
-                <ProgrammingCard type={cards[index]} disabled={disabled} onClick={() => onSelectCard(index)} />
+                <ProgrammingCard variant="hand" type={cards[index]} disabled={disabled} onClick={() => onSelectCard(index)} />
               ) : null}
             </RegisterSlot>
           </li>
