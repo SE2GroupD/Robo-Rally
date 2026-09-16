@@ -18,8 +18,6 @@ export function ProgrammingPhase({ roomId, onLockIn }: ProgrammingPhaseProps) {
     registers,
     isLockedIn,
     isSubmitting,
-    drawPileCount,
-    discardPileCount,
     placeCardInRegister,
     returnCardToHand,
     clearProgram,
@@ -46,12 +44,12 @@ export function ProgrammingPhase({ roomId, onLockIn }: ProgrammingPhaseProps) {
     <div ref={root} className="pointer-events-none absolute inset-0 text-white">
       <ProgrammingHand
         cards={hand}
-        disabled={isDisabled || selectedCount === 5}
+        disabled={isDisabled}
         onSelectCard={(index) => restoreFocus(() => placeCardInRegister(index))}
       />
       <footer
         aria-label="Programming controls"
-        className="absolute bottom-0 right-0 left-[var(--hand-rail,64px)] flex h-[20dvh] items-center-safe gap-2 overflow-auto p-2"
+        className="absolute bottom-0 right-0 left-(--hand-rail,64px) flex h-[20dvh] items-center-safe gap-2 overflow-auto p-2"
       >
         <div className="min-w-max flex-1">
           <h2 className="sr-only">Your program</h2>
@@ -62,14 +60,11 @@ export function ProgrammingPhase({ roomId, onLockIn }: ProgrammingPhaseProps) {
           />
         </div>
         <div className="grid w-45 min-w-40 grid-cols-2 gap-1 [&>p]:col-span-full [&>p]:text-center">
-          <p aria-live="polite" className="rounded bg-slate-950/90 px-2 py-1 text-xs">
-            {selectedCount}/5 cards selected
-          </p>
           <button
             data-ready
             type="button"
             onClick={submitProgram}
-            disabled={isDisabled || selectedCount < 5}
+            disabled={isDisabled || selectedCount === 0}
             className="pointer-events-auto min-h-11 rounded-md bg-emerald-600 px-5 font-bold text-white shadow-lg hover:bg-emerald-500 focus-visible:outline-2 focus-visible:outline-cyan-300 disabled:opacity-60"
           >
             {isSubmitting ? 'Submitting…' : isLockedIn ? 'Ready ✓' : 'Ready'}
@@ -82,9 +77,6 @@ export function ProgrammingPhase({ roomId, onLockIn }: ProgrammingPhaseProps) {
           >
             Clear
           </button>
-          <p className="rounded bg-slate-950/90 px-2 py-1 text-[11px]">
-            Draw: {drawPileCount} · Discard: {discardPileCount}
-          </p>
         </div>
       </footer>
     </div>
