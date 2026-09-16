@@ -46,7 +46,7 @@ Production code must never import tests. Features must never import another feat
 4. Is it composed UI already used by at least two features, with no feature-specific behavior or types? Put it in shared.
 5. Otherwise, keep it with its owning feature. Reuse within a feature does not qualify it for shared.
 
-`Map.tsx` stays at the top of `features/game/components/map/` and arranges boards and connects viewport behavior to rendering. `MapZoomControls.tsx` renders the zoom buttons, while `game/hooks/useMapViewport.ts` owns scale, scroll positioning, pointer capture, and drag handlers. The `boards/` subfolder contains `GameBoard`, `StartBoard`, and `Tile`, which build and render the board grid. The `objects/` subfolder contains `Robot` and `Checkpoint`, which render objects placed on tiles. Board layouts remain in `game/data/` and domain types in `game/types/`. None of these game components belongs in foundation. All programming UI, including `RegisterSlot` and `ProgramRegisters`, belongs in `features/game/components/programming/`.
+`Map` composes `StartBoard` and `GameBoard`, which render `Tile`. All belong in `features/game/components/map/`, alongside `Robot` and `Checkpoint`. None belongs in foundation. All programming UI, including `RegisterSlot` and `ProgramRegister`, belongs in `features/game/components/programming/`.
 
 Only application orchestration coordinates features, using props and callbacks. `App.tsx` renders page components. It keeps the robot movement hook mounted while switching pages, preserving the current training position. Game layout belongs in `GamePage`; authentication forms belong in the auth feature.
 
@@ -57,11 +57,3 @@ Only application orchestration coordinates features, using props and callbacks. 
 `npm run lint` includes boundary checks, and CI runs them through `npm run check`. `npm run test:boundaries` verifies the checker. Central test files are exempt as import sources; production imports remain checked.
 
 The checker enforces dependency direction. Reviewers must also enforce semantic placement: a self-contained game component in foundation can have valid imports and still violate this policy. Do not weaken the checker to accommodate misplaced code; move it to its owner.
-
-## Programming layouts
-
-`components/programming/ProgrammingPhase.tsx` connects state and controls. `ProgrammingCard.tsx` renders a card. The `register/` subfolder groups `RegisterSlot.tsx`, `ProgramRegisters.tsx` (five slots), and `ProgrammingHand.tsx` (nine slots). Both layouts use the same slot and card components.
-
-The hand keeps nine positions before and after fetching. Selected cards leave empty hand slots; removing or clearing returns each card to its original position. `useProgramming` owns selection and submission; layout components receive card values and index callbacks. Backend submission contains only the five ordered card types.
-
-The game page owns the full-viewport map and transparent programming overlay. The hand uses a full-height left column; the program and actions share a footer capped at `20dvh`. Slot/card variants share artwork while sizing for their role. Empty overlay gaps pass pointer input to the map; card previews support keyboard focus and Escape dismissal.
