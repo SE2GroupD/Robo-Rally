@@ -12,13 +12,10 @@ interface ProgramRegistersProps {
 
 export function ProgramRegisters({ cards = [], disabled = false, onRemoveCard, className }: ProgramRegistersProps) {
   return (
-    <ol aria-label="Program Register" className={cn('flex justify-center gap-2', className)}>
+    <ol aria-label="Program Register" className={cn('grid grid-cols-5 gap-2', className)}>
       {Array.from({ length: 5 }, (_, index) => (
         <li key={index} aria-label={`Program Register slot ${index + 1}`}>
-          <span aria-hidden="true" className="mb-1 block text-center text-xs font-bold text-white">
-            <span className="rounded bg-slate-950/90 px-2 py-0.5">{index + 1}</span>
-          </span>
-          <RegisterSlot variant="program">
+          <RegisterSlot>
             {cards[index] ? (
               <ProgrammingCard type={cards[index]} disabled={disabled} onClick={() => onRemoveCard?.(index)} />
             ) : null}

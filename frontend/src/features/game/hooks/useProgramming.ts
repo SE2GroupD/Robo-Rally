@@ -37,7 +37,7 @@ export function useProgramming(roomId: string, onLockIn?: (registers: CardType[]
           setIsLockedIn(true);
 
           // Map the restored backend string array into the new SelectedCard state shape
-          const restoredRegisters = data.lockedRegisters.map((card: CardType, idx: number) => ({
+          const restoredRegisters = data.lockedRegisters.map((card, idx) => ({
             card,
             handIndex: idx, // Mock index, as they can't be returned to the hand anyway once locked
           }));
@@ -111,11 +111,9 @@ export function useProgramming(roomId: string, onLockIn?: (registers: CardType[]
   };
 
   const submitProgram = async () => {
-    if (isLockedIn || submissionPending.current) return;
+    if (isLockedIn || submissionPending.current || selection.registers.some((slot) => slot === null)) return;
 
-    const cards = selection.registers.flatMap((slot) => (slot ? [slot.card] : []));
-    if (cards.length === 0) return;
-
+    const cards = selection.registers.map((slot) => slot!.card) as [CardType, CardType, CardType, CardType, CardType];
     submissionPending.current = true;
     setIsSubmitting(true);
 
