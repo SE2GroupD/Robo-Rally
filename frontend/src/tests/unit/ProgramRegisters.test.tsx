@@ -7,7 +7,10 @@ describe('Program Register', () => {
 
     const slots = within(screen.getByRole('list', { name: 'Program Register' })).getAllByRole('listitem');
     expect(slots).toHaveLength(5);
-    slots.forEach((slot) => expect(slot).toHaveTextContent(''));
+    slots.forEach((slot, index) => {
+      expect(slot).toHaveTextContent(String(index + 1));
+      expect(within(slot).queryByRole('button')).not.toBeInTheDocument();
+    });
   });
 
   it('keeps cards in their assigned slots when other slots are empty', () => {
