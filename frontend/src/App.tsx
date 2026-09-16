@@ -1,3 +1,4 @@
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAppNavigation } from './app/useAppNavigation';
 import { FrontPage } from './features/menu/pages/FrontPage';
 import { LoginPage } from './features/auth/pages/LoginPage';
@@ -7,33 +8,61 @@ import { RegisterPage } from './features/auth/pages/RegisterPage';
 import { useRobotMovement } from './features/game/hooks/useRobotMovement';
 
 function App() {
-  const { view, setView, playerInfo, handleLogin, handleGuestLogin, logout } = useAppNavigation();
+  const { navigate, playerInfo, handleLogin, handleGuestLogin, logout } = useAppNavigation();
   const { robot, runProgram } = useRobotMovement();
+  const menuRedirect = <Navigate to="/main-menu" replace />;
+  const loginRedirect = <Navigate to="/login" replace />;
 
-  if (!playerInfo) {
-    if (view === 'front-page') {
-      return <FrontPage onLoginClick={() => setView('login')} />;
-    }
-
-    if (view === 'register') {
-      return <RegisterPage onBack={() => setView('login')} onGuestLogin={handleGuestLogin} />;
-    }
-
-    return (
-      <LoginPage
-        onRegister={() => setView('register')}
-        onBack={() => setView('front-page')}
-        onLogin={handleLogin}
-        onGuestLogin={handleGuestLogin}
+  return (
+    <Routes>
+      <Route path="/" element={playerInfo ? menuRedirect : <FrontPage onLoginClick={() => navigate('/login')} />} />
+      <Route
+        path="/login"
+        element={
+          playerInfo ? (
+            menuRedirect
+          ) : (
+            <LoginPage
+              onRegister={() => navigate('/register')}
+              onBack={() => navigate('/')}
+              onLogin={handleLogin}
+              onGuestLogin={handleGuestLogin}
+            />
+          )
+        }
       />
-    );
-  }
-
-  if (view === 'game') {
-    return <GamePage onBack={() => setView('main-menu')} playerId={playerInfo.username} robot={robot} runProgram={runProgram} />;
-  }
-
-  return <MainMenuPage onStartGame={() => setView('game')} onLogout={logout} username={playerInfo.username} />;
+      <Route
+        path="/register"
+        element={playerInfo ? menuRedirect : <RegisterPage onBack={() => navigate('/login')} onGuestLogin={handleGuestLogin} />}
+      />
+      <Route
+        path="/main-menu"
+        element={
+          playerInfo ? (
+            <MainMenuPage onStartGame={() => navigate('/game')} onLogout={logout} username={playerInfo.username} />
+          ) : (
+            loginRedirect
+          )
+        }
+      />
+      <Route
+        path="/game"
+        element={
+          playerInfo ? (
+            <GamePage
+              onBack={() => navigate('/main-menu')}
+              playerId={playerInfo.username}
+              robot={robot}
+              runProgram={runProgram}
+            />
+          ) : (
+            loginRedirect
+          )
+        }
+      />
+      <Route path="*" element={<Navigate to={playerInfo ? '/main-menu' : '/'} replace />} />
+    </Routes>
+  );
 }
 
 export default App;
