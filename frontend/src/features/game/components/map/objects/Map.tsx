@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { StartBoard } from './StartBoard';
 import { GameBoard } from './GameBoard';
-import type { TileData } from './Tile';
+import { startboard1Layout, gameboard1Layout, gameboard2Layout, gameboard3Layout } from '../../data/mapLayouts';
+import type { BoardId, RobotState, TileData } from '../../types/board';
 
 export function Map() {
   const [scale, setScale] = useState(1);
