@@ -1,5 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
-import { ProgramRegister } from '../../shared/components/program-register/ProgramRegister';
+import { ProgramRegister } from '../../features/game/components/programming/ProgramRegister';
 
 describe('Program Register', () => {
   it('renders five empty slots', () => {
