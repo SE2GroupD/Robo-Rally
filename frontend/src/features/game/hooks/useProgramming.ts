@@ -24,6 +24,8 @@ export function useProgramming(roomId: string, onLockIn?: (registers: CardType[]
 
   useEffect(() => {
     let active = true;
+
+    // playerId is completely removed; the backend handles identity securely via JWT
     fetchPlayerHand(roomId)
       .then((data) => {
         if (!active) return;
@@ -110,12 +112,15 @@ export function useProgramming(roomId: string, onLockIn?: (registers: CardType[]
 
   const submitProgram = async () => {
     if (isLockedIn || submissionPending.current) return;
+
     const cards = selection.registers.flatMap((slot) => (slot ? [slot.card] : []));
     if (cards.length === 0) return;
+
     submissionPending.current = true;
     setIsSubmitting(true);
 
     try {
+      // playerId removed from payload
       await submitProgramRegister(roomId, { registers: cards });
     } catch (err) {
       console.error(err);
