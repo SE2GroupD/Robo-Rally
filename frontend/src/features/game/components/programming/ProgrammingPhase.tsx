@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { ProgramRegisters } from './register/ProgramRegisters';
-import { ProgrammingHand } from './register/ProgrammingHand';
+import { DrawRegister } from './register/DrawRegister';
 import { useProgramming } from '../../hooks/useProgramming';
 import type { CardType } from '../../types/CardType';
 
@@ -11,16 +11,8 @@ interface ProgrammingPhaseProps {
 
 export function ProgrammingPhase({ roomId, playerId, onLockIn }: ProgrammingPhaseProps) {
   const root = useRef<HTMLDivElement>(null);
-  const {
-    hand,
-    registers,
-    isLockedIn,
-    isSubmitting,
-    placeCardInRegister,
-    returnCardToHand,
-    clearProgram,
-    submitProgram,
-  } = useProgramming(roomId, playerId, onLockIn);
+  const { hand, registers, isLockedIn, isSubmitting, placeCardInRegister, returnCardToHand, clearProgram, submitProgram } =
+    useProgramming(roomId, playerId, onLockIn);
   const isDisabled = isLockedIn || isSubmitting;
   const selectedCount = registers.filter(Boolean).length;
   const restoreFocus = (action: () => void) => {
@@ -38,11 +30,7 @@ export function ProgrammingPhase({ roomId, playerId, onLockIn }: ProgrammingPhas
 
   return (
     <div ref={root} className="pointer-events-none absolute inset-0 text-white">
-      <ProgrammingHand
-        cards={hand}
-        disabled={isDisabled}
-        onSelectCard={(index) => restoreFocus(() => placeCardInRegister(index))}
-      />
+      <DrawRegister cards={hand} disabled={isDisabled} onSelectCard={(index) => restoreFocus(() => placeCardInRegister(index))} />
       <footer
         aria-label="Programming controls"
         className="absolute bottom-0 right-0 left-(--hand-rail,64px) flex h-[20dvh] items-center-safe gap-2 overflow-auto p-2"
