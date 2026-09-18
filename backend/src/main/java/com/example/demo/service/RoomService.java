@@ -99,6 +99,13 @@ public class RoomService {
         }
     }
 
+    public synchronized GameRoom getRoomByGameId(UUID gameId) {
+        return roomsByCode.values().stream()
+                .filter(candidate -> candidate.gameId().equals(gameId))
+                .findFirst()
+                .orElse(null);
+    }
+
     private String generateCode() {
         StringBuilder code = new StringBuilder(6);
         for (int i = 0; i < 6; i++) {
