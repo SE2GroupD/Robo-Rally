@@ -1,12 +1,11 @@
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
-import { useRef, useState } from 'react';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { RegisterForm } from './features/login-page/RegisterForm';
 import { ForgotPasswordForm } from './features/login-page/ForgotPasswordForm';
 import { ResetPasswordForm } from './features/login-page/ResetPasswordForm';
 import { VerifyEmailForm } from './features/login-page/VerifyEmailForm';
-import { MainMenuPage } from './features/main-menu/MainMenuPage';
-import { Map } from './foundation/components/map/Map';
+import { MainMenuPage } from './features/menu/pages/MainMenuPage';
+import { Map } from './features/game/components/map/Map';
 import { ProgrammingPhase } from './foundation/components/register-slot/ProgrammingPhase';
 import { useRobotMovement } from './hooks/game/useRobotMovement';
 import { createRoom, type CreatedRoom, type JoinedRoom } from './features/game/api/gameApi';

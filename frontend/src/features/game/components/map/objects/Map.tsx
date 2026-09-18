@@ -26,12 +26,14 @@ export function Map() {
     <div className="relative w-full max-w-[1200px] overflow-auto max-h-[60vh] rounded-xl border-4 border-slate-800 shadow-2xl bg-neutral-900">
       <div className="sticky top-4 right-4 z-50 float-right flex gap-2 bg-black/50 p-2 rounded-lg backdrop-blur-sm">
         <button
+          type="button"
           onClick={handleZoomOut}
           className="w-8 h-8 flex items-center justify-center bg-slate-700 text-white rounded hover:bg-slate-600 font-bold"
         >
           -
         </button>
         <button
+          type="button"
           onClick={handleZoomIn}
           className="w-8 h-8 flex items-center justify-center bg-slate-700 text-white rounded hover:bg-slate-600 font-bold"
         >
