@@ -1,18 +1,18 @@
-import type * as RoomApi from '../../features/api/gameApi';
+import type * as RoomApi from '../../features/game/api/gameApi';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { RoomSession } from '../../shared/components/room-session/RoomSession';
-import { fetchRoom, startRoom, leaveRoom, RoomRequestError, type JoinedRoom } from '../../features/api/gameApi';
+import { RoomSession } from '../../features/game/components/room/RoomSession';
+import { fetchRoom, startRoom, leaveRoom, RoomRequestError, type JoinedRoom } from '../../features/game/api/gameApi';
 
-vi.mock('../../features/api/gameApi', async (original) => ({
+vi.mock('../../features/game/api/gameApi', async (original) => ({
   ...(await original<typeof RoomApi>()),
   fetchRoom: vi.fn(),
   startRoom: vi.fn(),
   leaveRoom: vi.fn(),
 }));
-vi.mock('../../foundation/components/map/Board', () => ({ Board: () => <div>Game board</div> }));
-vi.mock('../../foundation/components/register-slot/ProgrammingPhase', () => ({
+vi.mock('../../features/game/components/map/Map', () => ({ Map: () => <div>Game board</div> }));
+vi.mock('../../features/game/components/programming/ProgrammingPhase', () => ({
   ProgrammingPhase: ({ roomId, playerId }: { roomId: string; playerId: string }) => (
     <div>
       {roomId}/{playerId}

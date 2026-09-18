@@ -1,33 +1,34 @@
-import { JoinBattlePage } from './features/join-battle/JoinBattlePage';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { useAppNavigation } from './app/useAppNavigation';
+import { FrontPage } from './features/menu/pages/FrontPage';
+import { LoginPage } from './features/auth/pages/LoginPage';
+import { MainMenuPage } from './features/menu/pages/MainMenuPage';
+import { GamePage } from './features/game/pages/GamePage';
+import { RegisterPage } from './features/auth/pages/RegisterPage';
+import { useRobotMovement } from './features/game/hooks/useRobotMovement';
 import { useRef, useState } from 'react';
-import { createRoom, type CreatedRoom, type JoinedRoom } from './features/api/gameApi';
-import { FrontPage } from './features/front-page/FrontPage';
-import { LoginPage } from './features/login-page/LoginPage';
-import { HostBattlePage } from './features/host-battle/HostBattlePage';
-import type { LoginRequestDto } from './features/login-page/types';
-import { MainMenuPage } from './features/main-menu/MainMenuPage';
-import { Board } from './foundation/components/map/Board';
-import { ProgrammingPhase } from './foundation/components/register-slot/ProgrammingPhase';
-
-type AppView = 'front-page' | 'login' | 'main-menu' | 'game' | 'host-battle' | 'join-battle';
+import { createRoom, type CreatedRoom, type JoinedRoom } from './features/game/api/gameApi';
+import { HostBattlePage } from './features/game/pages/HostBattlePage';
+import { JoinBattlePage } from './features/game/pages/JoinBattlePage';
 
 function App() {
-  const [view, setView] = useState<AppView>('front-page');
-  const [playerInfo, setPlayerInfo] = useState<{ username: string; email?: string } | null>(null);
-  const [joinedRoom, setJoinedRoom] = useState<JoinedRoom | null>(null);
+  const { navigate, playerInfo, handleLogin, handleGuestLogin, logout } = useAppNavigation();
+  const { robot, runProgram } = useRobotMovement();
+  const menuRedirect = <Navigate to="/main-menu" replace />;
+  const loginRedirect = <Navigate to="/login" replace />;
   const [hostRoom, setHostRoom] = useState<CreatedRoom | null>(null);
+  const [joinedRoom, setJoinedRoom] = useState<JoinedRoom | null>(null);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [roomError, setRoomError] = useState('');
   const creatingRoom = useRef(false);
-
   const handleHostBattle = async () => {
     if (!playerInfo || creatingRoom.current) return;
-    setView('host-battle');
+    navigate('/host-battle');
     if (hostRoom) return;
-
     creatingRoom.current = true;
     setIsCreatingRoom(true);
     setRoomError('');
+
     try {
       setHostRoom(await createRoom(playerInfo.username));
     } catch {
@@ -38,96 +39,104 @@ function App() {
     }
   };
 
-  const handleLogin = (dto: LoginRequestDto) => {
-    setPlayerInfo({
-      username: dto.email.split('@')[0],
-      email: dto.email,
-    });
+  const handleRoomBack = () => {
+    setHostRoom(null);
+    setJoinedRoom(null);
+    setRoomError('');
+    navigate('/main-menu');
   };
-
-  const handleGuestLogin = () => {
-    const randomGuestNumber = Math.floor(Math.random() * 9000) + 1000;
-    setPlayerInfo({ username: `Guest_${randomGuestNumber}` });
+  const handleLogout = () => {
+    setHostRoom(null);
+    setJoinedRoom(null);
+    setRoomError('');
+    logout();
   };
-
-  if (!playerInfo) {
-    if (view === 'front-page') {
-      return <FrontPage onLoginClick={() => setView('login')} />;
-    }
-
-    return <LoginPage onBack={() => setView('front-page')} onLogin={handleLogin} onGuestLogin={handleGuestLogin} />;
-  }
-
-  if (view === 'host-battle') {
-    return (
-      <HostBattlePage
-        username={playerInfo.username}
-        room={hostRoom}
-        isCreating={isCreatingRoom}
-        error={roomError}
-        onRetry={handleHostBattle}
-        onBack={() => {
-          setHostRoom(null);
-          setJoinedRoom(null);
-          setView('main-menu');
-        }}
-      />
-    );
-  }
-
-  if (view === 'join-battle') {
-    return (
-      <JoinBattlePage
-        username={playerInfo.username}
-        room={joinedRoom}
-        onJoined={setJoinedRoom}
-        onBack={() => {
-          setHostRoom(null);
-          setJoinedRoom(null);
-          setView('main-menu');
-        }}
-      />
-    );
-  }
-
-  if (view === 'game') {
-    // 2. Render both the Board and the Programming Phase in the game view!
-    // We'll pass a mock roomId for now since room creation isn't built yet.
-    return (
-      <div className="flex min-h-screen flex-col items-center bg-slate-950 p-4">
-        <button
-          type="button"
-          onClick={() => setView('main-menu')}
-          className="self-start mb-4 text-slate-400 hover:text-white underline"
-        >
-          &larr; Back to Menu
-        </button>
-
-        {/* Your 2D grid/map */}
-        <Board />
-
-        {/* The new card interface */}
-        <div className="mt-8 w-full max-w-5xl">
-          <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" playerId={playerInfo.username} />
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <MainMenuPage
-      onStartGame={() => setView('game')}
-      onLogout={() => {
-        setPlayerInfo(null);
-        setHostRoom(null);
-        setJoinedRoom(null);
-        setRoomError('');
-        setView('front-page');
-      }}
-      onHostBattle={handleHostBattle}
-      onJoinBattle={() => setView('join-battle')}
-      username={playerInfo.username}
-    />
+    <Routes>
+      <Route path="/" element={playerInfo ? menuRedirect : <FrontPage onLoginClick={() => navigate('/login')} />} />
+      <Route
+        path="/login"
+        element={
+          playerInfo ? (
+            menuRedirect
+          ) : (
+            <LoginPage
+              onRegister={() => navigate('/register')}
+              onBack={() => navigate('/')}
+              onLogin={handleLogin}
+              onGuestLogin={handleGuestLogin}
+            />
+          )
+        }
+      />
+      <Route
+        path="/register"
+        element={playerInfo ? menuRedirect : <RegisterPage onBack={() => navigate('/login')} onGuestLogin={handleGuestLogin} />}
+      />
+      <Route
+        path="/main-menu"
+        element={
+          playerInfo ? (
+            <MainMenuPage
+              onStartGame={() => navigate('/game')}
+              onHostBattle={handleHostBattle}
+              onJoinBattle={() => navigate('/join-battle')}
+              onLogout={handleLogout}
+              username={playerInfo.username}
+            />
+          ) : (
+            loginRedirect
+          )
+        }
+      />
+      <Route
+        path="/game"
+        element={
+          playerInfo ? (
+            <GamePage
+              onBack={() => navigate('/main-menu')}
+              playerId={playerInfo.username}
+              robot={robot}
+              runProgram={runProgram}
+            />
+          ) : (
+            loginRedirect
+          )
+        }
+      />
+
+      <Route
+        path="/host-battle"
+        element={
+          playerInfo ? (
+            <HostBattlePage
+              username={playerInfo.username}
+              room={hostRoom}
+              isCreating={isCreatingRoom}
+              error={roomError}
+              onRetry={handleHostBattle}
+              onBack={handleRoomBack}
+            />
+          ) : (
+            loginRedirect
+          )
+        }
+      />
+
+      <Route
+        path="/join-battle"
+        element={
+          playerInfo ? (
+            <JoinBattlePage username={playerInfo.username} room={joinedRoom} onJoined={setJoinedRoom} onBack={handleRoomBack} />
+          ) : (
+            loginRedirect
+          )
+        }
+      />
+
+      <Route path="*" element={<Navigate to={playerInfo ? '/main-menu' : '/'} replace />} />
+    </Routes>
   );
 }
 
