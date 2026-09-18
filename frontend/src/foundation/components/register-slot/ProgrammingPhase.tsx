@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ProgramRegister } from '../../../shared/components/program-register/ProgramRegister';
-import { ProgrammingCard } from './ProgrammingCard';
+//import { ProgramRegister } from '../../../features/types/ProgramRegisterDto';
+import { ProgrammingCard } from '../../../features/game/components/programming/ProgrammingCard';
 import { useProgramming } from '../../../hooks/game/useProgramming';
+import type { CardType } from '../../../features/game/types/CardType';
 
 interface ProgrammingPhaseProps {
   roomId: string;
@@ -98,7 +99,7 @@ export function ProgrammingPhase({ roomId }: ProgrammingPhaseProps) {
             {/* Registers */}
             <div className="flex flex-col items-center gap-2">
               <h2 className="text-xl font-bold uppercase tracking-widest text-slate-400">Registers</h2>
-              <ProgramRegister cards={registerCards} />
+              {/* <ProgramRegister cards={registerCards} /> */}
             </div>
 
             {/* Hand */}
