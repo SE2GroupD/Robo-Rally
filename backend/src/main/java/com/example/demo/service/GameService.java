@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.dto.BoardStateDto;
 import com.example.demo.dto.PlayerHandDto;
 import com.example.demo.dto.ProgramRegisterDto;
+import com.example.demo.dto.RobotStateDto;
 import com.example.demo.dto.TurnResolutionDto;
 
 import java.util.UUID;

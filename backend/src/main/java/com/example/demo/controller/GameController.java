@@ -1,9 +1,8 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.BoardStateDto;
 import com.example.demo.dto.PlayerHandDto;
 import com.example.demo.dto.ProgramRegisterDto;
-import com.example.demo.dto.TurnResolutionDto;
+import com.example.demo.dto.RobotStateDto;
 import com.example.demo.service.GameService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
