@@ -1,9 +1,22 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.BoardStateDto;
 import com.example.demo.dto.PlayerHandDto;
 import com.example.demo.dto.ProgramRegisterDto;
+import com.example.demo.dto.RegisterStepDto;
+import com.example.demo.dto.RobotStateDto;
+import com.example.demo.dto.RobotStepDto;
+import com.example.demo.dto.TurnResolutionDto;
+import com.example.demo.exception.PlayerNotInRoomException;
+import com.example.demo.exception.RoomNotFoundException;
+import com.example.demo.game.GameBoard;
+import com.example.demo.game.GameSession;
+import com.example.demo.game.MovementResolver;
 import com.example.demo.game.ProgrammingDeck;
+import com.example.demo.game.Robot;
 import com.example.demo.model.CardType;
+import com.example.demo.model.Direction;
+import com.example.demo.model.Position;
 
 import org.springframework.stereotype.Service;
 
@@ -16,54 +29,139 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class GameServiceImpl implements GameService {
 
-    // Temporary in-memory storage simulating a database of active player decks.
-    // Key: playerId -> Value: ProgrammingDeck
-    private final Map<String, ProgrammingDeck> activeDecks = new ConcurrentHashMap<>();
+    private static final int REGISTER_COUNT = 5;
+    private static final int DEFAULT_HAND_SIZE = 9;
+    private static final int DEFAULT_BOARD_WIDTH = 12;
+    private static final int DEFAULT_BOARD_HEIGHT = 12;
+
+    // Rooms are scoped by roomId now, fixing the earlier bug where decks were
+    // keyed only by playerId and would collide across different rooms.
+    private final Map<UUID, GameSession> rooms = new ConcurrentHashMap<>();
+    private final MovementResolver movementResolver = new MovementResolver();
+    private final RoomService roomService;
+
+    public GameServiceImpl(RoomService roomService) {
+        this.roomService = roomService;
+    }
 
     @Override
     public PlayerHandDto getPlayerHand(UUID roomId, String playerId) {
-        ProgrammingDeck deck = activeDecks.computeIfAbsent(playerId, id -> new ProgrammingDeck());
+        GameSession room = getOrCreateAndSyncSession(roomId, playerId);
+
+        ProgrammingDeck deck = room.getOrCreateDeck(playerId);
 
         List<CardType> safeHand;
-
-        // Synchronize on the specific deck to make the check-and-draw atomic
         synchronized (deck) {
             if (deck.getCurrentHand().isEmpty()) {
-                // drawCards already returns a new ArrayList copy
-                safeHand = deck.drawCards(9);
+                safeHand = deck.drawCards(DEFAULT_HAND_SIZE);
             } else {
-                // Create a defensive copy to prevent mutable aliasing in the DTO
                 safeHand = new ArrayList<>(deck.getCurrentHand());
             }
         }
 
-        // The DTO now holds a completely independent copy of the cards
         return new PlayerHandDto(playerId, safeHand, deck.getDrawPileSize(), deck.getDiscardPileSize());
     }
 
     @Override
-    public void submitPlayerRegisters(UUID roomId, ProgramRegisterDto request) {
-        String playerId = request.playerId();
-        ProgrammingDeck deck = activeDecks.get(playerId);
-
-        if (deck == null) {
-            throw new IllegalStateException("Player deck not found. Cannot submit registers.");
+    public void submitPlayerRegisters(UUID roomId, ProgramRegisterDto registerDto) {
+        if (registerDto.registers().size() != REGISTER_COUNT) {
+            throw new IllegalArgumentException("Must submit exactly " + REGISTER_COUNT + " register slots.");
         }
+        String playerId = registerDto.playerId();
+        GameSession room = getOrCreateAndSyncSession(roomId, playerId);
 
-        // Synchronize on the same deck monitor to ensure thread safety
-        // against concurrent getPlayerHand requests
+        ProgrammingDeck deck = room.getOrCreateDeck(playerId);
+
+        // Synchronize on the deck so hand/discard pile modifications remain thread-safe
         synchronized (deck) {
-            // The remaining unplayed cards in the player's hand are placed into their
-            // discard pile
-            // We pass a copy of the list of cards the player actually locked into their
-            // registers
-            deck.discardRemainingHand(new ArrayList<>(request.registers()));
+            deck.discardRemainingHand(new ArrayList<>(registerDto.registers()));
         }
 
-        System.out.println("Player " + playerId + " successfully locked in registers: " + request.registers());
+        room.submitRegisters(playerId, registerDto.registers());
+    }
 
-        // At this point in a real game, you would save these registers to the Neon
-        // Database
-        // and check if all players have submitted to trigger the Activation Phase.
+    @Override
+    public TurnResolutionDto resolveTurn(UUID roomId) {
+        GameSession room = getExistingRoom(roomId);
+        if (!room.allPlayersHaveSubmitted()) {
+            throw new IllegalStateException("Not every player has submitted registers yet.");
+        }
+
+        Map<Robot, List<CardType>> resolutionInput = room.buildResolutionInput();
+        List<RegisterStepDto> steps = new ArrayList<>();
+
+        movementResolver.resolveRound(room.getBoard(), resolutionInput, (registerNumber, cardsPlayed) -> {
+            List<RobotStepDto> robotSteps = cardsPlayed.entrySet().stream()
+                    .map(entry -> new RobotStepDto(
+                            entry.getKey().getPlayerId(),
+                            entry.getValue(),
+                            entry.getKey().getPosition().x(),
+                            entry.getKey().getPosition().y(),
+                            entry.getKey().getDirection()))
+                    .toList();
+            steps.add(new RegisterStepDto(registerNumber, robotSteps));
+        });
+
+        for (Map.Entry<Robot, List<CardType>> entry : resolutionInput.entrySet()) {
+            room.getOrCreateDeck(entry.getKey().getPlayerId()).discardPlayedCards(entry.getValue());
+        }
+        room.clearSubmittedRegisters();
+
+        return new TurnResolutionDto(roomId, room.getBoard().getWidth(), room.getBoard().getHeight(), steps);
+    }
+
+    @Override
+    public BoardStateDto getBoardState(UUID roomId) {
+        GameSession room = getExistingRoom(roomId);
+        return toBoardStateDto(roomId, room);
+    }
+
+    private GameSession getOrCreateAndSyncSession(UUID roomId, String playerId) {
+        boolean isTrainingRoom = roomId.toString().equals("123e4567-e89b-12d3-a456-426614174000");
+
+        if (!isTrainingRoom) {
+            com.example.demo.model.GameRoom lobbyRoom = roomService.getRoomByGameId(roomId);
+            if (lobbyRoom == null) {
+                throw new RoomNotFoundException("Room " + roomId + " does not exist in RoomService.");
+            }
+
+            boolean isPlayerInLobby = lobbyRoom.players().stream().anyMatch(player ->
+                    player.playerId().toString().equals(playerId) || player.playerName().equals(playerId)
+            );
+
+            if (!isPlayerInLobby) {
+                throw new PlayerNotInRoomException("Player " + playerId + " has not joined room " + roomId + ".");
+            }
+        }
+
+        GameSession room = rooms.computeIfAbsent(roomId,
+                id -> new GameSession(new GameBoard(DEFAULT_BOARD_WIDTH, DEFAULT_BOARD_HEIGHT)));
+
+        if (!room.getRobots().containsKey(playerId)) {
+            Position spawnPosition = new Position(room.getRobots().size(), 0);
+            room.getOrCreateRobot(playerId, spawnPosition, Direction.SOUTH);
+        }
+
+        return room;
+    }
+
+    private GameSession getExistingRoom(UUID roomId) {
+        GameSession room = rooms.get(roomId);
+        if (room == null) {
+            throw new RoomNotFoundException("Room " + roomId + " does not exist.");
+        }
+        return room;
+    }
+
+    private RobotStateDto toRobotStateDto(Robot robot) {
+        return new RobotStateDto(robot.getPlayerId(), robot.getPosition().x(),
+                robot.getPosition().y(), robot.getDirection());
+    }
+
+    private BoardStateDto toBoardStateDto(UUID roomId, GameSession room) {
+        List<RobotStateDto> robotStates = room.getRobots().values().stream()
+                .map(this::toRobotStateDto)
+                .toList();
+        return new BoardStateDto(roomId, room.getBoard().getWidth(), room.getBoard().getHeight(), robotStates);
     }
 }
