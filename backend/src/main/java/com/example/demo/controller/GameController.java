@@ -35,10 +35,17 @@ public class GameController {
     }
 
     @PostMapping("/{roomId}/registers")
-    public ResponseEntity<Void> submitRegisters(
+    public ResponseEntity<String> submitRegisters(
             @PathVariable UUID roomId,
-            @RequestBody ProgramRegisterDto registerDto) {
-        gameService.submitPlayerRegisters(roomId, registerDto);
+            @RequestBody ProgramRegisterDto request) {
+
+        if (request.registers() == null || request.registers().isEmpty()
+                || request.registers().size() > 5
+                || request.registers().stream().anyMatch(java.util.Objects::isNull)) {
+            return ResponseEntity.badRequest().body("Must submit 1 to 5 non-null cards.");
+        }
+
+        gameService.submitPlayerRegisters(roomId, request);
         return ResponseEntity.ok().build();
     }
 
