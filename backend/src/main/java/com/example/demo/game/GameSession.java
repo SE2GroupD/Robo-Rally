@@ -10,16 +10,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Everything needed to run one game room:
+ * Tracks the live active game loop, robot positions, and programming decks for an active room.
  */
-public class GameRoom {
+public class GameSession {
 
     private final GameBoard board;
     private final Map<String, Robot> robots = new ConcurrentHashMap<>();
     private final Map<String, ProgrammingDeck> decks = new ConcurrentHashMap<>();
     private final Map<String, List<CardType>> submittedRegisters = new LinkedHashMap<>();
 
-    public GameRoom(GameBoard board) {
+    public GameSession(GameBoard board) {
         this.board = board;
     }
 
@@ -39,20 +39,17 @@ public class GameRoom {
         return robots.computeIfAbsent(playerId, id -> new Robot(id, startPosition, startDirection));
     }
 
-    /** Locks in a player's five registers for the round. Throws if they have no robot yet. */
     public void submitRegisters(String playerId, List<CardType> registers) {
         if (!robots.containsKey(playerId)) {
-            throw new IllegalStateException("Player " + playerId + " has no robot in this room yet.");
+            throw new IllegalStateException("Player " + playerId + " has no robot in this session yet.");
         }
         submittedRegisters.put(playerId, registers);
     }
 
-    /** True once every robot currently in the room has submitted registers this round. */
     public boolean allPlayersHaveSubmitted() {
         return !robots.isEmpty() && submittedRegisters.keySet().containsAll(robots.keySet());
     }
 
-    /** Builds the input MovementResolver needs: each robot mapped to its submitted registers. */
     public Map<Robot, List<CardType>> buildResolutionInput() {
         Map<Robot, List<CardType>> input = new LinkedHashMap<>();
         for (Map.Entry<String, List<CardType>> entry : submittedRegisters.entrySet()) {
@@ -60,7 +57,6 @@ public class GameRoom {
         }
         return input;
     }
-
 
     public void clearSubmittedRegisters() {
         submittedRegisters.clear();

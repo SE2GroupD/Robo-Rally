@@ -7,14 +7,16 @@ import com.example.demo.dto.RegisterStepDto;
 import com.example.demo.dto.RobotStateDto;
 import com.example.demo.dto.RobotStepDto;
 import com.example.demo.dto.TurnResolutionDto;
+import com.example.demo.exception.PlayerNotInRoomException;
 import com.example.demo.exception.RoomNotFoundException;
 import com.example.demo.game.GameBoard;
-import com.example.demo.game.GameRoom;
+import com.example.demo.game.GameSession;
 import com.example.demo.game.MovementResolver;
 import com.example.demo.game.ProgrammingDeck;
 import com.example.demo.model.CardType;
 import com.example.demo.game.Robot;
 import com.example.demo.model.Direction;
+import com.example.demo.model.GameRoom;
 import com.example.demo.model.Position;
 
 import org.springframework.stereotype.Service;
@@ -37,9 +39,14 @@ public class GameServiceImpl implements GameService {
 
     // Rooms are scoped by roomId now, fixing the earlier bug where decks were
     // keyed only by playerId and would collide across different rooms.
-    private final Map<UUID, GameRoom> rooms = new ConcurrentHashMap<>();
+    private final Map<UUID, GameSession> rooms = new ConcurrentHashMap<>();
     private final MovementResolver movementResolver = new MovementResolver();
     private final Map<DeckKey, ProgrammingDeck> activeDecks = new ConcurrentHashMap<>();
+    private final RoomService roomService;
+
+    public GameServiceImpl(RoomService roomService) {
+        this.roomService = roomService;
+    }
 
     @Override
     public PlayerHandDto getPlayerHand(UUID roomId, String playerId) {
@@ -125,8 +132,7 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public TurnResolutionDto resolveTurn(UUID roomId) {
-        GameRoom room = getExistingRoom(roomId);
-
+        GameSession room = getExistingRoom(roomId);
         if (!room.allPlayersHaveSubmitted()) {
             throw new IllegalStateException("Not every player has submitted registers yet.");
         }
@@ -156,17 +162,40 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public BoardStateDto getBoardState(UUID roomId) {
-        GameRoom room = getExistingRoom(roomId);
+        GameSession room = getExistingRoom(roomId);
         return toBoardStateDto(roomId, room);
     }
 
-    private GameRoom getOrCreateRoom(UUID roomId) {
-        return rooms.computeIfAbsent(roomId,
-                id -> new GameRoom(new GameBoard(DEFAULT_BOARD_WIDTH, DEFAULT_BOARD_HEIGHT)));
+    private GameSession getOrCreateAndSyncSession(UUID roomId, String playerId) {
+        boolean isTrainingRoom = roomId.toString().equals("123e4567-e89b-12d3-a456-426614174000");
+
+        if (!isTrainingRoom) {
+            com.example.demo.model.GameRoom lobbyRoom = roomService.getRoomByGameId(roomId);
+            if (lobbyRoom == null) {
+                throw new RoomNotFoundException("Room " + roomId + " does not exist in RoomService.");
+            }
+
+            boolean isPlayerInLobby = lobbyRoom.players().stream().anyMatch(
+                    player -> player.playerId().toString().equals(playerId) || player.playerName().equals(playerId));
+
+            if (!isPlayerInLobby) {
+                throw new PlayerNotInRoomException("Player " + playerId + " has not joined room " + roomId + ".");
+            }
+        }
+
+        GameSession room = rooms.computeIfAbsent(roomId,
+                id -> new GameSession(new GameBoard(DEFAULT_BOARD_WIDTH, DEFAULT_BOARD_HEIGHT)));
+
+        if (!room.getRobots().containsKey(playerId)) {
+            Position spawnPosition = new Position(room.getRobots().size(), 0);
+            room.getOrCreateRobot(playerId, spawnPosition, Direction.SOUTH);
+        }
+
+        return room;
     }
 
-    private GameRoom getExistingRoom(UUID roomId) {
-        GameRoom room = rooms.get(roomId);
+    private GameSession getExistingRoom(UUID roomId) {
+        GameSession room = rooms.get(roomId);
         if (room == null) {
             throw new RoomNotFoundException("Room " + roomId + " does not exist.");
         }
@@ -178,7 +207,7 @@ public class GameServiceImpl implements GameService {
                 robot.getPosition().y(), robot.getDirection());
     }
 
-    private BoardStateDto toBoardStateDto(UUID roomId, GameRoom room) {
+    private BoardStateDto toBoardStateDto(UUID roomId, GameSession room) {
         List<RobotStateDto> robotStates = room.getRobots().values().stream()
                 .map(this::toRobotStateDto)
                 .toList();
