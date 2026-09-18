@@ -32,8 +32,8 @@ public class GameServiceImpl implements GameService {
 
     private static final int REGISTER_COUNT = 5;
     private static final int DEFAULT_HAND_SIZE = 9;
-    private static final int DEFAULT_BOARD_WIDTH = 12;
-    private static final int DEFAULT_BOARD_HEIGHT = 12;
+    // private static final int DEFAULT_BOARD_WIDTH = 12;
+    // private static final int DEFAULT_BOARD_HEIGHT = 12;
 
     // Rooms are scoped by roomId now, fixing the earlier bug where decks were
     // keyed only by playerId and would collide across different rooms.
@@ -125,7 +125,7 @@ public class GameServiceImpl implements GameService {
 
     private GameRoom getOrCreateRoom(UUID roomId) {
         return rooms.computeIfAbsent(roomId,
-                id -> new GameRoom(new GameBoard(DEFAULT_BOARD_WIDTH, DEFAULT_BOARD_HEIGHT)));
+                id -> new GameRoom(GameBoard.classicWithSeedTiles()));
     }
 
     private GameRoom getExistingRoom(UUID roomId) {
@@ -152,6 +152,6 @@ public class GameServiceImpl implements GameService {
         List<RobotStateDto> robotStates = room.getRobots().values().stream()
                 .map(this::toRobotStateDto)
                 .toList();
-        return new BoardStateDto(roomId, room.getBoard().getWidth(), room.getBoard().getHeight(), robotStates);
+        return new BoardStateDto(roomId, room.getBoard().getWidth(), room.getBoard().getHeight(), robotStates, room.getBoard().getSpecialTiles());
     }
 }
