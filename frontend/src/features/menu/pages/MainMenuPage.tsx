@@ -6,11 +6,10 @@ interface MainMenuPageProps {
   username: string;
   onLogout: () => void;
   onStartGame: () => void;
-  onHostBattle: () => void;
   onJoinBattle: () => void;
 }
 
-export function MainMenuPage({ onLogout, onStartGame, onHostBattle, onJoinBattle, username }: MainMenuPageProps) {
+export function MainMenuPage({ onLogout, onStartGame, onJoinBattle, username }: MainMenuPageProps) {
   return (
     <MenuScreen img={roboRallyImage} subtitle={`Pilot ${username}`} title="Main Menu">
       <div className="flex flex-col gap-3">
