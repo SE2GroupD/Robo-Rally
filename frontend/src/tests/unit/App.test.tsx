@@ -212,3 +212,68 @@ describe('URL and session recovery', () => {
     expect(screen.queryByLabelText('Robot position')).not.toBeInTheDocument();
   });
 });
+
+describe('room routes after the navigation merge', () => {
+  const room = {
+    gameId: 'real-room',
+    roomCode: 'ABC234',
+    playerId: 'host-id',
+    hostPlayerId: 'host-id',
+    status: 'WAITING',
+    players: [{ playerId: 'host-id', playerName: 'pilot' }],
+  };
+
+  it('creates a hosted run, moves its robot, and leaves using the server IDs', async () => {
+    let status = 'WAITING';
+    const requests = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/start')) status = 'STARTED';
+      const data = url.endsWith('/hand') ? { cards: ['MOVE_1'], drawPileCount: 0, discardPileCount: 0 } : { ...room, status };
+      return { ok: true, status: 200, json: async () => data };
+    });
+    vi.stubGlobal('fetch', requests);
+    sessionStorage.setItem(PILOT_SESSION_KEY, JSON.stringify({ username: 'pilot' }));
+    window.history.replaceState(null, '', '/main-menu');
+    const user = userEvent.setup();
+    renderApp();
+    await user.click(screen.getByRole('button', { name: 'Host Battle' }));
+    await expectPath('/host-battle');
+    expect(await screen.findByText('ABC234')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Start Battle' }));
+    expect(await screen.findByLabelText('Robot position')).toHaveTextContent('start:1,1');
+    await screen.findByRole('img', { name: 'Move 1' });
+    const hand = within(screen.getByRole('heading', { name: 'Your Hand' }).parentElement!);
+    await user.click(hand.getAllByRole('button')[0]);
+    await user.click(screen.getByRole('button', { name: 'Ready' }));
+    await waitFor(() => expect(screen.getByLabelText('Robot position')).toHaveTextContent('start:2,1'));
+    expect(requests).toHaveBeenCalledWith(expect.stringContaining('/game/real-room/player/host-id/hand'));
+    await user.click(screen.getByRole('button', { name: 'Leave Room' }));
+    await expectPath('/main-menu');
+    expect(requests).toHaveBeenCalledWith(
+      expect.stringContaining('/games/real-room/leave'),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ playerId: 'host-id' }),
+      }),
+    );
+  });
+
+  it('joins through the new route and returns to the menu after leaving', async () => {
+    const guest = { ...room, playerId: 'guest-id', players: [...room.players, { playerId: 'guest-id', playerName: 'guest' }] };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => guest }));
+    sessionStorage.setItem(PILOT_SESSION_KEY, JSON.stringify({ username: 'guest' }));
+    window.history.replaceState(null, '', '/main-menu');
+    const user = userEvent.setup();
+    renderApp();
+    await user.click(screen.getByRole('button', { name: 'Join Battle' }));
+    await expectPath('/join-battle');
+    await user.type(screen.getByLabelText('Room code'), 'ABC234');
+    await user.click(screen.getByRole('button', { name: 'Join Room' }));
+    expect(await screen.findByText('Guest · You')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start Battle' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Leave Room' }));
+    await expectPath('/main-menu');
+    await user.click(screen.getByRole('button', { name: 'Join Battle' }));
+    expect(screen.getByLabelText('Room code')).toHaveValue('');
+  });
+});
