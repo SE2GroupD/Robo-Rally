@@ -1,7 +1,7 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../App';
-import type { RobotState } from '../../features/game/types/board';
+import type { RobotState } from '../../features/game/types/Board';
 import { BrowserRouter } from 'react-router-dom';
 import { PILOT_SESSION_KEY } from '../../app/useAppNavigation';
 

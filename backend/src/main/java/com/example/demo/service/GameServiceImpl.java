@@ -16,54 +16,81 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class GameServiceImpl implements GameService {
 
-    // Temporary in-memory storage simulating a database of active player decks.
-    // Key: playerId -> Value: ProgrammingDeck
-    private final Map<String, ProgrammingDeck> activeDecks = new ConcurrentHashMap<>();
+    private record DeckKey(UUID roomId, String playerId) {
+    }
+
+    private final Map<DeckKey, ProgrammingDeck> activeDecks = new ConcurrentHashMap<>();
 
     @Override
     public PlayerHandDto getPlayerHand(UUID roomId, String playerId) {
-        ProgrammingDeck deck = activeDecks.computeIfAbsent(playerId, id -> new ProgrammingDeck());
+        DeckKey key = new DeckKey(roomId, playerId);
+        ProgrammingDeck deck = activeDecks.computeIfAbsent(key, k -> new ProgrammingDeck());
 
-        List<CardType> safeHand;
-
-        // Synchronize on the specific deck to make the check-and-draw atomic
+        // Snapshot all state atomically while holding the deck monitor
         synchronized (deck) {
-            if (deck.getCurrentHand().isEmpty()) {
-                // drawCards already returns a new ArrayList copy
+            List<CardType> safeHand;
+            if (deck.isLockedIn()) {
+                safeHand = new ArrayList<>();
+            } else if (deck.getCurrentHand().isEmpty()) {
                 safeHand = deck.drawCards(9);
             } else {
-                // Create a defensive copy to prevent mutable aliasing in the DTO
                 safeHand = new ArrayList<>(deck.getCurrentHand());
             }
-        }
 
-        // The DTO now holds a completely independent copy of the cards
-        return new PlayerHandDto(playerId, safeHand, deck.getDrawPileSize(), deck.getDiscardPileSize());
+            // Create defensive copies of live lists and snapshot primitive values
+            int drawPileSize = deck.getDrawPileSize();
+            int discardPileSize = deck.getDiscardPileSize();
+            List<CardType> safeLockedRegisters = new ArrayList<>(deck.getLockedRegisters());
+            boolean isLockedIn = deck.isLockedIn();
+
+            return new PlayerHandDto(
+                    playerId,
+                    safeHand,
+                    drawPileSize,
+                    discardPileSize,
+                    safeLockedRegisters,
+                    isLockedIn);
+        }
     }
 
     @Override
-    public void submitPlayerRegisters(UUID roomId, ProgramRegisterDto request) {
-        String playerId = request.playerId();
-        ProgrammingDeck deck = activeDecks.get(playerId);
+    public void submitPlayerRegisters(UUID roomId, String playerId, ProgramRegisterDto request) {
+        DeckKey key = new DeckKey(roomId, playerId);
+        ProgrammingDeck deck = activeDecks.get(key);
 
         if (deck == null) {
             throw new IllegalStateException("Player deck not found. Cannot submit registers.");
         }
 
-        // Synchronize on the same deck monitor to ensure thread safety
-        // against concurrent getPlayerHand requests
         synchronized (deck) {
-            // The remaining unplayed cards in the player's hand are placed into their
-            // discard pile
-            // We pass a copy of the list of cards the player actually locked into their
-            // registers
+            if (deck.isLockedIn()) {
+                throw new IllegalStateException("Registers are already locked in for this round.");
+            }
             deck.discardRemainingHand(new ArrayList<>(request.registers()));
         }
 
-        System.out.println("Player " + playerId + " successfully locked in registers: " + request.registers());
+        System.out.println("Player " + playerId + " successfully locked in registers in room " + roomId);
+    }
 
-        // At this point in a real game, you would save these registers to the Neon
-        // Database
-        // and check if all players have submitted to trigger the Activation Phase.
+    @Override
+    public void completeRound(UUID roomId, String playerId) {
+        DeckKey key = new DeckKey(roomId, playerId);
+        ProgrammingDeck deck = activeDecks.get(key);
+
+        if (deck == null) {
+            throw new IllegalStateException("Player deck not found.");
+        }
+
+        synchronized (deck) {
+            if (!deck.isLockedIn()) {
+                throw new IllegalStateException("Cannot complete round: player hasn't locked in yet.");
+            }
+
+            // Clean up the executed cards and reset the lock
+            deck.prepareForNextRound();
+        }
+
+        System.out.println("Player " + playerId + " completed the activation phase in room " + roomId
+                + " and is ready for the next round.");
     }
 }

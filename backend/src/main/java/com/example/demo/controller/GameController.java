@@ -2,8 +2,11 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.PlayerHandDto;
 import com.example.demo.dto.ProgramRegisterDto;
-import com.example.demo.service.GameService; // Import the service
+import com.example.demo.service.GameService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -14,35 +17,61 @@ public class GameController {
 
     private final GameService gameService;
 
-    // Spring Boot automatically injects the GameServiceImpl here
     public GameController(GameService gameService) {
         this.gameService = gameService;
     }
 
-    @GetMapping("/{roomId}/player/{playerId}/hand")
+    @GetMapping("/{roomId}/hand")
     public ResponseEntity<PlayerHandDto> getPlayerHand(
-            @PathVariable UUID roomId, 
-            @PathVariable String playerId) {
-        
-        // Delegate to the service to draw the cards
-        PlayerHandDto hand = gameService.getPlayerHand(roomId, playerId);
+            @PathVariable UUID roomId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        // Rely purely on the cryptographic JWT subject
+        String authenticatedUserId = jwt.getSubject();
+        PlayerHandDto hand = gameService.getPlayerHand(roomId, authenticatedUserId);
+
         return ResponseEntity.ok(hand);
     }
 
     @PostMapping("/{roomId}/register")
     public ResponseEntity<String> submitRegisters(
-            @PathVariable UUID roomId, 
-            @RequestBody ProgramRegisterDto request) {
-        
-        if (request.registers() == null || request.registers().isEmpty()
-                || request.registers().size() > 5
-                || request.registers().stream().anyMatch(java.util.Objects::isNull)) {
-            return ResponseEntity.badRequest().body("Must submit 1 to 5 non-null cards.");
+            @PathVariable UUID roomId,
+            @RequestBody ProgramRegisterDto request,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        if (request.registers().size() != 5) {
+            return ResponseEntity.badRequest().body("Must submit exactly 5 register slots.");
         }
-        
-        // Delegate to the service to process the submission
-        gameService.submitPlayerRegisters(roomId, request);
-        
+
+        String authenticatedUserId = jwt.getSubject();
+        gameService.submitPlayerRegisters(roomId, authenticatedUserId, request);
+
         return ResponseEntity.ok("Registers locked in successfully.");
+    }
+
+    @PostMapping("/{roomId}/complete-round")
+    public ResponseEntity<String> completeRound(
+            @PathVariable UUID roomId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        String authenticatedUserId = jwt.getSubject();
+        gameService.completeRound(roomId, authenticatedUserId);
+
+        return ResponseEntity.ok("Round completed successfully.");
+    }
+
+    // --- Exception Handlers ---
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException ex) {
+        // 400 Bad Request for forged/invalid cards
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<String> handleIllegalState(IllegalStateException ex) {
+        // 409 Conflict for state violations (already locked in, or completing before
+        // lock)
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 }

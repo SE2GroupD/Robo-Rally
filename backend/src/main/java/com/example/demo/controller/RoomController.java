@@ -1,21 +1,17 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.CreateRoomRequest;
-import com.example.demo.dto.RoomActionRequest;
-import java.util.UUID;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
 import com.example.demo.dto.JoinRoomRequest;
 import com.example.demo.dto.RoomResponse;
 import com.example.demo.model.GameRoom;
 import com.example.demo.service.RoomService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/games")
@@ -27,30 +23,50 @@ public class RoomController {
     }
 
     @PostMapping
-    public ResponseEntity<RoomResponse> createRoom(@RequestBody CreateRoomRequest request) {
-        GameRoom room = roomService.createRoom(request.playerName());
+    public ResponseEntity<RoomResponse> createRoom(
+            @RequestBody CreateRoomRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        GameRoom room = roomService.createRoom(request.playerName(), jwt.getSubject());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(RoomResponse.forPlayer(room, room.hostPlayerId()));
     }
 
     @PostMapping("/join")
-    public ResponseEntity<RoomResponse> joinRoom(@RequestBody JoinRoomRequest request) {
-        GameRoom room = roomService.joinRoom(request.roomCode(), request.playerName());
+    public ResponseEntity<RoomResponse> joinRoom(
+            @RequestBody JoinRoomRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        GameRoom room = roomService.joinRoom(request.roomCode(), request.playerName(), jwt.getSubject());
         return ResponseEntity.ok(RoomResponse.forPlayer(room, room.players().getLast().playerId()));
     }
+
     @GetMapping("/{gameId}")
-    public RoomResponse getRoom(@PathVariable UUID gameId, @RequestParam UUID playerId) {
-        return RoomResponse.forPlayer(roomService.getRoom(gameId, playerId), playerId);
+    public RoomResponse getRoom(
+            @PathVariable UUID gameId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        String securePlayerId = jwt.getSubject();
+        return RoomResponse.forPlayer(roomService.getRoom(gameId, securePlayerId), securePlayerId);
     }
 
     @PostMapping("/{gameId}/start")
-    public RoomResponse startRoom(@PathVariable UUID gameId, @RequestBody RoomActionRequest request) {
-        return RoomResponse.forPlayer(roomService.startRoom(gameId, request.playerId()), request.playerId());
+    public RoomResponse startRoom(
+            @PathVariable UUID gameId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        String securePlayerId = jwt.getSubject();
+        return RoomResponse.forPlayer(roomService.startRoom(gameId, securePlayerId), securePlayerId);
     }
 
     @PostMapping("/{gameId}/leave")
-    public ResponseEntity<Void> leaveRoom(@PathVariable UUID gameId, @RequestBody RoomActionRequest request) {
-        roomService.leaveRoom(gameId, request.playerId());
+    public ResponseEntity<Void> leaveRoom(
+            @PathVariable UUID gameId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        String securePlayerId = jwt.getSubject();
+        roomService.leaveRoom(gameId, securePlayerId);
+
         return ResponseEntity.noContent().build();
     }
 }

@@ -14,7 +14,7 @@ function emptySelection() {
   };
 }
 
-export function useProgramming(roomId: string, playerId: string, onLockIn?: (registers: CardType[]) => void) {
+export function useProgramming(roomId: string, onLockIn?: (registers: CardType[]) => void) {
   const [selection, setSelection] = useState(emptySelection);
   const [isLockedIn, setIsLockedIn] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,10 +24,28 @@ export function useProgramming(roomId: string, playerId: string, onLockIn?: (reg
 
   useEffect(() => {
     let active = true;
-    fetchPlayerHand(roomId, playerId)
+    fetchPlayerHand(roomId)
       .then((data) => {
         if (!active) return;
-        setSelection({ ...emptySelection(), hand: Array.from({ length: 9 }, (_, index) => data.cards[index] ?? null) });
+
+        // 1. Sync the locked-in status from the backend
+        setIsLockedIn(data.isLockedIn);
+
+        // 2. Reconstruct the hand from the backend
+        const newHand = Array.from({ length: 9 }, (_, index) => data.cards[index] ?? null);
+
+        // 3. Reconstruct the registers if the player previously locked them in
+        const newRegisters = Array.from({ length: 5 }, (_, index) => {
+          const card = data.lockedRegisters[index];
+          // We set handIndex to -1 because locked cards cannot be returned to the hand anyway
+          return card ? { card, handIndex: -1 } : null;
+        });
+
+        setSelection({
+          hand: newHand,
+          registers: newRegisters,
+        });
+
         setDrawPileCount(data.drawPileCount);
         setDiscardPileCount(data.discardPileCount);
       })
@@ -37,7 +55,7 @@ export function useProgramming(roomId: string, playerId: string, onLockIn?: (reg
     return () => {
       active = false;
     };
-  }, [roomId, playerId]);
+  }, [roomId]);
 
   const placeCardInRegister = (handIndex: number) => {
     if (isLockedIn || submissionPending.current) return;
@@ -84,7 +102,7 @@ export function useProgramming(roomId: string, playerId: string, onLockIn?: (reg
     submissionPending.current = true;
     setIsSubmitting(true);
     try {
-      await submitProgramRegister(roomId, { playerId, registers: cards });
+      await submitProgramRegister(roomId, { registers: cards });
     } catch (err) {
       console.error(err);
       console.warn('Failed to lock in registers.');

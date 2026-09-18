@@ -11,7 +11,14 @@ const handSlot = (index: number) => within(screen.getByRole('listitem', { name: 
 const programSlot = (index: number) => within(screen.getByRole('listitem', { name: `Program Register slot ${index}` }));
 
 beforeEach(() => {
-  vi.mocked(fetchPlayerHand).mockReset().mockResolvedValue({ playerId: 'pilot', cards, drawPileCount: 10, discardPileCount: 0 });
+  vi.mocked(fetchPlayerHand).mockReset().mockResolvedValue({
+    cards,
+    drawPileCount: 10,
+    discardPileCount: 0,
+    playerId: '',
+    lockedRegisters: [],
+    isLockedIn: false,
+  });
   vi.mocked(submitProgramRegister).mockReset().mockResolvedValue(undefined);
 });
 afterEach(() => vi.restoreAllMocks());
@@ -23,19 +30,28 @@ it('renders nine empty hand slots before fetching and fills only returned positi
       resolveHand = resolve;
     }),
   );
-  render(<ProgrammingPhase roomId="room" playerId="pilot" />);
+  render(<ProgrammingPhase roomId="room" />);
   expect(within(screen.getByRole('list', { name: 'Programming Hand' })).getAllByRole('listitem')).toHaveLength(9);
   expect(within(screen.getByRole('list', { name: 'Program Register' })).getAllByRole('listitem')).toHaveLength(5);
   expect(handSlot(1).queryByRole('button')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Ready' })).toBeDisabled();
-  await act(async () => resolveHand({ playerId: 'pilot', cards: ['MOVE_1'], drawPileCount: 0, discardPileCount: 0 }));
+  await act(async () =>
+    resolveHand({
+      playerId: 'pilot',
+      cards: ['MOVE_1'],
+      drawPileCount: 0,
+      discardPileCount: 0,
+      lockedRegisters: [],
+      isLockedIn: false,
+    }),
+  );
   expect(handSlot(1).getByRole('button', { name: 'Move 1' })).toBeInTheDocument();
   for (let i = 2; i <= 9; i++) expect(handSlot(i).queryByRole('button')).not.toBeInTheDocument();
 });
 
 it('preserves duplicate card positions, fills the first empty register, and restores the hand on clear', async () => {
   const user = userEvent.setup();
-  render(<ProgrammingPhase roomId="room" playerId="pilot" />);
+  render(<ProgrammingPhase roomId="room" />);
   await handSlot(1).findByRole('button');
   await user.click(handSlot(2).getByRole('button'));
   await user.click(handSlot(1).getByRole('button'));
@@ -63,7 +79,7 @@ it('limits selection to five and executes only the submitted sequence after succ
       finish = resolve;
     }),
   );
-  render(<ProgrammingPhase roomId="room" playerId="pilot" onLockIn={onLockIn} />);
+  render(<ProgrammingPhase roomId="room" onLockIn={onLockIn} />);
   await handSlot(1).findByRole('button');
   await user.click(screen.getByRole('button', { name: 'Ready' }));
   expect(submitProgramRegister).not.toHaveBeenCalled();
@@ -88,7 +104,7 @@ it('keeps a failed submission editable and does not execute it', async () => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   vi.mocked(submitProgramRegister).mockRejectedValue(new Error('offline'));
-  render(<ProgrammingPhase roomId="room" playerId="pilot" onLockIn={onLockIn} />);
+  render(<ProgrammingPhase roomId="room" onLockIn={onLockIn} />);
   await handSlot(1).findByRole('button');
   for (let i = 1; i <= 5; i++) await user.click(handSlot(i).getByRole('button'));
   await user.click(screen.getByRole('button', { name: 'Ready' }));
@@ -101,7 +117,7 @@ it('keeps a failed submission editable and does not execute it', async () => {
 it.each([1, 2, 3, 4])('submits and executes a %i-card program', async (count) => {
   const user = userEvent.setup();
   const onLockIn = vi.fn();
-  render(<ProgrammingPhase roomId="room" playerId="pilot" onLockIn={onLockIn} />);
+  render(<ProgrammingPhase roomId="room" onLockIn={onLockIn} />);
   await handSlot(1).findByRole('button');
   const indexes = [5, 3, 9, 2].slice(0, count);
   for (const index of indexes) await user.click(handSlot(index).getByRole('button'));
@@ -115,7 +131,7 @@ it.each([1, 2, 3, 4])('submits and executes a %i-card program', async (count) =>
 it('skips empty slots while preserving the remaining register order', async () => {
   const user = userEvent.setup();
   const onLockIn = vi.fn();
-  render(<ProgrammingPhase roomId="room" playerId="pilot" onLockIn={onLockIn} />);
+  render(<ProgrammingPhase roomId="room" onLockIn={onLockIn} />);
   await handSlot(1).findByRole('button');
   for (const index of [5, 3, 9, 2]) await user.click(handSlot(index).getByRole('button'));
   await user.click(programSlot(1).getByRole('button'));

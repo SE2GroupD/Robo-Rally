@@ -7,14 +7,13 @@ import type { CardType } from '../../types/CardType';
 
 interface ProgrammingPhaseProps {
   roomId: string;
-  playerId: string;
   onLockIn?: (registers: CardType[]) => void;
 }
 
-export function ProgrammingPhase({ roomId, playerId, onLockIn }: ProgrammingPhaseProps) {
+export function ProgrammingPhase({ roomId, onLockIn }: ProgrammingPhaseProps) {
   const root = useRef<HTMLDivElement>(null);
   const { hand, registers, isLockedIn, isSubmitting, placeCardInRegister, returnCardToHand, clearProgram, submitProgram } =
-    useProgramming(roomId, playerId, onLockIn);
+    useProgramming(roomId, onLockIn);
   const isDisabled = isLockedIn || isSubmitting;
   const selectedCount = registers.filter(Boolean).length;
   const restoreFocus = (action: () => void) => {

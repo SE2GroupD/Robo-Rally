@@ -91,7 +91,7 @@ export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
     return (
       <>
         <output>This room has closed or you are no longer a participant.</output>
-        <Button onClick={onLeft}>Back to Menu</Button>
+        <Button onClick={onLeft}>Back to Meu</Button>
       </>
     );
 
@@ -107,7 +107,7 @@ export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
         <div className="relative h-[75dvh] overflow-hidden bg-slate-950">
           <Map robot={robot} />
           <div className="pointer-events-none absolute inset-0 z-10">
-            <ProgrammingPhase roomId={room.gameId} playerId={room.playerId} onLockIn={runProgram} />
+            <ProgrammingPhase roomId={room.gameId} onLockIn={runProgram} />
           </div>
         </div>
       ) : (

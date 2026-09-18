@@ -1,4 +1,4 @@
-import type { Direction, TileData } from '../../../types/board';
+import type { Direction, TileData } from '../../../types/Board';
 import { Robot } from '../objects/Robot';
 import { Checkpoint } from '../objects/Checkpoint';
 import steelTileImage from '../../../../../assets/steel.png';

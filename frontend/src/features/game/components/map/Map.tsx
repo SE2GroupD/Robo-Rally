@@ -6,7 +6,7 @@ import { cn } from '../../../../utils/cn';
 import { StartBoard } from './boards/StartBoard';
 import { GameBoard } from './boards/GameBoard';
 import { startboard1Layout, gameboard1Layout, gameboard2Layout, gameboard3Layout } from '../../data/mapLayouts';
-import type { BoardId, RobotState, TileData } from '../../types/board';
+import type { BoardId, RobotState, TileData } from '../../types/Board';
 
 interface MapProps {
   robot?: RobotState;

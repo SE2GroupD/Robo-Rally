@@ -22,8 +22,8 @@ public class RoomService {
     private final SecureRandom random = new SecureRandom();
     private static final String CODE_CHARACTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-    // Synchronization keeps code selection and insertion atomic across requests.
-    public synchronized GameRoom createRoom(String playerName) {
+    // Now accepts secure playerId from the controller/JWT
+    public synchronized GameRoom createRoom(String playerName, String playerId) {
         if (playerName == null || playerName.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Player name is required.");
         }
@@ -33,13 +33,15 @@ public class RoomService {
             code = generateCode();
         } while (roomsByCode.containsKey(code));
 
-        RoomPlayer host = new RoomPlayer(UUID.randomUUID(), playerName.strip());
+        // Use the actual JWT subject instead of generating a random UUID
+        RoomPlayer host = new RoomPlayer(playerId, playerName.strip());
         GameRoom room = new GameRoom(UUID.randomUUID(), code, host.playerId(), List.of(host), RoomStatus.WAITING);
         roomsByCode.put(code, room);
         return room;
     }
 
-    public synchronized GameRoom joinRoom(String roomCode, String playerName) {
+    // Now accepts secure playerId from the controller/JWT
+    public synchronized GameRoom joinRoom(String roomCode, String playerName, String playerId) {
         if (playerName == null || playerName.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Player name is required.");
         }
@@ -59,43 +61,51 @@ public class RoomService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This room has already started.");
         }
 
-        // Return an immutable snapshot containing this guest as the last player.
-        // Holding the lock across lookup and replacement prevents lost joins.
+        // Idempotent join: If the player is already in the room, just return it.
+        if (room.players().stream().anyMatch(p -> p.playerId().equals(playerId))) {
+            return room;
+        }
+
         var players = new ArrayList<>(room.players());
-        players.add(new RoomPlayer(UUID.randomUUID(), playerName.strip()));
+        players.add(new RoomPlayer(playerId, playerName.strip()));
         GameRoom updated = new GameRoom(room.gameId(), code, room.hostPlayerId(), players, room.status());
         roomsByCode.put(code, updated);
         return updated;
     }
 
-    public synchronized GameRoom getRoom(UUID gameId, UUID playerId) {
+    // Changed UUID to String for playerId
+    public synchronized GameRoom getRoom(UUID gameId, String playerId) {
         GameRoom room = roomsByCode.values().stream()
                 .filter(candidate -> candidate.gameId().equals(gameId))
-                .findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room closed or not found."));
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room closed or not found."));
         if (playerId == null || room.players().stream().noneMatch(player -> player.playerId().equals(playerId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Player is not in this room.");
         }
         return room;
     }
 
-    public synchronized GameRoom startRoom(UUID gameId, UUID playerId) {
+    // Changed UUID to String for playerId
+    public synchronized GameRoom startRoom(UUID gameId, String playerId) {
         GameRoom room = getRoom(gameId, playerId);
         if (!room.hostPlayerId().equals(playerId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can start.");
         }
-        // Repeating start safely returns the same started room.
-        GameRoom started = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), room.players(), RoomStatus.STARTED);
+        GameRoom started = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), room.players(),
+                RoomStatus.STARTED);
         roomsByCode.put(room.roomCode(), started);
         return started;
     }
 
-    public synchronized void leaveRoom(UUID gameId, UUID playerId) {
+    // Changed UUID to String for playerId
+    public synchronized void leaveRoom(UUID gameId, String playerId) {
         GameRoom room = getRoom(gameId, playerId);
         if (room.hostPlayerId().equals(playerId)) {
             roomsByCode.remove(room.roomCode());
         } else {
             var remaining = room.players().stream().filter(player -> !player.playerId().equals(playerId)).toList();
-            roomsByCode.put(room.roomCode(), new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), remaining, room.status()));
+            roomsByCode.put(room.roomCode(),
+                    new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), remaining, room.status()));
         }
     }
 
