@@ -27,17 +27,6 @@ public interface GameService {
     void completeRound(UUID roomId, String playerId);
 
     /**
-     * Places a robot for this player in the room (creating the room if it doesn't
-     * exist yet).
-     */
-    RobotStateDto joinRoom(UUID roomId, String playerId);
-
-    /**
-     * Submits a player's chosen sequence of programming registers.
-     */
-    void submitPlayerRegisters(UUID roomId, ProgramRegisterDto registerDto);
-
-    /**
      * Resolves a turn for all players in the room once registers are submitted.
      */
     TurnResolutionDto resolveTurn(UUID roomId);

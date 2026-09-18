@@ -2,7 +2,6 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.PlayerHandDto;
 import com.example.demo.dto.ProgramRegisterDto;
-import com.example.demo.dto.RobotStateDto;
 import com.example.demo.service.GameService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,16 +19,6 @@ public class GameController {
 
     public GameController(GameService gameService) {
         this.gameService = gameService;
-    }
-
-    @PostMapping("/{roomId}/join")
-    public ResponseEntity<RobotStateDto> joinRoom(
-            @PathVariable UUID roomId,
-            @AuthenticationPrincipal Jwt jwt) {
-
-        // Use secure JWT subject instead of trusting @RequestParam String playerId
-        String authenticatedUserId = jwt.getSubject();
-        return ResponseEntity.ok(gameService.joinRoom(roomId, authenticatedUserId));
     }
 
     @GetMapping("/{roomId}/hand")

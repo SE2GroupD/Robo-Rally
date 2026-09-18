@@ -37,7 +37,7 @@ export function ProgrammingPhase({ roomId, onLockIn }: ProgrammingPhaseProps) {
         className="absolute inset-x-0 bottom-0 grid h-[25dvh] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] grid-rows-[minmax(0,1fr)] items-end max-sm:min-h-56 max-sm:grid-rows-[8rem_minmax(0,1fr)]"
       >
         <div aria-hidden="true" className="col-start-1 row-start-1" />
-        <div className="col-start-2 row-start-1 h-full w-[min(60vw,calc(100vw-18rem))] [container-type:size] max-sm:col-span-3 max-sm:col-start-1 max-sm:row-start-2 max-sm:w-[calc(100%-12rem)] max-sm:justify-self-center">
+        <div className="col-start-2 row-start-1 h-full w-[min(60vw,calc(100vw-18rem))] @container-size max-sm:col-span-3 max-sm:col-start-1 max-sm:row-start-2 max-sm:w-[calc(100%-12rem)] max-sm:justify-self-center">
           <h2 className="sr-only">Your program</h2>
           <ProgramRegisters
             cards={registers}

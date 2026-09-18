@@ -7,17 +7,12 @@ import com.example.demo.dto.RegisterStepDto;
 import com.example.demo.dto.RobotStateDto;
 import com.example.demo.dto.RobotStepDto;
 import com.example.demo.dto.TurnResolutionDto;
-import com.example.demo.exception.PlayerNotInRoomException;
 import com.example.demo.exception.RoomNotFoundException;
-import com.example.demo.game.GameBoard;
 import com.example.demo.game.GameSession;
 import com.example.demo.game.MovementResolver;
 import com.example.demo.game.ProgrammingDeck;
 import com.example.demo.model.CardType;
 import com.example.demo.game.Robot;
-import com.example.demo.model.Direction;
-import com.example.demo.model.GameRoom;
-import com.example.demo.model.Position;
 
 import org.springframework.stereotype.Service;
 
@@ -34,19 +29,13 @@ public class GameServiceImpl implements GameService {
     }
 
     private static final int DEFAULT_HAND_SIZE = 9;
-    private static final int DEFAULT_BOARD_WIDTH = 12;
-    private static final int DEFAULT_BOARD_HEIGHT = 12;
 
     // Rooms are scoped by roomId now, fixing the earlier bug where decks were
     // keyed only by playerId and would collide across different rooms.
     private final Map<UUID, GameSession> rooms = new ConcurrentHashMap<>();
     private final MovementResolver movementResolver = new MovementResolver();
-    private final Map<DeckKey, ProgrammingDeck> activeDecks = new ConcurrentHashMap<>();
-    private final RoomService roomService;
 
-    public GameServiceImpl(RoomService roomService) {
-        this.roomService = roomService;
-    }
+    private final Map<DeckKey, ProgrammingDeck> activeDecks = new ConcurrentHashMap<>();
 
     @Override
     public PlayerHandDto getPlayerHand(UUID roomId, String playerId) {
@@ -122,15 +111,6 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public RobotStateDto joinRoom(UUID roomId, String playerId) {
-        GameRoom room = getOrCreateRoom(roomId);
-        // Placeholder spawn logic, robots along the top row.
-        Position spawnPosition = new Position(room.getRobots().size(), 0);
-        Robot robot = room.getOrCreateRobot(playerId, spawnPosition, Direction.SOUTH);
-        return toRobotStateDto(robot);
-    }
-
-    @Override
     public TurnResolutionDto resolveTurn(UUID roomId) {
         GameSession room = getExistingRoom(roomId);
         if (!room.allPlayersHaveSubmitted()) {
@@ -164,34 +144,6 @@ public class GameServiceImpl implements GameService {
     public BoardStateDto getBoardState(UUID roomId) {
         GameSession room = getExistingRoom(roomId);
         return toBoardStateDto(roomId, room);
-    }
-
-    private GameSession getOrCreateAndSyncSession(UUID roomId, String playerId) {
-        boolean isTrainingRoom = roomId.toString().equals("123e4567-e89b-12d3-a456-426614174000");
-
-        if (!isTrainingRoom) {
-            com.example.demo.model.GameRoom lobbyRoom = roomService.getRoomByGameId(roomId);
-            if (lobbyRoom == null) {
-                throw new RoomNotFoundException("Room " + roomId + " does not exist in RoomService.");
-            }
-
-            boolean isPlayerInLobby = lobbyRoom.players().stream().anyMatch(
-                    player -> player.playerId().toString().equals(playerId) || player.playerName().equals(playerId));
-
-            if (!isPlayerInLobby) {
-                throw new PlayerNotInRoomException("Player " + playerId + " has not joined room " + roomId + ".");
-            }
-        }
-
-        GameSession room = rooms.computeIfAbsent(roomId,
-                id -> new GameSession(new GameBoard(DEFAULT_BOARD_WIDTH, DEFAULT_BOARD_HEIGHT)));
-
-        if (!room.getRobots().containsKey(playerId)) {
-            Position spawnPosition = new Position(room.getRobots().size(), 0);
-            room.getOrCreateRobot(playerId, spawnPosition, Direction.SOUTH);
-        }
-
-        return room;
     }
 
     private GameSession getExistingRoom(UUID roomId) {
