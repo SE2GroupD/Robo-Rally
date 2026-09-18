@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { fetchPlayerHand, submitProgramRegister } from '../../features/api/gameApi';
-import type { CardType } from '../../features/types/CardType';
+import { fetchPlayerHand, submitProgramRegister } from '../../features/game/api/gameApi';
+import type { CardType } from '../../features/game/types/CardType';
 
 export function useProgramming(roomId: string, onLockIn?: (registers: CardType[]) => void) {
   const [hand, setHand] = useState<CardType[]>([]);

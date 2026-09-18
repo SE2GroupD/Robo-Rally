@@ -1,4 +1,4 @@
-import { type CardType } from './CardType';
+import { type CardType } from '../../features/game/types/CardType.ts';
 
 // What the frontend sends to the backend when the player locks in
 export interface ProgramRegisterDto {

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import type { CardType } from '../../features/types/CardType';
-import type { Direction } from '../../foundation/components/map/Tile';
+import type { CardType } from '../../features/game/types/CardType';
+import type { Direction } from '../../features/game/types/board';
 
 export type BoardId = 'start' | 'game1' | 'game2' | 'game3';
 

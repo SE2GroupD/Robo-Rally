@@ -1,6 +1,6 @@
 import { type PlayerHandDto } from '../types/PlayerHandDto';
 import { type ProgramRegisterDto } from '../types/ProgramRegisterDto';
-import { neon } from '../../lib/neon';
+import { neon } from '../../../lib/neon';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
