@@ -1,7 +1,7 @@
-import roboRallyImage from '../../../assets/hero.png';
-import { Button } from '../../../foundation/components/button/Button';
-import { MenuScreen } from '../../../shared/components/menu-screen/MenuScreen';
-import { RoomSession } from '../components/room/RoomSession';
+import roboRallyImage from '../../assets/hero.png';
+import { Button } from '../../foundation/components/button/Button';
+import { MenuScreen } from '../../shared/components/menu-screen/MenuScreen';
+import { RoomSession } from '../../shared/components/room-session/RoomSession';
 import type { CreatedRoom } from '../api/gameApi';
 
 interface HostBattlePageProps {

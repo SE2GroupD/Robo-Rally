@@ -1,5 +1,5 @@
 import { Tile } from './Tile';
-import type { TileData } from '../../../types/board';
+import type { TileData } from '../../types/board';
 
 interface StartBoardProps {
   layoutData?: TileData[];

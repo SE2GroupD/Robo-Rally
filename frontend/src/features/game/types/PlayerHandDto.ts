@@ -5,4 +5,6 @@ export interface PlayerHandDto {
   cards: CardType[];
   drawPileCount: number;
   discardPileCount: number;
+  lockedRegisters: CardType[];
+  isLockedIn: boolean;
 }

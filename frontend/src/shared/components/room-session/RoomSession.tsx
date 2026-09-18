@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchRoom, leaveRoom, startRoom, RoomRequestError, type JoinedRoom } from '../../api/gameApi';
-import { Button } from '../../../../foundation/components/button/Button';
-import { Map } from '../map/Map';
-import { useRobotMovement } from '../../hooks/useRobotMovement';
-import { ProgrammingPhase } from '../programming/ProgrammingPhase';
+import { fetchRoom, leaveRoom, startRoom, RoomRequestError, type JoinedRoom } from '../../../features/api/gameApi';
+import { Button } from '../../../foundation/components/button/Button';
+import { Board } from '../../../foundation/components/map/Board';
+import { ProgrammingPhase } from '../../../foundation/components/register-slot/ProgrammingPhase';
 
 interface RoomSessionProps {
   initialRoom: JoinedRoom;
@@ -11,7 +10,6 @@ interface RoomSessionProps {
 }
 
 export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
-  const { robot, runProgram } = useRobotMovement();
   const [room, setRoom] = useState(initialRoom);
   const [error, setError] = useState('');
   const [closed, setClosed] = useState(false);
@@ -104,12 +102,10 @@ export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
       )}
       {busy && <output className="m-0">Updating room…</output>}
       {room.status === 'STARTED' && isHost ? (
-        <div className="relative h-[75dvh] overflow-hidden bg-slate-950">
-          <Map robot={robot} />
-          <div className="pointer-events-none absolute inset-0 z-10">
-            <ProgrammingPhase roomId={room.gameId} playerId={room.playerId} onLockIn={runProgram} />
-          </div>
-        </div>
+        <>
+          <Board />
+          <ProgrammingPhase roomId={room.gameId} playerId={room.playerId} />
+        </>
       ) : (
         <>
           <section className="rounded border border-metal-light p-4 text-center">

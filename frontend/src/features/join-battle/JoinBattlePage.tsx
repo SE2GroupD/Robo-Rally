@@ -1,9 +1,9 @@
-import { useRef, useState, type SubmitEvent } from 'react';
-import roboRallyImage from '../../../assets/hero.png';
-import { Button } from '../../../foundation/components/button/Button';
-import { TextInput } from '../../../foundation/components/text-input/TextInput';
-import { MenuScreen } from '../../../shared/components/menu-screen/MenuScreen';
-import { RoomSession } from '../components/room/RoomSession';
+import { RoomSession } from '../../shared/components/room-session/RoomSession';
+import { useRef, useState, type FormEvent } from 'react';
+import roboRallyImage from '../../assets/hero.png';
+import { Button } from '../../foundation/components/button/Button';
+import { TextInput } from '../../foundation/components/text-input/TextInput';
+import { MenuScreen } from '../../shared/components/menu-screen/MenuScreen';
 import { joinRoom, type JoinedRoom } from '../api/gameApi';
 
 interface JoinBattlePageProps {
@@ -19,7 +19,7 @@ export function JoinBattlePage({ username, room, onJoined, onBack }: JoinBattleP
   const [isJoining, setIsJoining] = useState(false);
   const joining = useRef(false);
 
-  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (joining.current) return;
     const code = roomCode.trim();
