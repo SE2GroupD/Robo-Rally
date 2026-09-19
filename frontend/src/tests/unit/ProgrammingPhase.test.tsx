@@ -6,6 +6,15 @@ import type { CardType } from '../../features/game/types/CardType';
 
 vi.mock('../../features/game/api/gameApi', () => ({ fetchPlayerHand: vi.fn(), submitProgramRegister: vi.fn() }));
 
+vi.mock('@neondatabase/neon-js/auth', () => ({
+  createAuthClient: () => ({
+    getSession: vi.fn().mockResolvedValue({
+      data: { session: { token: 'mock-jwt-token' } },
+      error: null,
+    }),
+  }),
+}));
+
 const cards: CardType[] = ['MOVE_1', 'MOVE_1', 'TURN_LEFT', 'TURN_RIGHT', 'MOVE_2', 'MOVE_3', 'POWER_UP', 'AGAIN', 'U_TURN'];
 const handSlot = (index: number) => within(screen.getByRole('listitem', { name: `Hand slot ${index}` }));
 const programSlot = (index: number) => within(screen.getByRole('listitem', { name: `Program Register slot ${index}` }));
@@ -87,7 +96,7 @@ it('limits selection to five and executes only the submitted sequence after succ
   await user.click(handSlot(1).getByRole('button'));
   await user.click(screen.getByRole('button', { name: 'Ready' }));
   const expected = ['U_TURN', 'MOVE_1', 'MOVE_2', 'TURN_LEFT', 'POWER_UP'];
-  expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { playerId: 'pilot', registers: expected });
+  expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { registers: expected });
   expect(onLockIn).not.toHaveBeenCalled();
   expect(screen.getByRole('button', { name: 'Clear' })).toBeDisabled();
   expect(programSlot(1).getByRole('button')).toBeDisabled();
@@ -123,7 +132,7 @@ it.each([1, 2, 3, 4])('submits and executes a %i-card program', async (count) =>
   for (const index of indexes) await user.click(handSlot(index).getByRole('button'));
   await user.click(screen.getByRole('button', { name: 'Ready' }));
   const expected = indexes.map((index) => cards[index - 1]);
-  expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { playerId: 'pilot', registers: expected });
+  expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { registers: expected });
   expect(onLockIn).toHaveBeenCalledExactlyOnceWith(expected);
   expect(screen.getByRole('button', { name: 'Ready ✓' })).toBeDisabled();
 });
@@ -138,6 +147,6 @@ it('skips empty slots while preserving the remaining register order', async () =
   await user.click(programSlot(3).getByRole('button'));
   await user.click(screen.getByRole('button', { name: 'Ready' }));
   const expected = ['TURN_LEFT', 'MOVE_1'];
-  expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { playerId: 'pilot', registers: expected });
+  expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { registers: expected });
   expect(onLockIn).toHaveBeenCalledExactlyOnceWith(expected);
 });

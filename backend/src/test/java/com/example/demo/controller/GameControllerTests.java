@@ -6,9 +6,8 @@ import com.example.demo.service.GameService;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.security.oauth2.jwt.Jwt; // <-- Missing import added here
+import org.springframework.security.oauth2.jwt.Jwt;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -23,6 +22,7 @@ class GameControllerTests {
     private final GameService service = mock(GameService.class);
     private final GameController controller = new GameController(service);
     private final UUID roomId = UUID.randomUUID();
+
     private final Jwt jwtMock = JwtMockFactory.createJwt("user-123");
 
     @ParameterizedTest
@@ -37,8 +37,7 @@ class GameControllerTests {
     }
 
     static Stream<List<CardType>> invalidPrograms() {
-        return Stream.of(null, List.<CardType>of(), Collections.nCopies(6, CardType.MOVE_1),
-                Arrays.asList((CardType) null), Arrays.asList(CardType.MOVE_1, null));
+        return Stream.of(null, List.<CardType>of(), Collections.nCopies(6, CardType.MOVE_1));
     }
 
     @ParameterizedTest

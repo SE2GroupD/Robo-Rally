@@ -1,13 +1,13 @@
 import { type PlayerHandDto } from '../types/PlayerHandDto';
 import { type ProgramRegisterDto } from '../types/ProgramRegisterDto';
-import { neon } from '../../auth/lib/neon';
+import { createAuthClient } from '@neondatabase/neon-js/auth';
 
-// Vite exposes env variables via import.meta.env
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const authClient = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL);
 
 // Helper function to extract the token safely
 async function getValidToken(): Promise<string> {
-  const sessionResponse = await neon.getSession();
+  const sessionResponse = await authClient.getSession();
 
   // We rely strictly on the defined TypeScript schema now
   const token = sessionResponse.data?.session?.token;
@@ -32,7 +32,7 @@ export interface CreatedRoom {
 export async function createRoom(playerName: string): Promise<CreatedRoom> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
 
-  const token = await getValidToken(); // <-- Fetch the token
+  const token = await getValidToken();
 
   const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/games`, {
     method: 'POST',
@@ -70,7 +70,6 @@ export async function createRoom(playerName: string): Promise<CreatedRoom> {
   return room;
 }
 
-// Proposed join response; align this contract with the room backend when implemented.
 export interface JoinedRoom {
   gameId: string;
   roomCode: string;
@@ -83,7 +82,7 @@ export interface JoinedRoom {
 export async function joinRoom(roomCode: string, playerName: string): Promise<JoinedRoom> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
 
-  const token = await getValidToken(); // <-- Fetch the token
+  const token = await getValidToken();
 
   let response: Response;
   try {
@@ -169,10 +168,10 @@ export class RoomRequestError extends Error {
 async function roomRequest(room: JoinedRoom, action?: 'start' | 'leave', signal?: AbortSignal): Promise<Response> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable.');
 
-  const token = await getValidToken(); // <-- Fetch the token
+  const token = await getValidToken();
 
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${token}`, // <-- Apply Auth to all room requests
+    Authorization: `Bearer ${token}`,
   };
 
   if (action) {

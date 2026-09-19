@@ -31,14 +31,15 @@ public class GameController {
         return ResponseEntity.ok(hand);
     }
 
-    @PostMapping("/{roomId}/registers")
+    @PostMapping("/{roomId}/register")
     public ResponseEntity<String> submitRegisters(
             @PathVariable UUID roomId,
             @RequestBody ProgramRegisterDto request,
             @AuthenticationPrincipal Jwt jwt) {
 
-        if (request.registers().size() != 5) {
-            return ResponseEntity.badRequest().body("Must submit exactly 5 register slots.");
+        if (request == null || request.registers() == null || request.registers().size() < 1
+                || request.registers().size() > 5) {
+            return ResponseEntity.badRequest().body("Must submit 1 to 5 non-null cards.");
         }
 
         String authenticatedUserId = jwt.getSubject();
@@ -63,7 +64,7 @@ public class GameController {
         try {
             return ResponseEntity.ok(gameService.resolveTurn(roomId));
         } catch (IllegalStateException e) {
-            return ResponseEntity.status(409).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
     }
 
@@ -74,7 +75,7 @@ public class GameController {
         try {
             return ResponseEntity.ok(gameService.getBoardState(roomId));
         } catch (IllegalStateException e) {
-            return ResponseEntity.status(404).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
 

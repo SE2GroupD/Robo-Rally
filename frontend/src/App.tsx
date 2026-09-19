@@ -20,11 +20,9 @@ function App() {
   const { navigate } = useAppNavigation();
   const { robot, runProgram } = useRobotMovement();
 
-  // 1. Use Neon as the source of truth for Auth
   const { data: session, isPending } = neon.useSession();
   const user = session?.user;
 
-  // Create playerInfo dynamically from the Neon user session
   const playerInfo = user ? { username: user.name || user.email?.split('@')[0] || 'Unknown Pilot' } : null;
 
   const menuRedirect = <Navigate to="/main-menu" replace />;
@@ -36,8 +34,6 @@ function App() {
   const [roomError, setRoomError] = useState('');
   const creatingRoom = useRef(false);
 
-  // 2. CRITICAL: Wait for Neon to initialize before rendering protected routes.
-  // This prevents the router from instantly kicking you back to login after you authenticate.
   if (isPending) {
     return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">Loading...</div>;
   }
@@ -71,7 +67,7 @@ function App() {
     setHostRoom(null);
     setJoinedRoom(null);
     setRoomError('');
-    await neon.signOut(); // 3. Ensure Neon clears the session
+    await neon.signOut();
     navigate('/login');
   };
 
