@@ -11,6 +11,7 @@ import com.example.demo.exception.RoomNotFoundException;
 import com.example.demo.game.GameSession;
 import com.example.demo.game.MovementResolver;
 import com.example.demo.game.ProgrammingDeck;
+import com.example.demo.game.Robot;
 import com.example.demo.model.CardType;
 import com.example.demo.game.Robot;
 
@@ -77,6 +78,8 @@ public class GameServiceImpl implements GameService {
         if (deck == null) {
             throw new IllegalStateException("Player deck not found. Cannot submit registers.");
         }
+        String playerId = registerDto.playerId();
+        GameSession room = getOrCreateAndSyncSession(roomId, playerId);
 
         synchronized (deck) {
             if (deck.isLockedIn()) {
