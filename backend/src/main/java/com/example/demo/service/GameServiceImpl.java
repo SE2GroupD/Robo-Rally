@@ -13,7 +13,6 @@ import com.example.demo.game.MovementResolver;
 import com.example.demo.game.ProgrammingDeck;
 import com.example.demo.game.Robot;
 import com.example.demo.model.CardType;
-import com.example.demo.game.Robot;
 
 import org.springframework.stereotype.Service;
 
@@ -78,8 +77,6 @@ public class GameServiceImpl implements GameService {
         if (deck == null) {
             throw new IllegalStateException("Player deck not found. Cannot submit registers.");
         }
-        String playerId = registerDto.playerId();
-        GameSession room = getOrCreateAndSyncSession(roomId, playerId);
 
         synchronized (deck) {
             if (deck.isLockedIn()) {
@@ -87,8 +84,6 @@ public class GameServiceImpl implements GameService {
             }
             deck.discardRemainingHand(new ArrayList<>(request.registers()));
         }
-
-        System.out.println("Player " + playerId + " successfully locked in registers in room " + roomId);
     }
 
     @Override
