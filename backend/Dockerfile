@@ -1,3 +1,4 @@
+# Dockerfile for the backend
 # Stage 1: Build the application
 FROM eclipse-temurin:25-jdk AS builder
 WORKDIR /app
