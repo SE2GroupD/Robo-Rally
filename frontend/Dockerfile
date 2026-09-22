@@ -1,3 +1,4 @@
+# Dockerfile for the frontend
 # Stage 1: Build the Vite React app
 FROM node:24-alpine AS builder
 WORKDIR /app
