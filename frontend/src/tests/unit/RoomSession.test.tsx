@@ -11,14 +11,20 @@ vi.mock('../../features/game/api/gameApi', async (original) => ({
   startRoom: vi.fn(),
   leaveRoom: vi.fn(),
 }));
+
 vi.mock('../../features/game/components/map/Map', () => ({ Map: () => <div>Game board</div> }));
 vi.mock('../../features/game/components/programming/ProgrammingPhase', () => ({
-  ProgrammingPhase: ({ roomId, playerId }: { roomId: string; playerId: string }) => (
-    <div>
-      {roomId}/{playerId}
-    </div>
-  ),
+  ProgrammingPhase: ({ roomId }: { roomId: string }) => <div>{roomId}/mocked-player</div>,
 }));
+vi.mock('@neondatabase/neon-js/auth', () => ({
+  createAuthClient: () => ({
+    getSession: vi.fn().mockResolvedValue({
+      data: { session: { token: 'mock-jwt-token' } },
+      error: null,
+    }),
+  }),
+}));
+
 const host: JoinedRoom = {
   gameId: 'game-1',
   roomCode: 'ABC234',
@@ -49,7 +55,7 @@ describe('room lifecycle', () => {
     render(<RoomSession initialRoom={host} onLeft={vi.fn()} />);
     await userEvent.click(screen.getByRole('button', { name: 'Start Battle' }));
     expect(await screen.findByText('Game board')).toBeInTheDocument();
-    expect(screen.getByText('game-1/host-1')).toBeInTheDocument();
+    expect(screen.getByText('game-1/mocked-player')).toBeInTheDocument();
     expect(startRoom).toHaveBeenCalledWith(host);
   });
 

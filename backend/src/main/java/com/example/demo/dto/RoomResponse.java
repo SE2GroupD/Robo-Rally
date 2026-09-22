@@ -8,14 +8,18 @@ import java.util.UUID;
 public record RoomResponse(
         UUID gameId,
         String roomCode,
-        UUID playerId,
-        UUID hostPlayerId,
+        String playerId,
+        String hostPlayerId,
         String status,
         List<RoomPlayer> players) {
 
-    public static RoomResponse forPlayer(GameRoom room, UUID playerId) {
+    public static RoomResponse forPlayer(GameRoom room, String securePlayerId) {
         return new RoomResponse(
-                room.gameId(), room.roomCode(), playerId,
-                room.hostPlayerId(), room.status().name(), room.players());
+                room.gameId(),
+                room.roomCode(),
+                securePlayerId,
+                room.hostPlayerId(),
+                room.status().name(),
+                room.players());
     }
 }

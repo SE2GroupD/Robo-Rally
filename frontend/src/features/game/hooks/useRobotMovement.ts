@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import type { CardType } from '../types/CardType';
-import type { Direction, BoardId, RobotState } from '../types/board';
+import type { Direction, BoardId, RobotState } from '../types/Board';
 
 // Where each board sits on one shared global grid, matching how <Map> lays
 // them out visually (StartBoard and GameBoard3 sit beside the GameBoard1/2

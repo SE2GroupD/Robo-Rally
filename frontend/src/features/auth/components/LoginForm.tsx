@@ -1,69 +1,81 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../foundation/components/button/Button';
-import { TextInput } from '../../../foundation/components/text-input/TextInput';
-import type { LoginRequestDto } from '../types/auth';
+import { neon } from '../lib/neon';
 
-interface LoginFormProps {
-  onLogin: (dto: LoginRequestDto) => void;
-}
-
-export function LoginForm({ onLogin }: LoginFormProps) {
+export function LoginForm() {
   const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const navigate = useNavigate();
 
-  const handleLoginSubmit = (event: FormEvent) => {
-    event.preventDefault();
-
-    if (!email || !password) {
-      setError('Enter pilot email and password.');
-      return;
+  const handleLogin = async (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = await neon.signIn.email({ email, password });
+      if (error) throw error;
+      navigate('/main-menu');
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Invalid credentials');
     }
-
-    setError('');
-    onLogin({
-      email,
-      passwordHash: password,
-    });
   };
 
   return (
-    <form className="flex flex-col gap-4" onSubmit={handleLoginSubmit}>
-      <TextInput
-        label="Email"
-        name="email"
-        onChange={(event) => {
-          setEmail(event.target.value);
-          setError('');
-        }}
-        placeholder="pilot@factory.com"
-        required
-        type="email"
-        value={email}
-      />
+    <>
+      <form onSubmit={handleLogin} className="flex flex-col gap-4 text-left">
+        <div>
+          <label htmlFor="login-email" className="mb-1 block text-sm font-bold text-slate-300">
+            Email Address
+          </label>
+          <input
+            id="login-email"
+            type="email"
+            required
+            className="w-full rounded border border-slate-700 bg-slate-800 p-2 text-white focus:border-robot-orange focus:outline-none"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
 
-      <TextInput
-        label="Password"
-        name="password"
-        onChange={(event) => {
-          setPassword(event.target.value);
-          setError('');
-        }}
-        placeholder="••••••••"
-        required
-        type="password"
-        value={password}
-      />
+        <div>
+          <div className="flex items-center justify-between">
+            <label htmlFor="login-password" className="mb-1 block text-sm font-bold text-slate-300">
+              Password
+            </label>
+            <button
+              type="button"
+              className="cursor-pointer border-none bg-transparent p-0 text-xs text-slate-400 hover:text-white"
+              onClick={() => navigate('/forgot-password')}
+            >
+              Forgot your password?
+            </button>
+          </div>
+          <input
+            id="login-password"
+            type="password"
+            required
+            className="w-full rounded border border-slate-700 bg-slate-800 p-2 text-white focus:border-robot-orange focus:outline-none"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
 
-      {error ? (
-        <p aria-live="polite" className="m-0 text-sm font-bold text-hazard">
-          {error}
-        </p>
-      ) : null}
+        {errorMsg && <p className="text-sm font-bold text-red-500">{errorMsg}</p>}
 
-      <Button className="mt-2 w-full" size="large" type="submit">
-        Log In
-      </Button>
-    </form>
+        <Button type="submit" className="mt-2 w-full" size="large" variant="primary">
+          Log In
+        </Button>
+      </form>
+
+      <div className="mt-4 text-center">
+        <button
+          type="button"
+          className="cursor-pointer border-none bg-transparent text-sm text-slate-400 underline hover:text-white"
+          onClick={() => navigate('/register')}
+        >
+          Need an account? Register here
+        </button>
+      </div>
+    </>
   );
 }

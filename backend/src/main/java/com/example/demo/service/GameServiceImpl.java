@@ -7,16 +7,12 @@ import com.example.demo.dto.RegisterStepDto;
 import com.example.demo.dto.RobotStateDto;
 import com.example.demo.dto.RobotStepDto;
 import com.example.demo.dto.TurnResolutionDto;
-import com.example.demo.exception.PlayerNotInRoomException;
 import com.example.demo.exception.RoomNotFoundException;
-import com.example.demo.game.GameBoard;
 import com.example.demo.game.GameSession;
 import com.example.demo.game.MovementResolver;
 import com.example.demo.game.ProgrammingDeck;
 import com.example.demo.game.Robot;
 import com.example.demo.model.CardType;
-import com.example.demo.model.Direction;
-import com.example.demo.model.Position;
 
 import org.springframework.stereotype.Service;
 
@@ -29,55 +25,87 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class GameServiceImpl implements GameService {
 
-    private static final int REGISTER_COUNT = 5;
+    private record DeckKey(UUID roomId, String playerId) {
+    }
+
     private static final int DEFAULT_HAND_SIZE = 9;
-    private static final int DEFAULT_BOARD_WIDTH = 12;
-    private static final int DEFAULT_BOARD_HEIGHT = 12;
 
     // Rooms are scoped by roomId now, fixing the earlier bug where decks were
     // keyed only by playerId and would collide across different rooms.
     private final Map<UUID, GameSession> rooms = new ConcurrentHashMap<>();
     private final MovementResolver movementResolver = new MovementResolver();
-    private final RoomService roomService;
 
-    public GameServiceImpl(RoomService roomService) {
-        this.roomService = roomService;
-    }
+    private final Map<DeckKey, ProgrammingDeck> activeDecks = new ConcurrentHashMap<>();
 
     @Override
     public PlayerHandDto getPlayerHand(UUID roomId, String playerId) {
-        GameSession room = getOrCreateAndSyncSession(roomId, playerId);
+        DeckKey key = new DeckKey(roomId, playerId);
+        ProgrammingDeck deck = activeDecks.computeIfAbsent(key, k -> new ProgrammingDeck());
 
-        ProgrammingDeck deck = room.getOrCreateDeck(playerId);
-
-        List<CardType> safeHand;
+        // Snapshot all state atomically while holding the deck monitor
         synchronized (deck) {
-            if (deck.getCurrentHand().isEmpty()) {
+            List<CardType> safeHand;
+            if (deck.isLockedIn()) {
+                safeHand = new ArrayList<>();
+            } else if (deck.getCurrentHand().isEmpty()) {
                 safeHand = deck.drawCards(DEFAULT_HAND_SIZE);
             } else {
                 safeHand = new ArrayList<>(deck.getCurrentHand());
             }
-        }
 
-        return new PlayerHandDto(playerId, safeHand, deck.getDrawPileSize(), deck.getDiscardPileSize());
+            // Create defensive copies of live lists and snapshot primitive values
+            int drawPileSize = deck.getDrawPileSize();
+            int discardPileSize = deck.getDiscardPileSize();
+            List<CardType> safeLockedRegisters = new ArrayList<>(deck.getLockedRegisters());
+            boolean isLockedIn = deck.isLockedIn();
+
+            return new PlayerHandDto(
+                    playerId,
+                    safeHand,
+                    drawPileSize,
+                    discardPileSize,
+                    safeLockedRegisters,
+                    isLockedIn);
+        }
     }
 
     @Override
-    public void submitPlayerRegisters(UUID roomId, ProgramRegisterDto registerDto) {
-        if (registerDto.registers().size() != REGISTER_COUNT) {
-            throw new IllegalArgumentException("Must submit exactly " + REGISTER_COUNT + " register slots.");
+    public void submitPlayerRegisters(UUID roomId, String playerId, ProgramRegisterDto request) {
+        DeckKey key = new DeckKey(roomId, playerId);
+        ProgrammingDeck deck = activeDecks.get(key);
+
+        if (deck == null) {
+            throw new IllegalStateException("Player deck not found. Cannot submit registers.");
         }
-        String playerId = registerDto.playerId();
-        GameSession room = getOrCreateAndSyncSession(roomId, playerId);
 
-        ProgrammingDeck deck = room.getOrCreateDeck(playerId);
-
-        // Synchronize on the deck so hand/discard pile modifications remain thread-safe
         synchronized (deck) {
-            deck.discardRemainingHand(new ArrayList<>(registerDto.registers()));
+            if (deck.isLockedIn()) {
+                throw new IllegalStateException("Registers are already locked in for this round.");
+            }
+            deck.discardRemainingHand(new ArrayList<>(request.registers()));
+        }
+    }
+
+    @Override
+    public void completeRound(UUID roomId, String playerId) {
+        DeckKey key = new DeckKey(roomId, playerId);
+        ProgrammingDeck deck = activeDecks.get(key);
+
+        if (deck == null) {
+            throw new IllegalStateException("Player deck not found.");
         }
 
-        room.submitRegisters(playerId, registerDto.registers());
+        synchronized (deck) {
+            if (!deck.isLockedIn()) {
+                throw new IllegalStateException("Cannot complete round: player hasn't locked in yet.");
+            }
+
+            // Clean up the executed cards and reset the lock
+            deck.prepareForNextRound();
+        }
+
+        System.out.println("Player " + playerId + " completed the activation phase in room " + roomId
+                + " and is ready for the next round.");
     }
 
     @Override
@@ -114,35 +142,6 @@ public class GameServiceImpl implements GameService {
     public BoardStateDto getBoardState(UUID roomId) {
         GameSession room = getExistingRoom(roomId);
         return toBoardStateDto(roomId, room);
-    }
-
-    private GameSession getOrCreateAndSyncSession(UUID roomId, String playerId) {
-        boolean isTrainingRoom = roomId.toString().equals("123e4567-e89b-12d3-a456-426614174000");
-
-        if (!isTrainingRoom) {
-            com.example.demo.model.GameRoom lobbyRoom = roomService.getRoomByGameId(roomId);
-            if (lobbyRoom == null) {
-                throw new RoomNotFoundException("Room " + roomId + " does not exist in RoomService.");
-            }
-
-            boolean isPlayerInLobby = lobbyRoom.players().stream().anyMatch(player ->
-                    player.playerId().toString().equals(playerId) || player.playerName().equals(playerId)
-            );
-
-            if (!isPlayerInLobby) {
-                throw new PlayerNotInRoomException("Player " + playerId + " has not joined room " + roomId + ".");
-            }
-        }
-
-        GameSession room = rooms.computeIfAbsent(roomId,
-                id -> new GameSession(new GameBoard(DEFAULT_BOARD_WIDTH, DEFAULT_BOARD_HEIGHT)));
-
-        if (!room.getRobots().containsKey(playerId)) {
-            Position spawnPosition = new Position(room.getRobots().size(), 0);
-            room.getOrCreateRobot(playerId, spawnPosition, Direction.SOUTH);
-        }
-
-        return room;
     }
 
     private GameSession getExistingRoom(UUID roomId) {

@@ -5,8 +5,13 @@ import { MapZoomControls } from './MapZoomControls';
 import { cn } from '../../../../utils/cn';
 import { StartBoard } from './boards/StartBoard';
 import { GameBoard } from './boards/GameBoard';
-import { startboard1Layout, gameboard1Layout, gameboard2Layout, gameboard3Layout } from '../../data/mapLayouts';
-import type { BoardId, RobotState, TileData } from '../../types/board';
+import {
+  startboard1Layout as start1,
+  gameboard1Layout as game1,
+  gameboard2Layout as game2,
+  gameboard3Layout as game3,
+} from '../../data/mapLayouts';
+import type { BoardId, RobotState, TileData } from '../../types/Board';
 
 interface MapProps {
   robot?: RobotState;
@@ -66,20 +71,20 @@ export function Map({ robot }: MapProps) {
       >
         <div className="relative" style={{ width: `calc(100% + ${1196 * scale}px)`, height: `calc(100% + ${1040 * scale}px)` }}>
           <div
-            className="flex flex-row items-start justify-center gap-[2px] absolute min-w-max origin-top-left"
+            className="flex flex-row items-start justify-center gap-0.5 absolute min-w-max origin-top-left"
             style={{ left: '50vw', top: '50dvh', transform: `scale(${scale})` }}
           >
-            <div className="mt-[260px]">
-              <StartBoard layoutData={withRobot(startboard1Layout, robot, 'start')} />
+            <div className="mt-65">
+              <StartBoard layoutData={withRobot(start1, robot, 'start')} />
             </div>
 
-            <div className="flex flex-col gap-[2px]">
-              <GameBoard layoutData={withRobot(gameboard1Layout, robot, 'game1')} />
-              <GameBoard layoutData={withRobot(gameboard2Layout, robot, 'game2')} />
+            <div className="flex flex-col gap-0.5">
+              <GameBoard layoutData={withRobot(game1, robot, 'game1')} />
+              <GameBoard layoutData={withRobot(game2, robot, 'game2')} />
             </div>
 
-            <div className="mt-[260px]">
-              <GameBoard layoutData={withRobot(gameboard3Layout, robot, 'game3')} />
+            <div className="mt-65">
+              <GameBoard layoutData={withRobot(game3, robot, 'game3')} />
             </div>
           </div>
         </div>

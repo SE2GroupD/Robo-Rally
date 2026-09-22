@@ -1,26 +1,43 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAppNavigation } from './app/useAppNavigation';
-import { FrontPage } from './features/menu/pages/FrontPage';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { MainMenuPage } from './features/menu/pages/MainMenuPage';
 import { GamePage } from './features/game/pages/GamePage';
-import { RegisterPage } from './features/auth/pages/RegisterPage';
 import { useRobotMovement } from './features/game/hooks/useRobotMovement';
 import { useRef, useState } from 'react';
 import { createRoom, type CreatedRoom, type JoinedRoom } from './features/game/api/gameApi';
 import { HostBattlePage } from './features/game/pages/HostBattlePage';
 import { JoinBattlePage } from './features/game/pages/JoinBattlePage';
+import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
+import { VerifyEmailForm } from './features/auth/pages/VerifyEmailForm';
+import { ResetPasswordForm } from './features/auth/pages/ResetPasswordForm';
+import { ForgotPasswordForm } from './features/auth/pages/ForgotPasswordForm';
+import { RegisterForm } from './features/auth/components/RegisterForm';
+import roboRallyImage from './assets/hero.png';
+import { neon } from './features/auth/lib/neon';
 
 function App() {
-  const { navigate, playerInfo, handleLogin, handleGuestLogin, logout } = useAppNavigation();
+  const { navigate } = useAppNavigation();
   const { robot, runProgram } = useRobotMovement();
+
+  const { data: session, isPending } = neon.useSession();
+  const user = session?.user;
+
+  const playerInfo = user ? { username: user.name || user.email?.split('@')[0] || 'Unknown Pilot' } : null;
+
   const menuRedirect = <Navigate to="/main-menu" replace />;
   const loginRedirect = <Navigate to="/login" replace />;
+
   const [hostRoom, setHostRoom] = useState<CreatedRoom | null>(null);
   const [joinedRoom, setJoinedRoom] = useState<JoinedRoom | null>(null);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [roomError, setRoomError] = useState('');
   const creatingRoom = useRef(false);
+
+  if (isPending) {
+    return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">Loading...</div>;
+  }
+
   const handleHostBattle = async () => {
     if (!playerInfo || creatingRoom.current) return;
     navigate('/host-battle');
@@ -45,35 +62,84 @@ function App() {
     setRoomError('');
     navigate('/main-menu');
   };
-  const handleLogout = () => {
+
+  const handleLogout = async () => {
     setHostRoom(null);
     setJoinedRoom(null);
     setRoomError('');
-    logout();
+    await neon.signOut();
+    navigate('/login');
   };
 
   return (
     <Routes>
-      <Route path="/" element={playerInfo ? menuRedirect : <FrontPage onLoginClick={() => navigate('/login')} />} />
+      <Route path="/" element={playerInfo ? menuRedirect : <Navigate to="/login" replace />} />
+
       <Route
         path="/login"
         element={
           playerInfo ? (
             menuRedirect
           ) : (
-            <LoginPage
-              onRegister={() => navigate('/register')}
-              onBack={() => navigate('/')}
-              onLogin={handleLogin}
-              onGuestLogin={handleGuestLogin}
-            />
+            <MenuScreen img={roboRallyImage} subtitle="Authenticate" title="Pilot Login" panelClassName="max-w-md w-full">
+              <LoginPage />
+            </MenuScreen>
           )
         }
       />
+
       <Route
         path="/register"
-        element={playerInfo ? menuRedirect : <RegisterPage onBack={() => navigate('/login')} onGuestLogin={handleGuestLogin} />}
+        element={
+          playerInfo ? (
+            menuRedirect
+          ) : (
+            <MenuScreen img={roboRallyImage} subtitle="Enlist as a Pilot" title="Pilot Login" panelClassName="max-w-md w-full">
+              <RegisterForm />
+            </MenuScreen>
+          )
+        }
       />
+
+      <Route
+        path="/forgot-password"
+        element={
+          playerInfo ? (
+            menuRedirect
+          ) : (
+            <MenuScreen img={roboRallyImage} subtitle="Recover Access" title="Pilot Login" panelClassName="max-w-md w-full">
+              <ForgotPasswordForm />
+            </MenuScreen>
+          )
+        }
+      />
+
+      <Route
+        path="/reset-password"
+        element={
+          playerInfo ? (
+            menuRedirect
+          ) : (
+            <MenuScreen img={roboRallyImage} subtitle="Verify Reset Code" title="Pilot Login" panelClassName="max-w-md w-full">
+              <ResetPasswordForm />
+            </MenuScreen>
+          )
+        }
+      />
+
+      <Route
+        path="/verify-email"
+        element={
+          playerInfo ? (
+            menuRedirect
+          ) : (
+            <MenuScreen img={roboRallyImage} subtitle="Account Security" title="Verify Email" panelClassName="max-w-md w-full">
+              <VerifyEmailForm />
+            </MenuScreen>
+          )
+        }
+      />
+
       <Route
         path="/main-menu"
         element={
@@ -90,6 +156,7 @@ function App() {
           )
         }
       />
+
       <Route
         path="/game"
         element={

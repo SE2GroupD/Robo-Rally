@@ -1,8 +1,24 @@
 import { type PlayerHandDto } from '../types/PlayerHandDto';
 import { type ProgramRegisterDto } from '../types/ProgramRegisterDto';
+import { createAuthClient } from '@neondatabase/neon-js/auth';
 
-// Vite exposes env variables via import.meta.env
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const authClient = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL);
+
+// Helper function to extract the token safely
+async function getValidToken(): Promise<string> {
+  const sessionResponse = await authClient.getSession();
+
+  // We rely strictly on the defined TypeScript schema now
+  const token = sessionResponse.data?.session?.token;
+
+  if (!token) {
+    console.error('Auth token is missing! Session payload:', sessionResponse);
+    throw new Error('User is not authenticated or token is missing');
+  }
+
+  return token;
+}
 
 export interface CreatedRoom {
   gameId: string;
@@ -16,9 +32,14 @@ export interface CreatedRoom {
 export async function createRoom(playerName: string): Promise<CreatedRoom> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
 
+  const token = await getValidToken();
+
   const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/games`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify({ playerName }),
     signal: AbortSignal.timeout(15000),
   });
@@ -49,7 +70,6 @@ export async function createRoom(playerName: string): Promise<CreatedRoom> {
   return room;
 }
 
-// Proposed join response; align this contract with the room backend when implemented.
 export interface JoinedRoom {
   gameId: string;
   roomCode: string;
@@ -62,11 +82,16 @@ export interface JoinedRoom {
 export async function joinRoom(roomCode: string, playerName: string): Promise<JoinedRoom> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
 
+  const token = await getValidToken();
+
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/games/join`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ roomCode: roomCode.trim(), playerName }),
       signal: AbortSignal.timeout(15000),
     });
@@ -104,16 +129,27 @@ export async function joinRoom(roomCode: string, playerName: string): Promise<Jo
   return room;
 }
 
-export async function fetchPlayerHand(roomId: string, playerId: string): Promise<PlayerHandDto> {
-  const response = await fetch(`${API_BASE_URL}/game/${roomId}/player/${playerId}/hand`);
+export async function fetchPlayerHand(roomId: string): Promise<PlayerHandDto> {
+  const token = await getValidToken();
+
+  const response = await fetch(`${API_BASE_URL}/game/${roomId}/hand`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   if (!response.ok) throw new Error('Failed to fetch hand');
   return response.json();
 }
 
 export async function submitProgramRegister(roomId: string, payload: ProgramRegisterDto): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/game/${roomId}/register`, {
+  const token = await getValidToken();
+
+  const response = await fetch(`${API_BASE_URL}/game/${roomId}/registers`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(payload),
   });
 
@@ -131,11 +167,22 @@ export class RoomRequestError extends Error {
 
 async function roomRequest(room: JoinedRoom, action?: 'start' | 'leave', signal?: AbortSignal): Promise<Response> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable.');
+
+  const token = await getValidToken();
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+  };
+
+  if (action) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   const base = `${API_BASE_URL.replace(/\/$/, '')}/games/${encodeURIComponent(room.gameId)}`;
   const url = action ? `${base}/${action}` : `${base}?playerId=${encodeURIComponent(room.playerId)}`;
   const response = await fetch(url, {
     method: action ? 'POST' : 'GET',
-    headers: action ? { 'Content-Type': 'application/json' } : undefined,
+    headers,
     body: action ? JSON.stringify({ playerId: room.playerId }) : undefined,
     signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
   });
