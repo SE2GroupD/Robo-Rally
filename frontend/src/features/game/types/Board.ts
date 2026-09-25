@@ -1,3 +1,5 @@
+export type AvatarId = 1 | 2 | 3 | 4 | 5 | 6;
+
 export type Direction = 'NORTH' | 'EAST' | 'SOUTH' | 'WEST';
 
 export type WallConfig = {
@@ -10,7 +12,7 @@ export type WallConfig = {
 export type TileData = {
   x: number;
   y: number;
-  robot?: { hue: number; direction: Direction };
+  robot?: { avatarId?: AvatarId; hue: number; direction: Direction };
   checkpointNumber?: number;
   walls?: WallConfig;
   hasPit?: boolean;

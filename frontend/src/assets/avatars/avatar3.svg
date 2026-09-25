@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="200" height="200">
+  <!-- Directional Drop Base (Pointing South) -->
+  <path d="M 50,95 Q 10,75 10,45 A 40,40 0 1,1 90,45 Q 90,75 50,95 Z" fill="#7E5109" stroke="#E67E22" stroke-width="3"/>
+  
+  <!-- Rear Antenna -->
+  <line x1="35" y1="25" x2="25" y2="12" stroke="#BDC3C7" stroke-width="3" />
+  <circle cx="25" cy="12" r="4" fill="#E74C3C" />
+
+  <!-- Orange TV Body -->
+  <rect x="28" y="25" width="44" height="30" rx="3" fill="#D35400" />
+  
+  <!-- White Screen (Front/South) -->
+  <rect x="32" y="40" width="36" height="15" fill="#ECF0F1" />
+  
+  <!-- Eyes -->
+  <circle cx="40" cy="48" r="3" fill="#111111" />
+  <circle cx="60" cy="48" r="3" fill="#111111" />
+  
+  <!-- Wheel Base -->
+  <rect x="40" y="55" width="20" height="12" rx="2" fill="#34495E" />
+</svg>
