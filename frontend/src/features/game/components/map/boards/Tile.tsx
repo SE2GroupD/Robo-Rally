@@ -63,10 +63,7 @@ export function Tile({ tile }: TileProps) {
 
       <div className="relative z-30 flex w-full h-full items-center justify-center">
         {tile.robot ? (
-          <Robot 
-            avatarId={tile.robot.avatarId || 1} 
-            rotation={getRotationDegrees(tile.robot.direction)} 
-          />
+          <Robot avatarId={tile.robot.avatarId || 1} rotation={getRotationDegrees(tile.robot.direction)} />
         ) : tile.checkpointNumber !== undefined ? (
           <Checkpoint num={tile.checkpointNumber} />
         ) : null}

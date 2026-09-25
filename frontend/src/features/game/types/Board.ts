@@ -1,4 +1,4 @@
-import type { AvatarId } from "../components/map/objects/Robot";
+import type { AvatarId } from '../components/map/objects/Robot';
 
 export type Direction = 'NORTH' | 'EAST' | 'SOUTH' | 'WEST';
 
