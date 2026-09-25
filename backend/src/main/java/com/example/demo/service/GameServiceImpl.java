@@ -8,6 +8,7 @@ import com.example.demo.dto.RobotStateDto;
 import com.example.demo.dto.RobotStepDto;
 import com.example.demo.dto.TurnResolutionDto;
 import com.example.demo.exception.RoomNotFoundException;
+import com.example.demo.game.GameBoard;
 import com.example.demo.game.GameSession;
 import com.example.demo.game.MovementResolver;
 import com.example.demo.game.ProgrammingDeck;
@@ -29,6 +30,8 @@ public class GameServiceImpl implements GameService {
     }
 
     private static final int DEFAULT_HAND_SIZE = 9;
+    // private static final int DEFAULT_BOARD_WIDTH = 12;
+    // private static final int DEFAULT_BOARD_HEIGHT = 12;
 
     // Rooms are scoped by roomId now, fixing the earlier bug where decks were
     // keyed only by playerId and would collide across different rooms.
@@ -138,9 +141,14 @@ public class GameServiceImpl implements GameService {
         return new TurnResolutionDto(roomId, room.getBoard().getWidth(), room.getBoard().getHeight(), steps);
     }
 
+    private GameSession getOrCreateRoom(UUID roomId) {
+    return rooms.computeIfAbsent(roomId,
+            id -> new GameSession(GameBoard.classicWithSeedTiles()));
+}
+
     @Override
     public BoardStateDto getBoardState(UUID roomId) {
-        GameSession room = getExistingRoom(roomId);
+        GameSession room = getOrCreateRoom(roomId);
         return toBoardStateDto(roomId, room);
     }
 
@@ -161,6 +169,6 @@ public class GameServiceImpl implements GameService {
         List<RobotStateDto> robotStates = room.getRobots().values().stream()
                 .map(this::toRobotStateDto)
                 .toList();
-        return new BoardStateDto(roomId, room.getBoard().getWidth(), room.getBoard().getHeight(), robotStates);
+        return new BoardStateDto(roomId, room.getBoard().getWidth(), room.getBoard().getHeight(), robotStates, room.getBoard().getSpecialTiles());
     }
 }
