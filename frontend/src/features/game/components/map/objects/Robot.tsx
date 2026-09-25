@@ -1,3 +1,5 @@
+import type { AvatarId } from '../../../types/Board';
+
 import avatar1 from '../../../../../assets/avatars/avatar1.svg';
 import avatar2 from '../../../../../assets/avatars/avatar2.svg';
 import avatar3 from '../../../../../assets/avatars/avatar3.svg';
@@ -14,9 +16,6 @@ const AVATAR_MAP: Record<number, string> = {
   5: avatar5,
   6: avatar6,
 };
-
-// Strongly type the allowed IDs
-export type AvatarId = 1 | 2 | 3 | 4 | 5 | 6;
 
 interface RobotProps {
   avatarId: AvatarId;
