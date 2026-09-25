@@ -1,3 +1,5 @@
+import type { AvatarId } from "../components/map/objects/Robot";
+
 export type Direction = 'NORTH' | 'EAST' | 'SOUTH' | 'WEST';
 
 export type WallConfig = {
@@ -10,7 +12,7 @@ export type WallConfig = {
 export type TileData = {
   x: number;
   y: number;
-  robot?: { hue: number; direction: Direction };
+  robot?: { avatarId?: AvatarId; hue: number; direction: Direction };
   checkpointNumber?: number;
   walls?: WallConfig;
   hasPit?: boolean;
