@@ -36,11 +36,21 @@ public class Robot {
     }
 
     public void moveForward(GameBoard board, int spaces) {
-        position = board.clampToBounds(position.moveIn(direction, spaces));
+        move(board, direction, spaces);
     }
 
     public void moveBackward(GameBoard board, int spaces) {
-        position = board.clampToBounds(position.moveIn(direction.opposite(), spaces));
+        move(board, direction.opposite(), spaces);
+    }
+
+    private void move(GameBoard board, Direction movementDirection, int spaces) {
+        for (int i = 0; i < spaces; i++) {
+            if (!board.canMove(position, movementDirection)) {
+                break;
+            }
+
+            position = position.moveIn(movementDirection, 1);
+        }
     }
 
     public void turnRight() {
