@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchRoom, leaveRoom, startRoom, RoomRequestError, type JoinedRoom } from '../../api/gameApi';
+import { fetchRoom, leaveRoom, startRoom, selectRobot, RoomRequestError, type JoinedRoom } from '../../api/gameApi';
 import { Button } from '../../../../foundation/components/button/Button';
 import { Map } from '../map/Map';
 import { useRobotMovement } from '../../hooks/useRobotMovement';
 import { ProgrammingPhase } from '../programming/ProgrammingPhase';
+import { RobotSelection } from './RobotSelection';
+import type { AvatarId } from '../../types/Board';
 
 interface RoomSessionProps {
   initialRoom: JoinedRoom;
@@ -20,6 +22,13 @@ export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
   const actionPending = useRef(false);
   const revision = useRef(0);
   const isHost = room.playerId === room.hostPlayerId;
+
+  const currentPlayer = room.players.find((player) => player.playerId === room.playerId);
+  const selectedAvatarId = currentPlayer?.avatarId ?? null;
+
+  const takenAvatarIds = room.players
+    .filter((player) => player.playerId !== room.playerId && player.avatarId !== null)
+    .map((player) => player.avatarId as number);
 
   useEffect(() => {
     if (closed) return;
@@ -78,6 +87,27 @@ export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
     }
   }
 
+  async function handleSelectRobot(avatarId: number) {
+    if (actionPending.current) return;
+    actionPending.current = true;
+    revision.current += 1;
+    setBusy(true);
+    setError('');
+
+    try {
+      setRoom(await selectRobot(room, avatarId));
+    } catch (cause) {
+      if (cause instanceof RoomRequestError && cause.status === 409) {
+        setError('That robot has already been selected.');
+      } else {
+        setError('Could not select robot. Please try again.');
+      }
+    } finally {
+      actionPending.current = false;
+      setBusy(false);
+    }
+  }
+
   async function copyCode() {
     try {
       await navigator.clipboard.writeText(room.roomCode);
@@ -104,8 +134,8 @@ export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
       )}
       {busy && <output className="m-0">Updating room…</output>}
       {room.status === 'STARTED' && isHost ? (
-        <div className="relative h-[75dvh] overflow-hidden bg-slate-950">
-          <Map robot={robot} />
+        <div className="relative h-[75dvh] overflow-auto bg-slate-950">
+          <Map robot={{ ...robot, avatarId: (selectedAvatarId ?? undefined) as AvatarId | undefined }} />
           <div className="pointer-events-none absolute inset-0 z-10">
             <ProgrammingPhase roomId={room.gameId} onLockIn={runProgram} />
           </div>
@@ -125,6 +155,14 @@ export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
               </>
             )}
           </section>
+
+          <RobotSelection
+            selectedAvatarId={selectedAvatarId}
+            takenAvatarIds={takenAvatarIds}
+            disabled={busy || room.status !== 'WAITING'}
+            onSelect={handleSelectRobot}
+          />
+
           <section className="rounded border border-metal-light p-4">
             <h2 className="mb-3 mt-0 text-lg font-bold">Players</h2>
             <ul className="m-0 flex list-none flex-col gap-2 p-0">
