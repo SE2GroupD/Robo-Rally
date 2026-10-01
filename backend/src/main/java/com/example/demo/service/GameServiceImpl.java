@@ -7,13 +7,16 @@ import com.example.demo.dto.RegisterStepDto;
 import com.example.demo.dto.RobotStateDto;
 import com.example.demo.dto.RobotStepDto;
 import com.example.demo.dto.TurnResolutionDto;
-import com.example.demo.exception.RoomNotFoundException;
 import com.example.demo.game.GameBoard;
 import com.example.demo.game.GameSession;
 import com.example.demo.game.MovementResolver;
 import com.example.demo.game.ProgrammingDeck;
 import com.example.demo.game.Robot;
 import com.example.demo.model.CardType;
+import com.example.demo.model.Direction;
+import com.example.demo.model.GameRoom;
+import com.example.demo.model.Position;
+import com.example.demo.model.RoomStatus;
 
 import org.springframework.stereotype.Service;
 
@@ -26,149 +29,153 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class GameServiceImpl implements GameService {
 
-    private record DeckKey(UUID roomId, String playerId) {
+    private static final int HAND_SIZE = 9;
+
+    private final RoomService roomService;
+    private final MovementResolver movementResolver = new MovementResolver();
+    private final Map<UUID, GameSession> sessions = new ConcurrentHashMap<>();
+
+    public GameServiceImpl(RoomService roomService) {
+        this.roomService = roomService;
     }
 
-    private static final int DEFAULT_HAND_SIZE = 9;
-    // private static final int DEFAULT_BOARD_WIDTH = 12;
-    // private static final int DEFAULT_BOARD_HEIGHT = 12;
+    /**
+     * Verifies the caller is in the room (404/403 from RoomService), that the
+     * room has started, and lazily creates the session from the room's players.
+     */
+    private GameSession sessionFor(UUID gameId, String playerId) {
+        GameRoom room = roomService.getRoom(gameId, playerId);
+        if (room.status() != RoomStatus.STARTED) {
+            throw new IllegalStateException("The game has not started yet.");
+        }
+        return sessions.computeIfAbsent(gameId, _ -> createSession(room));
+    }
 
-    // Rooms are scoped by roomId now, fixing the earlier bug where decks were
-    // keyed only by playerId and would collide across different rooms.
-    private final Map<UUID, GameSession> rooms = new ConcurrentHashMap<>();
-    private final MovementResolver movementResolver = new MovementResolver();
-
-    private final Map<DeckKey, ProgrammingDeck> activeDecks = new ConcurrentHashMap<>();
+    private GameSession createSession(GameRoom room) {
+        GameBoard board = GameBoard.classicWithSeedTiles();
+        List<Position> spawns = board.getSpawnPositions();
+        if (room.players().size() > spawns.size()) {
+            throw new IllegalStateException("Too many players for this board (max " + spawns.size() + ").");
+        }
+        GameSession session = new GameSession(board);
+        for (int i = 0; i < room.players().size(); i++) {
+            session.addPlayer(room.players().get(i).playerId(), spawns.get(i), Direction.EAST);
+        }
+        return session;
+    }
 
     @Override
-    public PlayerHandDto getPlayerHand(UUID roomId, String playerId) {
-        DeckKey key = new DeckKey(roomId, playerId);
-        ProgrammingDeck deck = activeDecks.computeIfAbsent(key, k -> new ProgrammingDeck());
-
-        // Snapshot all state atomically while holding the deck monitor
-        synchronized (deck) {
-            List<CardType> safeHand;
+    public PlayerHandDto getPlayerHand(UUID gameId, String playerId) {
+        GameSession session = sessionFor(gameId, playerId);
+        synchronized (session) {
+            ProgrammingDeck deck = session.getDeck(playerId);
+            List<CardType> hand;
             if (deck.isLockedIn()) {
-                safeHand = new ArrayList<>();
+                hand = new ArrayList<>();
             } else if (deck.getCurrentHand().isEmpty()) {
-                safeHand = deck.drawCards(DEFAULT_HAND_SIZE);
+                hand = deck.drawCards(HAND_SIZE);
             } else {
-                safeHand = new ArrayList<>(deck.getCurrentHand());
+                hand = new ArrayList<>(deck.getCurrentHand());
             }
-
-            // Create defensive copies of live lists and snapshot primitive values
-            int drawPileSize = deck.getDrawPileSize();
-            int discardPileSize = deck.getDiscardPileSize();
-            List<CardType> safeLockedRegisters = new ArrayList<>(deck.getLockedRegisters());
-            boolean isLockedIn = deck.isLockedIn();
-
             return new PlayerHandDto(
                     playerId,
-                    safeHand,
-                    drawPileSize,
-                    discardPileSize,
-                    safeLockedRegisters,
-                    isLockedIn);
+                    hand,
+                    deck.getDrawPileSize(),
+                    deck.getDiscardPileSize(),
+                    new ArrayList<>(deck.getLockedRegisters()),
+                    deck.isLockedIn());
         }
     }
 
     @Override
-    public void submitPlayerRegisters(UUID roomId, String playerId, ProgramRegisterDto request) {
-        DeckKey key = new DeckKey(roomId, playerId);
-        ProgrammingDeck deck = activeDecks.get(key);
-
-        if (deck == null) {
-            throw new IllegalStateException("Player deck not found. Cannot submit registers.");
+    public void submitPlayerRegisters(UUID gameId, String playerId, ProgramRegisterDto request) {
+        GameSession session = sessionFor(gameId, playerId);
+        List<CardType> registers = new ArrayList<>(request.registers());
+        if (registers.size() != 5 || registers.contains(null)) {
+            throw new IllegalArgumentException("Exactly 5 non-null registers are required.");
         }
-
-        synchronized (deck) {
+        synchronized (session) {
+            ProgrammingDeck deck = session.getDeck(playerId);
             if (deck.isLockedIn()) {
                 throw new IllegalStateException("Registers are already locked in for this round.");
             }
-            deck.discardRemainingHand(new ArrayList<>(request.registers()));
-        }
-    }
-
-    @Override
-    public void completeRound(UUID roomId, String playerId) {
-        DeckKey key = new DeckKey(roomId, playerId);
-        ProgrammingDeck deck = activeDecks.get(key);
-
-        if (deck == null) {
-            throw new IllegalStateException("Player deck not found.");
-        }
-
-        synchronized (deck) {
-            if (!deck.isLockedIn()) {
-                throw new IllegalStateException("Cannot complete round: player hasn't locked in yet.");
+            if (deck.getCurrentHand().isEmpty()) {
+                throw new IllegalStateException("No hand has been dealt yet.");
             }
-
-            // Clean up the executed cards and reset the lock
-            deck.prepareForNextRound();
+            deck.discardRemainingHand(registers); // validates against the hand, throws if invalid
+            session.submitRegisters(playerId, registers);
+            if (session.allPlayersHaveSubmitted()) {
+                resolveRound(session);
+            }
         }
-
-        System.out.println("Player " + playerId + " completed the activation phase in room " + roomId
-                + " and is ready for the next round.");
     }
 
-    @Override
-    public TurnResolutionDto resolveTurn(UUID roomId) {
-        GameSession room = getExistingRoom(roomId);
-        if (!room.allPlayersHaveSubmitted()) {
-            throw new IllegalStateException("Not every player has submitted registers yet.");
-        }
-
-        Map<Robot, List<CardType>> resolutionInput = room.buildResolutionInput();
+    /** Must be called while holding the session lock. */
+    private void resolveRound(GameSession session) {
+        List<RobotStateDto> starting = robotStates(session);
+        Map<Robot, List<CardType>> input = session.buildResolutionInput();
         List<RegisterStepDto> steps = new ArrayList<>();
 
-        movementResolver.resolveRound(room.getBoard(), resolutionInput, (registerNumber, cardsPlayed) -> {
+        movementResolver.resolveRound(session.getBoard(), input, (registerNumber, cardsPlayed) -> {
             List<RobotStepDto> robotSteps = cardsPlayed.entrySet().stream()
-                    .map(entry -> new RobotStepDto(
-                            entry.getKey().getPlayerId(),
-                            entry.getValue(),
-                            entry.getKey().getPosition().x(),
-                            entry.getKey().getPosition().y(),
-                            entry.getKey().getDirection()))
+                    .map(e -> new RobotStepDto(
+                            e.getKey().getPlayerId(),
+                            e.getValue(),
+                            e.getKey().getPosition().x(),
+                            e.getKey().getPosition().y(),
+                            e.getKey().getDirection()))
                     .toList();
             steps.add(new RegisterStepDto(registerNumber, robotSteps));
         });
 
-        for (Map.Entry<Robot, List<CardType>> entry : resolutionInput.entrySet()) {
-            room.getOrCreateDeck(entry.getKey().getPlayerId()).discardPlayedCards(entry.getValue());
+        // Played cards go to the discard pile here (prepareForNextRound) - and only here.
+        for (String playerId : session.getRobots().keySet()) {
+            session.getDeck(playerId).prepareForNextRound();
         }
-        room.clearSubmittedRegisters();
-
-        return new TurnResolutionDto(roomId, room.getBoard().getWidth(), room.getBoard().getHeight(), steps);
+        session.finishRound(new TurnResolutionDto(session.getRound(), starting, steps));
     }
-
-    private GameSession getOrCreateRoom(UUID roomId) {
-    return rooms.computeIfAbsent(roomId,
-            id -> new GameSession(GameBoard.classicWithSeedTiles()));
-}
 
     @Override
-    public BoardStateDto getBoardState(UUID roomId) {
-        GameSession room = getOrCreateRoom(roomId);
-        return toBoardStateDto(roomId, room);
-    }
-
-    private GameSession getExistingRoom(UUID roomId) {
-        GameSession room = rooms.get(roomId);
-        if (room == null) {
-            throw new RoomNotFoundException("Room " + roomId + " does not exist.");
+    public BoardStateDto getBoardState(UUID gameId, String playerId) {
+        GameSession session = sessionFor(gameId, playerId);
+        synchronized (session) {
+            List<String> lockedIn = session.getRobots().keySet().stream()
+                    .filter(id -> session.getDeck(id).isLockedIn())
+                    .toList();
+            GameBoard board = session.getBoard();
+            return new BoardStateDto(
+                    gameId,
+                    board.getWidth(),
+                    board.getHeight(),
+                    robotStates(session),
+                    board.getSpecialTiles(),
+                    session.getRound(),
+                    lockedIn,
+                    session.getLastResolution());
         }
-        return room;
     }
 
-    private RobotStateDto toRobotStateDto(Robot robot) {
-        return new RobotStateDto(robot.getPlayerId(), robot.getPosition().x(),
-                robot.getPosition().y(), robot.getDirection());
+    @Override
+    public void removePlayer(UUID gameId, String playerId) {
+        GameSession session = sessions.get(gameId);
+        if (session == null) return;
+        synchronized (session) {
+            session.removePlayer(playerId);
+            // The leaver may have been the only one we were waiting for.
+            if (session.allPlayersHaveSubmitted()) {
+                resolveRound(session);
+            }
+        }
     }
 
-    private BoardStateDto toBoardStateDto(UUID roomId, GameSession room) {
-        List<RobotStateDto> robotStates = room.getRobots().values().stream()
-                .map(this::toRobotStateDto)
+    @Override
+    public void endGame(UUID gameId) {
+        sessions.remove(gameId);
+    }
+
+    private List<RobotStateDto> robotStates(GameSession session) {
+        return session.getRobots().values().stream()
+                .map(r -> new RobotStateDto(r.getPlayerId(), r.getPosition().x(), r.getPosition().y(), r.getDirection()))
                 .toList();
-        return new BoardStateDto(roomId, room.getBoard().getWidth(), room.getBoard().getHeight(), robotStates, room.getBoard().getSpecialTiles());
     }
 }
