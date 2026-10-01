@@ -62,12 +62,12 @@ export function useGameReplay(state: BoardStateDto | null) {
 
     setRobots(state.robots);
 
-    async function replay(resolution: TurnResolutionDto) {
-      const current = new Map(resolution.startingRobots.map((r) => [r.playerId, { ...r }]));
+    async function replay(res: TurnResolutionDto) {
+      const current = new Map(res.startingRobots.map((r) => [r.playerId, { ...r }]));
       setRobots([...current.values()].map((r) => ({ ...r })));
       await sleep(STEP_DELAY_MS);
 
-      for (const step of resolution.steps) {
+      for (const step of res.steps) {
         const paths = step.robots.map((s) => ({
           step: s,
           tiles: tilesBetween(current.get(s.playerId) ?? s, s),
@@ -84,7 +84,7 @@ export function useGameReplay(state: BoardStateDto | null) {
         }
       }
     }
-  }, [state, isReplaying]);
+  }, [state]);
 
   return {
     robots,
