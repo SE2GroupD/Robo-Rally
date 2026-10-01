@@ -3,27 +3,22 @@ import type { TileData } from '../../../types/Board';
 
 interface GameBoardProps {
   layoutData?: TileData[];
+  width?: number;
+  height?: number;
 }
 
-export function GameBoard({ layoutData = [] }: GameBoardProps) {
-  const width = 10;
-  const height = 10;
+export function GameBoard({ layoutData = [], width = 10, height = 10 }: GameBoardProps) {
   const tiles: TileData[] = [];
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const specialTile = layoutData.find((t) => t.x === x && t.y === y);
-      if (specialTile) {
-        tiles.push(specialTile);
-      } else {
-        tiles.push({ x, y });
-      }
+      tiles.push(specialTile ?? { x, y });
     }
   }
 
   return (
-    <div className="grid grid-cols-[repeat(10,50px)] gap-[2px] w-max bg-neutral-800 rounded-md">
-      {' '}
+    <div className="grid w-max gap-[2px] rounded-md bg-neutral-800" style={{ gridTemplateColumns: `repeat(${width}, 50px)` }}>
       {tiles.map((tile) => (
         <Tile key={`game-${tile.x}-${tile.y}`} tile={tile} />
       ))}

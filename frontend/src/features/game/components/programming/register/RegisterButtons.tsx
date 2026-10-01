@@ -7,7 +7,7 @@ interface RegisterButtonsProps {
 }
 
 export function RegisterButtons({ onSubmit, onClear, selectedCount, isSubmitting, isLockedIn }: RegisterButtonsProps) {
-  const disabled = isSubmitting || isLockedIn || selectedCount === 0;
+  const disabled = isSubmitting || isLockedIn || selectedCount < 5;
 
   return (
     <fieldset aria-label="Program actions" className="pointer-events-auto grid min-w-0 gap-2 border-0 p-0">

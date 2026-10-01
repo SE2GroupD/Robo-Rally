@@ -39,7 +39,7 @@ it('renders nine empty hand slots before fetching and fills only returned positi
       resolveHand = resolve;
     }),
   );
-  render(<ProgrammingPhase roomId="room" />);
+  render(<ProgrammingPhase roomId="room" round={1} />);
   expect(within(screen.getByRole('list', { name: 'Programming Hand' })).getAllByRole('listitem')).toHaveLength(9);
   expect(within(screen.getByRole('list', { name: 'Program Register' })).getAllByRole('listitem')).toHaveLength(5);
   expect(handSlot(1).queryByRole('button')).not.toBeInTheDocument();
@@ -60,7 +60,7 @@ it('renders nine empty hand slots before fetching and fills only returned positi
 
 it('preserves duplicate card positions, fills the first empty register, and restores the hand on clear', async () => {
   const user = userEvent.setup();
-  render(<ProgrammingPhase roomId="room" />);
+  render(<ProgrammingPhase roomId="room" round={1} />);
   await handSlot(1).findByRole('button');
   await user.click(handSlot(2).getByRole('button'));
   await user.click(handSlot(1).getByRole('button'));
@@ -79,16 +79,15 @@ it('preserves duplicate card positions, fills the first empty register, and rest
   expect(within(screen.getByRole('list', { name: 'Program Register' })).queryAllByRole('button')).toHaveLength(0);
 });
 
-it('limits selection to five and executes only the submitted sequence after success', async () => {
+it('limits selection to five and submits only that sequence', async () => {
   const user = userEvent.setup();
-  const onLockIn = vi.fn();
   let finish!: () => void;
   vi.mocked(submitProgramRegister).mockReturnValue(
     new Promise<void>((resolve) => {
       finish = resolve;
     }),
   );
-  render(<ProgrammingPhase roomId="room" onLockIn={onLockIn} />);
+  render(<ProgrammingPhase roomId="room" round={1} />);
   await handSlot(1).findByRole('button');
   await user.click(screen.getByRole('button', { name: 'Ready' }));
   expect(submitProgramRegister).not.toHaveBeenCalled();
@@ -97,11 +96,9 @@ it('limits selection to five and executes only the submitted sequence after succ
   await user.click(screen.getByRole('button', { name: 'Ready' }));
   const expected = ['U_TURN', 'MOVE_1', 'MOVE_2', 'TURN_LEFT', 'POWER_UP'];
   expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { registers: expected });
-  expect(onLockIn).not.toHaveBeenCalled();
   expect(screen.getByRole('button', { name: 'Clear' })).toBeDisabled();
   expect(programSlot(1).getByRole('button')).toBeDisabled();
   await act(async () => finish());
-  expect(onLockIn).toHaveBeenCalledExactlyOnceWith(expected);
   expect(screen.getByRole('button', { name: 'Ready ✓' })).toBeDisabled();
   await user.click(programSlot(1).getByRole('button'));
   expect(handSlot(9).queryByRole('button')).not.toBeInTheDocument();
@@ -109,44 +106,34 @@ it('limits selection to five and executes only the submitted sequence after succ
 
 it('keeps a failed submission editable and does not execute it', async () => {
   const user = userEvent.setup();
-  const onLockIn = vi.fn();
   vi.spyOn(console, 'error').mockImplementation(() => {});
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   vi.mocked(submitProgramRegister).mockRejectedValue(new Error('offline'));
-  render(<ProgrammingPhase roomId="room" onLockIn={onLockIn} />);
+  render(<ProgrammingPhase roomId="room" round={1} />);
   await handSlot(1).findByRole('button');
   for (let i = 1; i <= 5; i++) await user.click(handSlot(i).getByRole('button'));
   await user.click(screen.getByRole('button', { name: 'Ready' }));
   await waitFor(() => expect(screen.getByRole('button', { name: 'Ready' })).toBeEnabled());
-  expect(onLockIn).not.toHaveBeenCalled();
   await user.click(programSlot(2).getByRole('button'));
   expect(handSlot(2).getByRole('button', { name: 'Move 1' })).toBeInTheDocument();
 });
 
-it.each([1, 2, 3, 4])('submits and executes a %i-card program', async (count) => {
+it.each([0, 1, 4])('does not allow locking in %i cards', async (count) => {
   const user = userEvent.setup();
-  const onLockIn = vi.fn();
-  render(<ProgrammingPhase roomId="room" onLockIn={onLockIn} />);
+  render(<ProgrammingPhase roomId="room" round={1} />);
   await handSlot(1).findByRole('button');
-  const indexes = [5, 3, 9, 2].slice(0, count);
-  for (const index of indexes) await user.click(handSlot(index).getByRole('button'));
-  await user.click(screen.getByRole('button', { name: 'Ready' }));
-  const expected = indexes.map((index) => cards[index - 1]);
-  expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { registers: expected });
-  expect(onLockIn).toHaveBeenCalledExactlyOnceWith(expected);
-  expect(screen.getByRole('button', { name: 'Ready ✓' })).toBeDisabled();
+  for (let i = 1; i <= count; i++) await user.click(handSlot(i).getByRole('button'));
+  expect(screen.getByRole('button', { name: 'Ready' })).toBeDisabled();
+  expect(submitProgramRegister).not.toHaveBeenCalled();
 });
 
-it('skips empty slots while preserving the remaining register order', async () => {
-  const user = userEvent.setup();
-  const onLockIn = vi.fn();
-  render(<ProgrammingPhase roomId="room" onLockIn={onLockIn} />);
+it('stays idle without a round and refetches the hand when the round changes', async () => {
+  const { rerender } = render(<ProgrammingPhase roomId="room" round={null} />);
+  expect(fetchPlayerHand).not.toHaveBeenCalled();
+  expect(screen.getByRole('button', { name: 'Ready ✓' })).toBeDisabled();
+  rerender(<ProgrammingPhase roomId="room" round={1} />);
   await handSlot(1).findByRole('button');
-  for (const index of [5, 3, 9, 2]) await user.click(handSlot(index).getByRole('button'));
-  await user.click(programSlot(1).getByRole('button'));
-  await user.click(programSlot(3).getByRole('button'));
-  await user.click(screen.getByRole('button', { name: 'Ready' }));
-  const expected = ['TURN_LEFT', 'MOVE_1'];
-  expect(submitProgramRegister).toHaveBeenCalledExactlyOnceWith('room', { registers: expected });
-  expect(onLockIn).toHaveBeenCalledExactlyOnceWith(expected);
+  rerender(<ProgrammingPhase roomId="room" round={2} />);
+  await waitFor(() => expect(fetchPlayerHand).toHaveBeenCalledTimes(2));
+  expect(screen.getByRole('button', { name: 'Ready' })).toBeDisabled();
 });

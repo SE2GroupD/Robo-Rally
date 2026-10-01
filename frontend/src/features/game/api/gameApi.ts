@@ -1,3 +1,4 @@
+import { type BoardStateDto } from '../types/GameStateDto';
 import { type PlayerHandDto } from '../types/PlayerHandDto';
 import { type ProgramRegisterDto } from '../types/ProgramRegisterDto';
 import { createAuthClient } from '@neondatabase/neon-js/auth';
@@ -221,4 +222,15 @@ export async function startRoom(room: JoinedRoom): Promise<JoinedRoom> {
 
 export async function leaveRoom(room: JoinedRoom): Promise<void> {
   await roomRequest(room, 'leave');
+}
+
+export async function fetchBoardState(gameId: string, signal?: AbortSignal): Promise<BoardStateDto> {
+  const token = await getValidToken();
+
+  const response = await fetch(`${API_BASE_URL}/game/${encodeURIComponent(gameId)}/state`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal,
+  });
+  if (!response.ok) throw new RoomRequestError('Board state request failed.', response.status);
+  return response.json();
 }
