@@ -21,12 +21,7 @@ interface RobotSelectionProps {
   onSelect: (avatarId: number) => void;
 }
 
-export function RobotSelection({
-  selectedAvatarId,
-  takenAvatarIds,
-  disabled = false,
-  onSelect,
-}: RobotSelectionProps) {
+export function RobotSelection({ selectedAvatarId, takenAvatarIds, disabled = false, onSelect }: RobotSelectionProps) {
   return (
     <section className="rounded border border-metal-light p-4">
       <h2 className="mb-3 mt-0 text-lg font-bold">Select your robot</h2>
@@ -46,11 +41,7 @@ export function RobotSelection({
                 selected ? 'border-2 border-white' : 'border-metal-light'
               } ${taken ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}`}
             >
-              <img
-                src={AVATAR_MAP[avatarId]}
-                alt={`Robot ${avatarId}`}
-                className="h-12 w-12"
-              />
+              <img src={AVATAR_MAP[avatarId]} alt={`Robot ${avatarId}`} className="h-12 w-12" />
             </button>
           );
         })}
