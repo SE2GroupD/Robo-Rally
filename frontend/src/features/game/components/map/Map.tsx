@@ -23,7 +23,7 @@ function withRobot(layout: TileData[], robot: RobotState | undefined, boardId: B
   const withoutRobot = layout.map(({ robot: _robot, ...tile }) => tile);
   if (!robot || robot.board !== boardId) return withoutRobot;
 
-  const robotField = { robot: { hue: robot.hue, direction: robot.direction } };
+  const robotField = { robot: { avatarId: robot.avatarId, hue: robot.hue, direction: robot.direction } };
   const index = withoutRobot.findIndex((tile) => tile.x === robot.x && tile.y === robot.y);
   if (index === -1) {
     return [...withoutRobot, { x: robot.x, y: robot.y, ...robotField }];

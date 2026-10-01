@@ -31,7 +31,7 @@ const host: JoinedRoom = {
   playerId: 'host-1',
   hostPlayerId: 'host-1',
   status: 'WAITING',
-  players: [{ playerId: 'host-1', playerName: 'Host' }],
+  players: [{ playerId: 'host-1', playerName: 'Host', avatarId: null }],
 };
 
 beforeEach(() => {
@@ -42,7 +42,10 @@ afterEach(cleanup);
 
 describe('room lifecycle', () => {
   it('refreshes the host player list and aborts polling on unmount', async () => {
-    vi.mocked(fetchRoom).mockResolvedValue({ ...host, players: [...host.players, { playerId: 'guest', playerName: 'Friend' }] });
+    vi.mocked(fetchRoom).mockResolvedValue({
+      ...host,
+      players: [...host.players, { playerId: 'guest', playerName: 'Friend', avatarId: null }],
+    });
     const { unmount } = render(<RoomSession initialRoom={host} onLeft={vi.fn()} />);
     expect(await screen.findByText('Friend')).toBeInTheDocument();
     const signal = vi.mocked(fetchRoom).mock.calls[0][1];
@@ -60,7 +63,11 @@ describe('room lifecycle', () => {
   });
 
   it('shows guests the started status without game controls', async () => {
-    const guest = { ...host, playerId: 'guest', players: [...host.players, { playerId: 'guest', playerName: 'Friend' }] };
+    const guest = {
+      ...host,
+      playerId: 'guest',
+      players: [...host.players, { playerId: 'guest', playerName: 'Friend', avatarId: null }],
+    };
     vi.mocked(fetchRoom).mockResolvedValue({ ...guest, status: 'STARTED' });
     render(<RoomSession initialRoom={guest} onLeft={vi.fn()} />);
     expect(await screen.findByText('The host is running a training game.')).toBeInTheDocument();
