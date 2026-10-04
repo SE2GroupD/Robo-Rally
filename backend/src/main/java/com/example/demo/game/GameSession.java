@@ -61,4 +61,8 @@ public class GameSession {
     public void clearSubmittedRegisters() {
         submittedRegisters.clear();
     }
+
+    public void addRobot(Robot robot) {
+        this.robots.put(robot.getPlayerId(), robot);
+    }
 }

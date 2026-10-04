@@ -77,9 +77,34 @@ public class GameBoard {
                 Tile.conveyorTile(4, 3, new Conveyor(Direction.NORTH, true)),
                 Tile.withWalls(8, 8, new Walls(true, false, false, true)),
                 Tile.antenna(0, 0),
-                Tile.spawnPoint(0, 1),
-                Tile.spawnPoint(0, 2),
+                Tile.spawnPoint(1, 1),
+                Tile.spawnPoint(1, 2),
+                Tile.spawnPoint(1, 3),
+                Tile.spawnPoint(1, 6),
+                Tile.spawnPoint(1, 7),
+                Tile.spawnPoint(1, 8),
                 Tile.checkpoint(10, 10, 1)
         ));
+    }
+
+    public List<Position> getAvailableStartTiles() {
+        return specialTiles.values().stream()
+                .filter(Tile::isAvailableSpawn)
+                .map(tile -> new Position(tile.x(), tile.y()))
+                .toList(); 
+    }
+
+    public void updateTileOccupant(Position pos, String playerId) {
+        Tile existingTile = specialTiles.get(pos);
+        if (existingTile != null && existingTile.isSpawnPoint()) {
+            Tile updatedTile = existingTile.withOccupant(playerId);
+            specialTiles.put(pos, updatedTile);
+        }
+    }
+
+    public List<Tile> getSpawnPointList() {
+        return specialTiles.values().stream()
+                .filter(Tile::isSpawnPoint)
+                .toList(); 
     }
 }

@@ -14,6 +14,11 @@ import com.example.demo.game.MovementResolver;
 import com.example.demo.game.ProgrammingDeck;
 import com.example.demo.game.Robot;
 import com.example.demo.model.CardType;
+import com.example.demo.model.BoardDefinition;
+import com.example.demo.model.Direction;
+import com.example.demo.model.GameRoom;
+import com.example.demo.model.Position;
+import com.example.demo.model.RoomPlayer;
 
 import org.springframework.stereotype.Service;
 
@@ -39,6 +44,14 @@ public class GameServiceImpl implements GameService {
     private final MovementResolver movementResolver = new MovementResolver();
 
     private final Map<DeckKey, ProgrammingDeck> activeDecks = new ConcurrentHashMap<>();
+
+    private final RoomService roomService;
+    private final BoardRegistry boardRegistry;
+
+    public GameServiceImpl(RoomService roomService, BoardRegistry boardRegistry) {
+        this.roomService = roomService;
+        this.boardRegistry = boardRegistry;
+    }
 
     @Override
     public PlayerHandDto getPlayerHand(UUID roomId, String playerId) {
@@ -142,9 +155,25 @@ public class GameServiceImpl implements GameService {
     }
 
     private GameSession getOrCreateRoom(UUID roomId) {
-    return rooms.computeIfAbsent(roomId,
-            id -> new GameSession(GameBoard.classicWithSeedTiles()));
-}
+    return rooms.computeIfAbsent(roomId, id -> {
+            GameRoom roomDetails = roomService.getRoomByGameId(roomId);
+            if (roomDetails == null) {
+                throw new RoomNotFoundException("Room " + roomId + " does not exist.");
+            }   
+            BoardDefinition boardDef = boardRegistry.getBoard(roomDetails.startBoardId());
+            GameBoard board = new GameBoard(boardDef.width(), boardDef.height(), boardDef.specialTiles());
+            GameSession session = new GameSession(board);
+            for (RoomPlayer player : roomDetails.players()) {
+                Position startPos = player.startPosition();
+                if (startPos == null) {
+                    throw new IllegalStateException("Player " + player.playerName() + " has no start position.");
+                }
+                Robot robot = new Robot(player.playerId(), startPos, Direction.EAST);
+                session.addRobot(robot);
+            }
+            return session;
+        });
+    }
 
     @Override
     public BoardStateDto getBoardState(UUID roomId) {

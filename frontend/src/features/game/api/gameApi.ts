@@ -1,6 +1,7 @@
 import { type PlayerHandDto } from '../types/PlayerHandDto';
 import { type ProgramRegisterDto } from '../types/ProgramRegisterDto';
 import { createAuthClient } from '@neondatabase/neon-js/auth';
+import type { TileData } from '../types/Board';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const authClient = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL);
@@ -26,7 +27,7 @@ export interface CreatedRoom {
   playerId: string;
   hostPlayerId: string;
   status: 'WAITING' | 'STARTED';
-  players: { playerId: string; playerName: string }[];
+  players: { playerId: string; playerName: string; startPosition?: { x: number; y: number } }[];
 }
 
 export async function createRoom(playerName: string): Promise<CreatedRoom> {
@@ -75,8 +76,9 @@ export interface JoinedRoom {
   roomCode: string;
   playerId: string;
   hostPlayerId: string;
+  startBoardConfig?: TileData[];
   status: 'WAITING' | 'STARTED';
-  players: { playerId: string; playerName: string }[];
+  players: { playerId: string; playerName: string; startPosition?: { x: number; y: number } }[];
 }
 
 export async function joinRoom(roomCode: string, playerName: string): Promise<JoinedRoom> {
@@ -221,4 +223,24 @@ export async function startRoom(room: JoinedRoom): Promise<JoinedRoom> {
 
 export async function leaveRoom(room: JoinedRoom): Promise<void> {
   await roomRequest(room, 'leave');
+}
+
+export async function selectStartTile(room: JoinedRoom, x: number, y: number): Promise<JoinedRoom> {
+  if (!API_BASE_URL) throw new Error('Room service is unavailable.');
+
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/games/${encodeURIComponent(room.gameId)}/start-tile`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ x, y }),
+  });
+
+  if (response.status === 409) throw new Error('Cette case est déjà prise par un autre joueur.');
+  if (response.status === 400) throw new Error('Position de départ invalide.');
+  if (!response.ok) throw new RoomRequestError('Impossible de sélectionner cette case.', response.status);
+
+  return readRoom(response, room);
 }

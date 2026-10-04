@@ -3,9 +3,11 @@ import type { TileData } from '../../../types/Board';
 
 interface StartBoardProps {
   layoutData?: TileData[];
+  currentPlayerId?: string;
+  onTileClick?: (x: number, y: number) => void;
 }
 
-export function StartBoard({ layoutData = [] }: StartBoardProps) {
+export function StartBoard({ layoutData = [], currentPlayerId, onTileClick }: StartBoardProps) {
   const width = 3;
   const height = 10;
   const tiles: TileData[] = [];
@@ -23,9 +25,14 @@ export function StartBoard({ layoutData = [] }: StartBoardProps) {
   }
 
   return (
-    <div className="grid grid-cols-[repeat(3,50px)] gap-[2px] w-max bg-neutral-800 rounded-md">
+    <div className="grid grid-cols-[repeat(3,50px)] gap-0.5 w-max bg-neutral-800 rounded-md">
       {tiles.map((tile) => (
-        <Tile key={`start-${tile.x}-${tile.y}`} tile={tile} />
+        <Tile 
+          key={`start-${tile.x}-${tile.y}`} 
+          tile={tile}
+          currentPlayerId={currentPlayerId}
+          onTileClick={onTileClick}
+        />
       ))}
     </div>
   );

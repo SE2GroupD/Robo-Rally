@@ -1,0 +1,15 @@
+{
+  "id": "classic_start",
+  "name": "Classic Start Board",
+  "width": 3,
+  "height": 10,
+  "specialTiles": [
+    { "x": 1, "y": 1, "isSpawnPoint": true },
+    { "x": 1, "y": 2, "isSpawnPoint": true },
+    { "x": 1, "y": 3, "isSpawnPoint": true },
+    { "x": 1, "y": 6, "isSpawnPoint": true },
+    { "x": 1, "y": 7, "isSpawnPoint": true },
+    { "x": 1, "y": 8, "isSpawnPoint": true },
+    { "x": 0, "y": 4, "hasAntenna": true }
+  ]
+}

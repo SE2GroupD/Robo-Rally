@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import type { CardType } from '../types/CardType';
 import type { Direction, BoardId, RobotState } from '../types/Board';
 
@@ -62,9 +62,25 @@ function step(state: RobotState, facing: Direction): RobotState {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export function useRobotMovement() {
-  const [robot, setRobot] = useState<RobotState>(INITIAL_ROBOT);
+export function useRobotMovement(initialPos?: { x: number; y: number }) {
+  const [robot, setRobot] = useState<RobotState>({
+    board: 'start',
+    x: initialPos?.x ?? 1,
+    y: initialPos?.y ?? 1,
+    direction: 'EAST',
+    hue: 0,
+  });
   const [isExecuting, setIsExecuting] = useState(false);
+
+  useEffect(() => {
+    if (initialPos) {
+      setRobot((current) => ({
+        ...current,
+        x: initialPos.x,
+        y: initialPos.y,
+      }));
+    }
+  }, [initialPos?.x, initialPos?.y]);
 
   const runProgram = useCallback(async (cards: readonly CardType[]) => {
     setIsExecuting(true);
