@@ -14,7 +14,7 @@ interface HostBattlePageProps {
   onRoomUpdate: (room: CreatedRoom | null) => void;
 }
 
-export function HostBattlePage({ username, room, isCreating, error, onRetry, onBack, onRoomUpdate }: HostBattlePageProps) {
+export function HostBattlePage({ username, room, isCreating, error, onRetry, onBack }: HostBattlePageProps) {
   return (
     <MenuScreen
       img={roboRallyImage}

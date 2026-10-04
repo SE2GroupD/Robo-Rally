@@ -47,9 +47,19 @@ export function Tile({ tile, currentPlayerId, onTileClick }: TileProps) {
 
       {tile.isSpawnPoint && (
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => {
             if (onTileClick && !tile.occupyingPlayerId) {
               onTileClick(tile.x, tile.y);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              if (onTileClick && !tile.occupyingPlayerId) {
+                onTileClick(tile.x, tile.y);
+              }
             }
           }}
           className={`absolute z-10 w-6 h-6 rounded-full border-2 border-dashed flex items-center justify-center text-[10px] transition-colors

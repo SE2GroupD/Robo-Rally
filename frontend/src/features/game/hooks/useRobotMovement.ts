@@ -42,8 +42,6 @@ const DELTAS: Record<Direction, { dx: number; dy: number }> = {
 
 const STEP_DELAY_MS = 350;
 
-const INITIAL_ROBOT: RobotState = { board: 'start', x: 1, y: 1, direction: 'EAST', hue: 0 };
-
 function rotate(direction: Direction, quarterTurns: number): Direction {
   const index = (DIRECTIONS.indexOf(direction) + quarterTurns + 4) % 4;
   return DIRECTIONS[index];
@@ -70,17 +68,17 @@ export function useRobotMovement(initialPos?: { x: number; y: number }) {
     direction: 'EAST',
     hue: 0,
   });
-  const [isExecuting, setIsExecuting] = useState(false);
 
-  useEffect(() => {
-    if (initialPos) {
-      setRobot((current) => ({
-        ...current,
-        x: initialPos.x,
-        y: initialPos.y,
-      }));
-    }
-  }, [initialPos?.x, initialPos?.y]);
+  const [prevInitPos, setPrevInitPos] = useState(initialPos);
+  if (initialPos?.x !== prevInitPos?.x || initialPos?.y !== prevInitPos?.y) {
+    setPrevInitPos(initialPos);
+    setRobot((current) => ({
+      ...current,
+      x: initialPos?.x ?? 1,
+      y: initialPos?.y ?? 1,
+    }));
+  }
+  const [isExecuting, setIsExecuting] = useState(false);
 
   const runProgram = useCallback(async (cards: readonly CardType[]) => {
     setIsExecuting(true);
