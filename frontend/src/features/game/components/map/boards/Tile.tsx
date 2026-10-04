@@ -46,25 +46,24 @@ export function Tile({ tile, currentPlayerId, onTileClick }: TileProps) {
       )}
 
       {tile.isSpawnPoint && (
-        <div 
+        <div
           onClick={() => {
             if (onTileClick && !tile.occupyingPlayerId) {
               onTileClick(tile.x, tile.y);
             }
           }}
           className={`absolute z-10 w-6 h-6 rounded-full border-2 border-dashed flex items-center justify-center text-[10px] transition-colors
-            ${onTileClick 
-                ? (tile.occupyingPlayerId === currentPlayerId 
-                    ? 'border-emerald-500 bg-emerald-500/40 text-emerald-200'
-                    : tile.occupyingPlayerId 
-                      ? 'border-red-500 bg-red-500/40 text-red-200 cursor-not-allowed'
-                      : 'border-gray-400 bg-black/40 text-white cursor-pointer hover:border-white hover:bg-white/20')
+            ${
+              onTileClick
+                ? tile.occupyingPlayerId === currentPlayerId
+                  ? 'border-emerald-500 bg-emerald-500/40 text-emerald-200'
+                  : tile.occupyingPlayerId
+                    ? 'border-red-500 bg-red-500/40 text-red-200 cursor-not-allowed'
+                    : 'border-gray-400 bg-black/40 text-white cursor-pointer hover:border-white hover:bg-white/20'
                 : 'border-gray-400 bg-black/40 text-gray-300 cursor-default'
             }`}
         >
-          {onTileClick 
-            ? (tile.occupyingPlayerId === currentPlayerId ? '✓' : (tile.occupyingPlayerId ? '✗' : '⚙️'))
-            : '⚙️'}
+          {onTileClick ? (tile.occupyingPlayerId === currentPlayerId ? '✓' : tile.occupyingPlayerId ? '✗' : '⚙️') : '⚙️'}
         </div>
       )}
 

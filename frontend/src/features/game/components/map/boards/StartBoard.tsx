@@ -27,12 +27,7 @@ export function StartBoard({ layoutData = [], currentPlayerId, onTileClick }: St
   return (
     <div className="grid grid-cols-[repeat(3,50px)] gap-0.5 w-max bg-neutral-800 rounded-md">
       {tiles.map((tile) => (
-        <Tile 
-          key={`start-${tile.x}-${tile.y}`} 
-          tile={tile}
-          currentPlayerId={currentPlayerId}
-          onTileClick={onTileClick}
-        />
+        <Tile key={`start-${tile.x}-${tile.y}`} tile={tile} currentPlayerId={currentPlayerId} onTileClick={onTileClick} />
       ))}
     </div>
   );

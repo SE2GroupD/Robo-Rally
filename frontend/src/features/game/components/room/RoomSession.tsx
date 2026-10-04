@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchRoom, leaveRoom, startRoom, selectStartTile, RoomRequestError, type JoinedRoom } from '../../api/gameApi';import { Button } from '../../../../foundation/components/button/Button';
+import { fetchRoom, leaveRoom, startRoom, selectStartTile, RoomRequestError, type JoinedRoom } from '../../api/gameApi';
+import { Button } from '../../../../foundation/components/button/Button';
 import { Map } from '../map/Map';
 import { useRobotMovement } from '../../hooks/useRobotMovement';
 import { ProgrammingPhase } from '../programming/ProgrammingPhase';
@@ -14,7 +15,7 @@ interface RoomSessionProps {
 export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
   const [room, setRoom] = useState(initialRoom);
   const [error, setError] = useState('');
-  const currentPlayer = room.players.find(p => p.playerId === room.playerId);
+  const currentPlayer = room.players.find((p) => p.playerId === room.playerId);
   const startPos = currentPlayer?.startPosition || { x: 1, y: 1 };
   const { robot, runProgram } = useRobotMovement(startPos);
   const [closed, setClosed] = useState(false);
@@ -102,7 +103,7 @@ export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
   }
 
   const startTilesConfig: TileData[] = (room.startBoardConfig || []).map((tile: TileData) => {
-    const occupant = room.players.find(p => p.startPosition?.x === tile.x && p.startPosition?.y === tile.y);
+    const occupant = room.players.find((p) => p.startPosition?.x === tile.x && p.startPosition?.y === tile.y);
     return { ...tile, occupyingPlayerId: occupant?.playerId };
   });
 
@@ -155,11 +156,7 @@ export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
           </section>
           <section className="rounded border border-metal-light p-4 flex flex-col items-center">
             <h2 className="mb-3 mt-0 text-lg font-bold">Select Start Position</h2>
-            <StartBoard 
-              layoutData={startTilesConfig} 
-              currentPlayerId={room.playerId} 
-              onTileClick={handleTileClick} 
-            />
+            <StartBoard layoutData={startTilesConfig} currentPlayerId={room.playerId} onTileClick={handleTileClick} />
           </section>
           <section className="rounded border border-metal-light p-4">
             <h2 className="mb-3 mt-0 text-lg font-bold">Players</h2>
