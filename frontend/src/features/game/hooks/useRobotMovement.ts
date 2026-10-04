@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState } from 'react';
 import type { CardType } from '../types/CardType';
 import type { Direction, BoardId, RobotState } from '../types/Board';
 

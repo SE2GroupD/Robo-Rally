@@ -46,23 +46,14 @@ export function Tile({ tile, currentPlayerId, onTileClick }: TileProps) {
       )}
 
       {tile.isSpawnPoint && (
-        <div
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           onClick={() => {
             if (onTileClick && !tile.occupyingPlayerId) {
               onTileClick(tile.x, tile.y);
             }
           }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              if (onTileClick && !tile.occupyingPlayerId) {
-                onTileClick(tile.x, tile.y);
-              }
-            }
-          }}
-          className={`absolute z-10 w-6 h-6 rounded-full border-2 border-dashed flex items-center justify-center text-[10px] transition-colors
+          className={`absolute z-10 w-6 h-6 rounded-full border-2 border-dashed flex items-center justify-center text-[10px] transition-colors p-0
             ${
               onTileClick
                 ? tile.occupyingPlayerId === currentPlayerId
@@ -74,7 +65,7 @@ export function Tile({ tile, currentPlayerId, onTileClick }: TileProps) {
             }`}
         >
           {onTileClick ? (tile.occupyingPlayerId === currentPlayerId ? '✓' : tile.occupyingPlayerId ? '✗' : '⚙️') : '⚙️'}
-        </div>
+        </button>
       )}
 
       {tile.gear === 'CLOCKWISE' && <div className="absolute z-10 text-emerald-500 text-2xl font-black">↻</div>}
