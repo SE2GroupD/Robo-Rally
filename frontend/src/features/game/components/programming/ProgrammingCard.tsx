@@ -48,6 +48,7 @@ export function ProgrammingCard({ type, onClick, disabled, variant = 'program' }
     AGAIN: againImage,
   };
 
+  const label = cardLabels[type];
   const isDamage = ['SPAM', 'WORM', 'VIRUS', 'TROJAN_HORSE'].includes(type);
   const image = cardImages[type];
 
@@ -56,6 +57,7 @@ export function ProgrammingCard({ type, onClick, disabled, variant = 'program' }
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-label={label}
       className={cn(
         'pointer-events-auto flex h-full w-full min-h-0 min-w-0 flex-col items-center justify-center overflow-hidden rounded-md shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300',
         image ? 'bg-[#a9a9a9] p-1' : 'border-2 p-2 text-center font-bold',
