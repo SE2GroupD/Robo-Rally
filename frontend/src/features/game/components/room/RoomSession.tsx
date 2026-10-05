@@ -2,28 +2,47 @@ import { useEffect, useRef, useState } from 'react';
 import { fetchRoom, leaveRoom, startRoom, selectStartTile, RoomRequestError, type JoinedRoom } from '../../api/gameApi';
 import { Button } from '../../../../foundation/components/button/Button';
 import { Map } from '../map/Map';
-import { useRobotMovement } from '../../hooks/useRobotMovement';
+import { useGameState } from '../../hooks/useGameState';
+import { useGameReplay } from '../../hooks/useGameReplay';
+import { toTileData } from '../../data/serverTiles';
 import { ProgrammingPhase } from '../programming/ProgrammingPhase';
 import { StartBoard } from '../map/boards/StartBoard';
-import type { TileData } from '../../types/Board';
+import type { TileData, AvatarId } from '../../types/Board';
+import type { BoardStateDto } from '../../types/GameStateDto';
 
 interface RoomSessionProps {
   initialRoom: JoinedRoom;
   onLeft: () => void;
 }
 
+function describeStatus(state: BoardStateDto, players: JoinedRoom['players'], isReplaying: boolean) {
+  if (isReplaying) return `Round ${state.round - 1} resolving…`;
+  const waitingFor = players.filter((p) => !state.lockedInPlayerIds.includes(p.playerId)).map((p) => p.playerName);
+  return waitingFor.length > 0 ? `Round ${state.round} · Waiting for ${waitingFor.join(', ')}` : '';
+}
+
 export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
   const [room, setRoom] = useState(initialRoom);
   const [error, setError] = useState('');
-  const currentPlayer = room.players.find((p) => p.playerId === room.playerId);
-  const startPos = currentPlayer?.startPosition || { x: 1, y: 1 };
-  const { robot, runProgram } = useRobotMovement(startPos);
   const [closed, setClosed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [copyMessage, setCopyMessage] = useState('');
   const actionPending = useRef(false);
   const revision = useRef(0);
   const isHost = room.playerId === room.hostPlayerId;
+  const started = room.status === 'STARTED';
+
+  const { state, error: gameError } = useGameState(room.gameId, started && !closed);
+  const { robots, isReplaying, programmingRound } = useGameReplay(state);
+
+  // Avatar and hue come from the player's position in the room (max 6 players).
+  const mapRobots = robots.map((robot) => {
+    const index = Math.max(
+      0,
+      room.players.findIndex((p) => p.playerId === robot.playerId),
+    );
+    return { ...robot, avatarId: ((index % 6) + 1) as AvatarId, hue: index * 60 };
+  });
 
   useEffect(() => {
     if (closed) return;
@@ -131,28 +150,38 @@ export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
           {error}
         </p>
       )}
+      {gameError && (
+        <p role="alert" className="m-0 text-hazard">
+          {gameError}
+        </p>
+      )}
       {busy && <output className="m-0">Updating room…</output>}
-      {room.status === 'STARTED' && isHost ? (
+      {started ? (
         <div className="relative h-[75dvh] overflow-hidden bg-slate-950">
-          <Map robot={robot} />
-          <div className="pointer-events-none absolute inset-0 z-10">
-            <ProgrammingPhase roomId={room.gameId} onLockIn={runProgram} />
-          </div>
+          {state ? (
+            <>
+              <Map width={state.width} height={state.height} tiles={state.tiles.map(toTileData)} robots={mapRobots} />
+              <div className="pointer-events-none absolute inset-x-0 top-2 z-20 text-center text-sm text-white">
+                {describeStatus(state, room.players, isReplaying)}
+              </div>
+              <div className="pointer-events-none absolute inset-0 z-10">
+                <ProgrammingPhase roomId={room.gameId} round={programmingRound} />
+              </div>
+            </>
+          ) : (
+            <output className="absolute inset-0 flex items-center justify-center text-white">Loading game…</output>
+          )}
         </div>
       ) : (
         <>
           <section className="rounded border border-metal-light p-4 text-center">
             <h2 className="m-0 text-sm font-bold text-text-muted">Room code</h2>
             <p className="my-3 select-text text-3xl font-bold tracking-widest">{room.roomCode}</p>
-            {room.status === 'WAITING' && (
-              <>
-                <Button className="w-full" onClick={copyCode} variant="secondary">
-                  Copy Code
-                </Button>
-                <p className="mb-0 mt-3 text-sm text-text-muted">Share this code so friends can join.</p>
-                <output className="mb-0 mt-2 text-sm">{copyMessage}</output>
-              </>
-            )}
+            <Button className="w-full" onClick={copyCode} variant="secondary">
+              Copy Code
+            </Button>
+            <p className="mb-0 mt-3 text-sm text-text-muted">Share this code so friends can join.</p>
+            <output className="mb-0 mt-2 text-sm">{copyMessage}</output>
           </section>
           <section className="rounded border border-metal-light p-4 flex flex-col items-center">
             <h2 className="mb-3 mt-0 text-lg font-bold">Select Start Position</h2>
@@ -172,13 +201,7 @@ export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
               ))}
             </ul>
           </section>
-          {!isHost && (
-            <output className="m-0 text-center text-text-muted">
-              {room.status === 'STARTED'
-                ? 'The host is running a training game.'
-                : 'Waiting for the host to start. Only the host can play this run.'}
-            </output>
-          )}
+          {!isHost && <output className="m-0 text-center text-text-muted">Waiting for the host to start the battle.</output>}
           {isHost && (
             <Button size="large" disabled={busy} onClick={() => handleAction('start')}>
               Start Battle

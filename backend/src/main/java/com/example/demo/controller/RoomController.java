@@ -4,11 +4,11 @@ import com.example.demo.dto.CreateRoomRequest;
 import com.example.demo.dto.JoinRoomRequest;
 import com.example.demo.dto.RoomResponse;
 import com.example.demo.model.GameRoom;
-import com.example.demo.service.RoomService;
 import com.example.demo.model.Position;
-import com.example.demo.game.GameBoard;
 import com.example.demo.model.Tile;
 import com.example.demo.service.BoardRegistry;
+import com.example.demo.service.GameService;
+import com.example.demo.service.RoomService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,10 +23,12 @@ import java.util.UUID;
 public class RoomController {
     private final RoomService roomService;
     private final BoardRegistry boardRegistry;
+    private final GameService gameService;
 
-    public RoomController(RoomService roomService, BoardRegistry boardRegistry) {
+    public RoomController(RoomService roomService, BoardRegistry boardRegistry, GameService gameService) {
         this.roomService = roomService;
         this.boardRegistry = boardRegistry;
+        this.gameService = gameService;
     }
 
     private List<Tile> getSpawnsForRoom(GameRoom room) {
@@ -50,8 +52,9 @@ public class RoomController {
             @RequestBody JoinRoomRequest request,
             @AuthenticationPrincipal Jwt jwt) {
 
-        GameRoom room = roomService.joinRoom(request.roomCode(), request.playerName(), jwt.getSubject());
-        return ResponseEntity.ok(RoomResponse.forPlayer(room, room.players().getLast().playerId(), getSpawnsForRoom(room)));
+        String playerId = jwt.getSubject();
+        GameRoom room = roomService.joinRoom(request.roomCode(), request.playerName(), playerId);
+        return ResponseEntity.ok(RoomResponse.forPlayer(room, playerId, getSpawnsForRoom(room)));
     }
 
     @GetMapping("/{gameId}")
@@ -64,6 +67,7 @@ public class RoomController {
         return RoomResponse.forPlayer(room, securePlayerId, getSpawnsForRoom(room));
     }
 
+    /** The game session is created lazily from the room's players on first game request. */
     @PostMapping("/{gameId}/start")
     public RoomResponse startRoom(
             @PathVariable UUID gameId,
@@ -80,8 +84,15 @@ public class RoomController {
             @AuthenticationPrincipal Jwt jwt) {
 
         String securePlayerId = jwt.getSubject();
+        GameRoom room = roomService.getRoom(gameId, securePlayerId);
+        boolean wasHost = room.hostPlayerId().equals(securePlayerId);
         roomService.leaveRoom(gameId, securePlayerId);
 
+        if (wasHost) {
+            gameService.endGame(gameId);
+        } else {
+            gameService.removePlayer(gameId, securePlayerId);
+        }
         return ResponseEntity.noContent().build();
     }
 

@@ -14,7 +14,12 @@ function emptySelection() {
   };
 }
 
-export function useProgramming(roomId: string, onLockIn?: (registers: CardType[]) => void) {
+/**
+ * `round` is the round being programmed (null = not ready, e.g. a replay is
+ * playing). The hand is refetched whenever it changes, which is how a new
+ * hand appears after each round resolves.
+ */
+export function useProgramming(roomId: string, round: number | null) {
   const [selection, setSelection] = useState(emptySelection);
   const [isLockedIn, setIsLockedIn] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,29 +28,19 @@ export function useProgramming(roomId: string, onLockIn?: (registers: CardType[]
   const [discardPileCount, setDiscardPileCount] = useState(0);
 
   useEffect(() => {
+    if (round === null) return;
     let active = true;
     fetchPlayerHand(roomId)
       .then((data) => {
         if (!active) return;
-
-        // 1. Sync the locked-in status from the backend
         setIsLockedIn(data.isLockedIn);
-
-        // 2. Reconstruct the hand from the backend
         const newHand = Array.from({ length: 9 }, (_, index) => data.cards[index] ?? null);
-
-        // 3. Reconstruct the registers if the player previously locked them in
         const newRegisters = Array.from({ length: 5 }, (_, index) => {
           const card = data.lockedRegisters[index];
-          // We set handIndex to -1 because locked cards cannot be returned to the hand anyway
+          // handIndex -1: locked cards can't be returned to the hand anyway
           return card ? { card, handIndex: -1 } : null;
         });
-
-        setSelection({
-          hand: newHand,
-          registers: newRegisters,
-        });
-
+        setSelection({ hand: newHand, registers: newRegisters });
         setDrawPileCount(data.drawPileCount);
         setDiscardPileCount(data.discardPileCount);
       })
@@ -55,10 +50,12 @@ export function useProgramming(roomId: string, onLockIn?: (registers: CardType[]
     return () => {
       active = false;
     };
-  }, [roomId]);
+  }, [roomId, round]);
+
+  const locked = isLockedIn || round === null;
 
   const placeCardInRegister = (handIndex: number) => {
-    if (isLockedIn || submissionPending.current) return;
+    if (locked || submissionPending.current) return;
     setSelection((current) => {
       const card = current.hand[handIndex];
       const registerIndex = current.registers.findIndex((slot) => slot === null);
@@ -72,7 +69,7 @@ export function useProgramming(roomId: string, onLockIn?: (registers: CardType[]
   };
 
   const returnCardToHand = (registerIndex: number) => {
-    if (isLockedIn || submissionPending.current) return;
+    if (locked || submissionPending.current) return;
     setSelection((current) => {
       const selected = current.registers[registerIndex];
       if (!selected) return current;
@@ -85,7 +82,7 @@ export function useProgramming(roomId: string, onLockIn?: (registers: CardType[]
   };
 
   const clearProgram = () => {
-    if (isLockedIn || submissionPending.current) return;
+    if (locked || submissionPending.current) return;
     setSelection((current) => {
       const hand = [...current.hand];
       current.registers.forEach((selected) => {
@@ -96,29 +93,27 @@ export function useProgramming(roomId: string, onLockIn?: (registers: CardType[]
   };
 
   const submitProgram = async () => {
-    if (isLockedIn || submissionPending.current) return;
+    if (locked || submissionPending.current) return;
     const cards = selection.registers.flatMap((slot) => (slot ? [slot.card] : []));
-    if (cards.length === 0) return;
+    if (cards.length !== 5) return;
     submissionPending.current = true;
     setIsSubmitting(true);
     try {
       await submitProgramRegister(roomId, { registers: cards });
+      setIsLockedIn(true); // the server decides when the round resolves; the poll picks it up
     } catch (err) {
       console.error(err);
       console.warn('Failed to lock in registers.');
-      return;
     } finally {
       submissionPending.current = false;
       setIsSubmitting(false);
     }
-    setIsLockedIn(true);
-    onLockIn?.(cards);
   };
 
   return {
     hand: selection.hand,
     registers: selection.registers.map((slot) => slot?.card ?? null),
-    isLockedIn,
+    isLockedIn: locked,
     isSubmitting,
     drawPileCount,
     discardPileCount,

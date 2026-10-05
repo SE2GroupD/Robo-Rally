@@ -6,7 +6,7 @@ it('places Ready before Clear and calls each action', async () => {
   const user = userEvent.setup();
   const onSubmit = vi.fn();
   const onClear = vi.fn();
-  render(<RegisterButtons onSubmit={onSubmit} onClear={onClear} selectedCount={1} isSubmitting={false} isLockedIn={false} />);
+  render(<RegisterButtons onSubmit={onSubmit} onClear={onClear} selectedCount={5} isSubmitting={false} isLockedIn={false} />);
   expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual(['Ready', 'Clear']);
   await user.tab();
   expect(screen.getByRole('button', { name: 'Ready' })).toHaveFocus();
@@ -34,4 +34,14 @@ it.each([
   await user.click(screen.getByRole('button', { name: 'Clear' }));
   expect(onSubmit).not.toHaveBeenCalled();
   expect(onClear).not.toHaveBeenCalled();
+});
+
+it('keeps Ready disabled until all five registers are filled', async () => {
+  const user = userEvent.setup();
+  const onSubmit = vi.fn();
+  render(<RegisterButtons onSubmit={onSubmit} onClear={vi.fn()} selectedCount={4} isSubmitting={false} isLockedIn={false} />);
+  expect(screen.getByRole('button', { name: 'Ready' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Clear' })).toBeEnabled();
+  await user.click(screen.getByRole('button', { name: 'Ready' }));
+  expect(onSubmit).not.toHaveBeenCalled();
 });

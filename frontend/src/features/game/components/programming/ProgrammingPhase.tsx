@@ -3,17 +3,16 @@ import { ProgramRegisters } from './register/ProgramRegisters';
 import { RegisterButtons } from './register/RegisterButtons';
 import { DrawRegister } from './register/DrawRegister';
 import { useProgramming } from '../../hooks/useProgramming';
-import type { CardType } from '../../types/CardType';
 
 interface ProgrammingPhaseProps {
   roomId: string;
-  onLockIn?: (registers: CardType[]) => void;
+  round: number | null;
 }
 
-export function ProgrammingPhase({ roomId, onLockIn }: ProgrammingPhaseProps) {
+export function ProgrammingPhase({ roomId, round }: ProgrammingPhaseProps) {
   const root = useRef<HTMLDivElement>(null);
   const { hand, registers, isLockedIn, isSubmitting, placeCardInRegister, returnCardToHand, clearProgram, submitProgram } =
-    useProgramming(roomId, onLockIn);
+    useProgramming(roomId, round);
   const isDisabled = isLockedIn || isSubmitting;
   const selectedCount = registers.filter(Boolean).length;
   const restoreFocus = (action: () => void) => {

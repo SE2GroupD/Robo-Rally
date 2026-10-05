@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.service.BoardRegistry;
+import com.example.demo.service.GameService;
 import com.example.demo.service.RoomService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,8 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -23,6 +26,7 @@ class RoomControllerTests {
     private MockMvc mvc;
     private RoomService service;
     private BoardRegistry boardRegistry;
+    private GameService gameService;
     private final String hostId = "host-123";
     private final String guestId = "guest-456";
 
@@ -31,8 +35,9 @@ class RoomControllerTests {
     @BeforeEach
     void setUp() {
         boardRegistry = new BoardRegistry();
-        boardRegistry.loadBoards(); // Initialisation manuelle des ressources JSON
+        boardRegistry.loadBoards();
         service = new RoomService(boardRegistry);
+        gameService = mock(GameService.class);
 
         HandlerMethodArgumentResolver principalResolver = new HandlerMethodArgumentResolver() {
             @Override
@@ -47,7 +52,7 @@ class RoomControllerTests {
             }
         };
 
-        mvc = MockMvcBuilders.standaloneSetup(new RoomController(service, boardRegistry))
+        mvc = MockMvcBuilders.standaloneSetup(new RoomController(service, boardRegistry, gameService))
                 .setCustomArgumentResolvers(principalResolver)
                 .build();
     }
@@ -75,6 +80,8 @@ class RoomControllerTests {
         currentMockSubject = hostId;
         mvc.perform(post("/api/games/" + room.gameId() + "/leave"))
                 .andExpect(status().isNoContent());
+
+        verify(gameService).endGame(room.gameId());
 
         mvc.perform(get("/api/games/" + room.gameId()))
                 .andExpect(status().isNotFound());

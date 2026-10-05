@@ -3,8 +3,6 @@ package com.example.demo.service;
 import com.example.demo.model.BoardDefinition;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.stereotype.Service;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
@@ -39,5 +37,9 @@ public class BoardRegistry {
 
     public BoardDefinition getBoard(String id) {
         return boards.getOrDefault(id, boards.get("classic_start"));
+    }
+
+    public BoardDefinition getBoardById(String id) {
+        return boards.get(id);
     }
 }

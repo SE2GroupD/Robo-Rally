@@ -1,7 +1,9 @@
 package com.example.demo.model;
- 
+
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
- 
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 // Most tiles on the board are blank, use Tile.blank(x, y) for those
 // Tiles that have something on it, set only the relevant fields and leave everything else at default.
@@ -9,17 +11,18 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 //JsonInclude avoids sending null attributes as they are optional on the frontend
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record Tile(
-        int x,
-        int y,
-        boolean hasPit,
-        Walls walls,
-        boolean hasAntenna,
-        boolean isSpawnPoint,
-        GearRotation gear,
-        Conveyor conveyor,
-        Integer checkpointNumber,
-        String occupyingPlayerId
+        @JsonProperty("x") int x,
+        @JsonProperty("y") int y,
+        @JsonProperty("hasPit") @JsonAlias({"hasPit", "pit", "isPit"}) boolean hasPit,
+        @JsonProperty("walls") @JsonAlias({"walls", "wall", "isWall"}) Walls walls,
+        @JsonProperty("hasAntenna") @JsonAlias({"hasAntenna", "antenna", "isAntenna"}) boolean hasAntenna,
+        @JsonProperty("isSpawnPoint") @JsonAlias({"isSpawnPoint", "spawnPoint", "isSpawn", "spawn"}) boolean isSpawnPoint,
+        @JsonProperty("gear") @JsonAlias({"gear", "gearRotation"}) GearRotation gear,
+        @JsonProperty("conveyor") @JsonAlias({"conveyor", "conveyorTile"}) Conveyor conveyor,
+        @JsonProperty("checkpointNumber") @JsonAlias({"checkpointNumber", "checkpoint", "isCheckpoint"}) Integer checkpointNumber,
+        @JsonProperty("occupyingPlayerId") @JsonAlias({"occupyingPlayerId", "occupant"}) String occupyingPlayerId
 ) {
  
     public static Tile blank(int x, int y) {

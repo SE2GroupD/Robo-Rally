@@ -1,32 +1,38 @@
-import { Map } from '../components/map/Map';
-import { ProgrammingPhase } from '../components/programming/ProgrammingPhase';
-import type { RobotState } from '../types/Board';
-import type { CardType } from '../types/CardType';
+import { Navigate } from 'react-router-dom';
+import { Button } from '../../../foundation/components/button/Button';
+import { RoomSession } from '../components/room/RoomSession'; // adjust to where RoomSession lives
+import type { JoinedRoom } from '../api/gameApi';
 
 interface GamePageProps {
+  room: JoinedRoom | null;
+  isStarting: boolean;
+  error: string;
+  onRetry: () => void;
   onBack: () => void;
-  playerId: string;
-  robot: RobotState;
-  runProgram: (cards: readonly CardType[]) => void;
 }
 
-export function GamePage({ onBack, robot, runProgram }: GamePageProps) {
-  // Temporary room ID until room creation is implemented.
+// Solo play: App creates a real room and starts it immediately, so the server
+// runs the game exactly as it does for a hosted battle. RoomSession's own
+// "Leave Room" button closes the room and calls onBack.
+export function GamePage({ room, isStarting, error, onRetry, onBack }: GamePageProps) {
+  // A refresh loses the in-memory room, so there is nothing to show.
+  if (!room && !isStarting && !error) return <Navigate to="/main-menu" replace />;
+
   return (
-    <div className="relative h-dvh overflow-hidden bg-slate-950">
-      <button
-        type="button"
-        onClick={onBack}
-        className="absolute right-28 top-3 z-20 rounded bg-slate-950/90 px-3 py-2 text-sm text-slate-200 underline focus-visible:outline-2 focus-visible:outline-cyan-300"
-      >
-        &larr; Back to Menu
-      </button>
-
-      <Map robot={robot} />
-
-      <div className="pointer-events-none absolute inset-0 z-10">
-        <ProgrammingPhase roomId="123e4567-e89b-12d3-a456-426614174000" onLockIn={runProgram} />
-      </div>
+    <div className="flex min-h-dvh flex-col gap-3 bg-slate-950 p-3 text-white">
+      {isStarting && <output className="m-0">Starting game…</output>}
+      {error && (
+        <>
+          <p role="alert" className="m-0 text-hazard">
+            {error}
+          </p>
+          <Button onClick={onRetry}>Try Again</Button>
+          <Button variant="secondary" onClick={onBack}>
+            Back to Menu
+          </Button>
+        </>
+      )}
+      {room && <RoomSession initialRoom={room} onLeft={onBack} />}
     </div>
   );
 }

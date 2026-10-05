@@ -15,7 +15,6 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 class GameControllerTests {
@@ -26,14 +25,19 @@ class GameControllerTests {
     private final Jwt jwtMock = JwtMockFactory.createJwt("user-123");
 
     @ParameterizedTest
-    @ValueSource(ints = { 1, 2, 3, 4, 5 })
-    void acceptsOneToFiveCards(int count) {
-        var cards = List.of(CardType.MOVE_1, CardType.TURN_LEFT, CardType.MOVE_2,
-                CardType.TURN_RIGHT, CardType.POWER_UP).subList(0, count);
+    @ValueSource(ints = { 1, 2, 3, 4 })
+    void rejectsFewerThanFiveCards(int count) {
+        var cards = List.of(
+                CardType.MOVE_1,
+                CardType.TURN_LEFT,
+                CardType.MOVE_2,
+                CardType.TURN_RIGHT,
+                CardType.MOVE_3
+        ).subList(0, count);
         var request = new ProgramRegisterDto(cards);
 
-        assertEquals(200, controller.submitRegisters(roomId, request, jwtMock).getStatusCode().value());
-        verify(service).submitPlayerRegisters(roomId, jwtMock.getSubject(), request);
+        assertEquals(400, controller.submitRegisters(roomId, request, jwtMock).getStatusCode().value());
+        verifyNoInteractions(service);
     }
 
     static Stream<List<CardType>> invalidPrograms() {
@@ -46,7 +50,7 @@ class GameControllerTests {
         var response = controller.submitRegisters(roomId, new ProgramRegisterDto(cards), jwtMock);
 
         assertEquals(400, response.getStatusCode().value());
-        assertEquals("Must submit 1 to 5 non-null cards.", response.getBody());
+        assertEquals("Must submit exactly 5 cards.", response.getBody());
         verifyNoInteractions(service);
     }
 }

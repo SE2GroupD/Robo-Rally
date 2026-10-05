@@ -3,35 +3,23 @@ package com.example.demo.service;
 import com.example.demo.dto.BoardStateDto;
 import com.example.demo.dto.PlayerHandDto;
 import com.example.demo.dto.ProgramRegisterDto;
-import com.example.demo.dto.TurnResolutionDto;
 
 import java.util.UUID;
 
 public interface GameService {
 
-    /**
-     * Retrieves the 9 drawn cards for a specific player in a specific room.
-     */
-    PlayerHandDto getPlayerHand(UUID roomId, String playerId);
+    /** The player's current hand (dealt on first request each round). */
+    PlayerHandDto getPlayerHand(UUID gameId, String playerId);
 
-    /**
-     * Processes the 5 registers submitted by a player, locking them in for the
-     * round.
-     */
-    void submitPlayerRegisters(UUID roomId, String playerId, ProgramRegisterDto request);
+    /** Locks in the player's registers; resolves the round when the last player locks in. */
+    void submitPlayerRegisters(UUID gameId, String playerId, ProgramRegisterDto request);
 
-    /**
-     * Completes the current round for a specific player in a specific room.
-     */
-    void completeRound(UUID roomId, String playerId);
+    /** Board, robots, lock-in status and the last round's replay. */
+    BoardStateDto getBoardState(UUID gameId, String playerId);
 
-    /**
-     * Resolves a turn for all players in the room once registers are submitted.
-     */
-    TurnResolutionDto resolveTurn(UUID roomId);
+    /** A non-host player left mid-game. */
+    void removePlayer(UUID gameId, String playerId);
 
-    /**
-     * Retrieves the current state of the board and robot positions.
-     */
-    BoardStateDto getBoardState(UUID roomId);
+    /** The room closed. */
+    void endGame(UUID gameId);
 }
