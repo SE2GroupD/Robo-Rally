@@ -19,6 +19,8 @@ const getRotationDegrees = (dir: Direction): number => {
   }
 };
 
+const ARROWS: Record<Direction, string> = { NORTH: '↑', EAST: '→', SOUTH: '↓', WEST: '←' };
+
 interface TileProps {
   tile: TileData;
 }
@@ -58,6 +60,17 @@ export function Tile({ tile }: TileProps) {
           {tile.conveyor.direction === 'EAST' && '→'}
           {tile.conveyor.direction === 'SOUTH' && '↓'}
           {tile.conveyor.direction === 'WEST' && '←'}
+        </div>
+      )}
+
+      {tile.pushPanel && (
+        <div
+          role="img"
+          aria-label={`Push panel ${tile.pushPanel.direction.toLowerCase()}, registers ${tile.pushPanel.activeRegisters.join(', ')}`}
+          className="absolute z-10 flex flex-col items-center font-black leading-none text-orange-400"
+        >
+          <span className="text-xl">{ARROWS[tile.pushPanel.direction]}</span>
+          <span className="text-[9px]">{tile.pushPanel.activeRegisters.join('')}</span>
         </div>
       )}
 

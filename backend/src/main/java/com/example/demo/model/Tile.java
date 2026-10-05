@@ -1,7 +1,6 @@
 package com.example.demo.model;
- 
+
 import com.fasterxml.jackson.annotation.JsonInclude;
- 
 
 // Most tiles on the board are blank, use Tile.blank(x, y) for those
 // Tiles that have something on it, set only the relevant fields and leave everything else at default.
@@ -18,38 +17,43 @@ public record Tile(
         boolean isSpawnPoint,
         GearRotation gear,
         Conveyor conveyor,
-        Integer checkpointNumber
+        Integer checkpointNumber,
+        PushPanel pushPanel
 ) {
- 
+
     public static Tile blank(int x, int y) {
-        return new Tile(x, y, false, null, false, false, null, null, null);
+        return new Tile(x, y, false, null, false, false, null, null, null, null);
     }
- 
+
     public static Tile pit(int x, int y) {
-        return new Tile(x, y, true, null, false, false, null, null, null);
+        return new Tile(x, y, true, null, false, false, null, null, null, null);
     }
- 
+
     public static Tile withWalls(int x, int y, Walls walls) {
-        return new Tile(x, y, false, walls, false, false, null, null, null);
+        return new Tile(x, y, false, walls, false, false, null, null, null, null);
     }
- 
+
     public static Tile antenna(int x, int y) {
-        return new Tile(x, y, false, null, true, false, null, null, null);
+        return new Tile(x, y, false, null, true, false, null, null, null, null);
     }
- 
+
     public static Tile spawnPoint(int x, int y) {
-        return new Tile(x, y, false, null, false, true, null, null, null);
+        return new Tile(x, y, false, null, false, true, null, null, null, null);
     }
- 
+
     public static Tile gearTile(int x, int y, GearRotation rotation) {
-        return new Tile(x, y, false, null, false, false, rotation, null, null);
+        return new Tile(x, y, false, null, false, false, rotation, null, null, null);
     }
- 
+
     public static Tile conveyorTile(int x, int y, Conveyor conveyor) {
-        return new Tile(x, y, false, null, false, false, null, conveyor, null);
+        return new Tile(x, y, false, null, false, false, null, conveyor, null, null);
     }
- 
+
     public static Tile checkpoint(int x, int y, int number) {
-        return new Tile(x, y, false, null, false, false, null, null, number);
+        return new Tile(x, y, false, null, false, false, null, null, number, null);
+    }
+
+    public static Tile pushPanelTile(int x, int y, PushPanel pushPanel) {
+        return new Tile(x, y, false, null, false, false, null, null, null, pushPanel);
     }
 }

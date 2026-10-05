@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.dto.BoardStateDto;
 import com.example.demo.dto.PlayerHandDto;
 import com.example.demo.dto.ProgramRegisterDto;
+import com.example.demo.dto.PhaseStepDto;
 import com.example.demo.dto.RegisterStepDto;
 import com.example.demo.dto.RobotStateDto;
 import com.example.demo.dto.RobotStepDto;
@@ -16,6 +17,7 @@ import com.example.demo.model.CardType;
 import com.example.demo.model.Direction;
 import com.example.demo.model.GameRoom;
 import com.example.demo.model.Position;
+import com.example.demo.model.ResolutionPhase;
 import com.example.demo.model.RoomStatus;
 
 import org.springframework.stereotype.Service;
@@ -23,8 +25,10 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class GameServiceImpl implements GameService {
@@ -48,7 +52,7 @@ public class GameServiceImpl implements GameService {
         if (room.status() != RoomStatus.STARTED) {
             throw new IllegalStateException("The game has not started yet.");
         }
-        return sessions.computeIfAbsent(gameId, _ -> createSession(room));
+        return sessions.computeIfAbsent(gameId, id -> createSession(room));
     }
 
     private GameSession createSession(GameRoom room) {
@@ -116,17 +120,27 @@ public class GameServiceImpl implements GameService {
         Map<Robot, List<CardType>> input = session.buildResolutionInput();
         List<RegisterStepDto> steps = new ArrayList<>();
 
-        movementResolver.resolveRound(session.getBoard(), input, (registerNumber, cardsPlayed) -> {
-            List<RobotStepDto> robotSteps = cardsPlayed.entrySet().stream()
-                    .map(e -> new RobotStepDto(
-                            e.getKey().getPlayerId(),
-                            e.getValue(),
-                            e.getKey().getPosition().x(),
-                            e.getKey().getPosition().y(),
-                            e.getKey().getDirection()))
-                    .toList();
-            steps.add(new RegisterStepDto(registerNumber, robotSteps));
+        Map<Integer, List<PhaseStepDto>> phasesByRegister = new TreeMap<>();
+        AtomicReference<List<RobotStateDto>> previous = new AtomicReference<>(starting);
+
+        movementResolver.resolveRound(session.getBoard(), input, (registerNumber, phase, cardsPlayed) -> {
+            List<RobotStateDto> now = robotStates(session);
+            // Always keep the CARD phase; keep later phases only if something moved or turned.
+            if (phase == ResolutionPhase.CARD || !now.equals(previous.get())) {
+                List<RobotStepDto> robotSteps = input.keySet().stream()
+                        .map(r -> new RobotStepDto(
+                                r.getPlayerId(),
+                                cardsPlayed.get(r),
+                                r.getPosition().x(),
+                                r.getPosition().y(),
+                                r.getDirection()))
+                        .toList();
+                phasesByRegister.computeIfAbsent(registerNumber, k -> new ArrayList<>())
+                        .add(new PhaseStepDto(phase, robotSteps));
+                previous.set(now);
+            }
         });
+        phasesByRegister.forEach((registerNumber, phases) -> steps.add(new RegisterStepDto(registerNumber, phases)));
 
         // Played cards go to the discard pile here (prepareForNextRound) - and only here.
         for (String playerId : session.getRobots().keySet()) {
