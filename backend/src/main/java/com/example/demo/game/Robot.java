@@ -42,23 +42,6 @@ public class Robot {
         }
     }
 
-    public void turnRight() {
-        direction = direction.rotateRight();
-        for (int i = 0; i < spaces; i++) {
-            step(board, direction);
-        }
-    }
-
-    public void moveBackward(GameBoard board, int spaces) {
-        for (int i = 0; i < spaces; i++) {
-            step(board, direction.opposite());
-        }
-    }
-
-    private void step(GameBoard board, Direction stepDirection) {
-        position = board.clampToBounds(position.moveIn(stepDirection, 1));
-    }
-
     public void turnRight() { direction = direction.rotateRight(); }
     public void turnLeft() { direction = direction.rotateLeft(); }
     public void uTurn() { direction = direction.opposite(); }
