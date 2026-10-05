@@ -9,6 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Locale;
 import java.util.HashMap;
 import java.util.List;
@@ -19,8 +20,13 @@ import java.util.UUID;
 public class RoomService {
     // Active rooms are temporary: restarting the backend clears this map.
     private final Map<String, GameRoom> roomsByCode = new HashMap<>();
+    private final Map<UUID, String> publicRoomNamesByGameId = new HashMap<>();
     private final SecureRandom random = new SecureRandom();
     private static final String CODE_CHARACTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private static final int MAX_PUBLIC_ROOM_PLAYERS = 6;
+
+    /** Metadata for a public room; the existing GameRoom model remains unchanged. */
+    public record PublicRoom(GameRoom room, String roomName) { }
 
     // Now accepts secure playerId from the controller/JWT
     public synchronized GameRoom createRoom(String playerName, String playerId) {
@@ -38,6 +44,52 @@ public class RoomService {
         GameRoom room = new GameRoom(UUID.randomUUID(), code, host.playerId(), List.of(host), RoomStatus.WAITING);
         roomsByCode.put(code, room);
         return room;
+    }
+
+    /** Creates a normal room and marks it as visible on the Start Platform. */
+    public synchronized GameRoom createPublicRoom(String playerName, String playerId, String roomName) {
+        if (roomName == null || roomName.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Room name is required.");
+        }
+        String cleanRoomName = roomName.strip();
+        if (cleanRoomName.length() > 40) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Room name must be 40 characters or fewer.");
+        }
+
+        GameRoom room = createRoom(playerName, playerId);
+        publicRoomNamesByGameId.put(room.gameId(), cleanRoomName);
+        return room;
+    }
+
+    /** Returns public rooms that are still waiting and have an available player slot. */
+    public synchronized List<PublicRoom> listPublicRooms() {
+        List<PublicRoom> publicRooms = new ArrayList<>();
+        for (Map.Entry<UUID, String> entry : publicRoomNamesByGameId.entrySet()) {
+            GameRoom room = getRoomByGameId(entry.getKey());
+            if (room != null && room.status() == RoomStatus.WAITING && room.players().size() < MAX_PUBLIC_ROOM_PLAYERS) {
+                publicRooms.add(new PublicRoom(room, entry.getValue()));
+            }
+        }
+        publicRooms.sort(Comparator.comparing(PublicRoom::roomName, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(publicRoom -> publicRoom.room().roomCode()));
+        return List.copyOf(publicRooms);
+    }
+
+    /** Joins a room selected from the public-room list. */
+    public synchronized GameRoom joinPublicRoom(UUID gameId, String playerName, String playerId) {
+        if (!publicRoomNamesByGameId.containsKey(gameId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Public room not found.");
+        }
+        GameRoom room = getRoomByGameId(gameId);
+        if (room == null) {
+            publicRoomNamesByGameId.remove(gameId);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Public room not found.");
+        }
+        boolean alreadyJoined = room.players().stream().anyMatch(player -> player.playerId().equals(playerId));
+        if (!alreadyJoined && room.players().size() >= MAX_PUBLIC_ROOM_PLAYERS) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This room is full.");
+        }
+        return joinRoom(room.roomCode(), playerName, playerId);
     }
 
     // Now accepts secure playerId from the controller/JWT

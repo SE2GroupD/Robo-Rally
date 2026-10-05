@@ -52,6 +52,34 @@ class RoomControllerTests {
         }
 
         @Test
+        void publicRoomEndpointsListCreateAndJoinRooms() throws Exception {
+                currentMockSubject = hostId;
+                String publicRoomJson = mvc.perform(post("/api/games/public")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"playerName\":\"Host\",\"roomName\":\"Morning Shift\"}"))
+                        .andExpect(status().isCreated())
+                        .andExpect(jsonPath("$.status").value("WAITING"))
+                        .andReturn().getResponse().getContentAsString();
+                String gameId = com.jayway.jsonpath.JsonPath.read(publicRoomJson, "$.gameId");
+
+                mvc.perform(get("/api/games/public"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$[0].gameId").value(gameId))
+                        .andExpect(jsonPath("$[0].roomName").value("Morning Shift"))
+                        .andExpect(jsonPath("$[0].hostPlayerName").value("Host"))
+                        .andExpect(jsonPath("$[0].playerCount").value(1))
+                        .andExpect(jsonPath("$[0].maxPlayers").value(6));
+
+                currentMockSubject = guestId;
+                mvc.perform(post("/api/games/public/" + gameId + "/join")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"playerName\":\"Guest\"}"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.playerId").value(guestId))
+                        .andExpect(jsonPath("$.players.length()").value(2));
+        }
+
+        @Test
         void roomLifecycleEndpointsReturnUpdatedState() throws Exception {
                 var room = service.createRoom("Host", hostId);
 

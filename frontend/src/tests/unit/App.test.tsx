@@ -115,6 +115,22 @@ beforeEach(() => {
       ],
     };
 
+    const publicRooms = [
+      {
+        gameId: 'public-room',
+        roomName: 'Friday factory race',
+        hostPlayerName: 'Mia',
+        playerCount: 2,
+        maxPlayers: 6,
+      },
+    ];
+
+    if (endpoint.endsWith('/public/rooms')) return createResponse(publicRooms);
+    if (endpoint.endsWith('/games/public')) {
+      if (init?.method === 'POST') return createResponse(hostRoom);
+      return createResponse([]);
+    }
+    if (endpoint.endsWith('/games/public/public-room/join')) return createResponse(guestRoom);
     if (endpoint.includes('/games/join')) return createResponse(guestRoom);
     if (endpoint.endsWith('/start')) {
       roomStatus = 'STARTED';
@@ -207,6 +223,46 @@ describe('URL and session recovery', () => {
 });
 
 describe('room routes after the navigation merge', () => {
+  it('lists public rooms, refreshes them, and joins a selected room', async () => {
+    window.history.replaceState(null, '', '/main-menu');
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(screen.getByRole('button', { name: 'Public Rooms' }));
+    await expectPath('/start-platform');
+    expect(await screen.findByText('Friday factory race')).toBeInTheDocument();
+    expect(screen.getByText('Host: Mia · 2/6 pilots')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Refresh' }));
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/public/rooms'), expect.anything()));
+
+    await user.click(screen.getByRole('button', { name: 'Join' }));
+    await expectPath('/join-battle');
+    expect(await screen.findByText('Guest · You')).toBeInTheDocument();
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/games/public/public-room/join'),
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('creates a named public room from the Start Platform', async () => {
+    window.history.replaceState(null, '', '/main-menu');
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(screen.getByRole('button', { name: 'Public Rooms' }));
+    await screen.findByText('Friday factory race');
+    await user.type(screen.getByLabelText('Room name'), 'Robot Rush');
+    await user.click(screen.getByRole('button', { name: 'Create public room' }));
+
+    await expectPath('/host-battle');
+    expect(await screen.findByText('ABC234')).toBeInTheDocument();
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/games/public'),
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ roomName: 'Robot Rush', playerName: 'pilot' }) }),
+    );
+  });
+
   it('creates a hosted run, shows the servers robot, and leaves using the server IDs', async () => {
     window.history.replaceState(null, '', '/main-menu');
     const user = userEvent.setup();

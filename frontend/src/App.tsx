@@ -7,6 +7,7 @@ import { useRef, useState } from 'react';
 import { createRoom, startRoom, leaveRoom, type CreatedRoom, type JoinedRoom } from './features/game/api/gameApi';
 import { HostBattlePage } from './features/game/pages/HostBattlePage';
 import { JoinBattlePage } from './features/game/pages/JoinBattlePage';
+import { StartPlatformPage } from './features/game/pages/StartPlatformPage';
 import { MenuScreen } from './shared/components/menu-screen/MenuScreen';
 import { VerifyEmailForm } from './features/auth/pages/VerifyEmailForm';
 import { ResetPasswordForm } from './features/auth/pages/ResetPasswordForm';
@@ -173,10 +174,33 @@ function App() {
           playerInfo ? (
             <MainMenuPage
               onStartGame={handleStartGame}
+              onStartPlatform={() => navigate('/start-platform')}
               onHostBattle={handleHostBattle}
               onJoinBattle={() => navigate('/join-battle')}
               onLogout={handleLogout}
               username={playerInfo.username}
+            />
+          ) : (
+            loginRedirect
+          )
+        }
+      />
+
+      <Route
+        path="/start-platform"
+        element={
+          playerInfo ? (
+            <StartPlatformPage
+              username={playerInfo.username}
+              onBack={handleRoomBack}
+              onCreated={(room) => {
+                setHostRoom(room);
+                navigate('/host-battle');
+              }}
+              onJoined={(room) => {
+                setJoinedRoom(room);
+                navigate('/join-battle');
+              }}
             />
           ) : (
             loginRedirect
