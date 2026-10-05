@@ -2,21 +2,16 @@ package com.example.demo.game;
 
 import com.example.demo.model.CardType;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Resolves one activation phase: given every robot's five programmed
- * registers, applies them register-by-register (all robots' register 1,
- * then all register 2, and so on) - this is how card priority ordering
- * works in the real game.
- *
- * Simplifications for version 0:
- *  - Within a single register, robots are processed in the iteration order
- *    of the map the caller provides.
- *    if/when collision handling needs a real tie-break order.
- *  - No collision detection or pushing between robots.
+ * Resolves one activation phase register-by-register (all robots' register 1,
+ * then all register 2, ...).
+ * Still simplified: robots are processed in the iteration order of the input map,
+ * and there is no collision/pushing between robots yet.
  */
 public class MovementResolver {
 
@@ -26,28 +21,32 @@ public class MovementResolver {
     public interface RegisterCallback {
         /**
          * Called after all robots' cards for one register have been applied.
-         * registerNumber is 1-based (1..5). cardsPlayed only contains robots
-         * that actually had a card in this register (a robot with fewer than
-         * 5 registers submitted is simply skipped for the missing ones).
+         * registerNumber is 1-based. cardsPlayed holds the card as programmed
+         * (so AGAIN is reported as AGAIN) for robots that had a card this register.
          */
         void onRegisterResolved(int registerNumber, Map<Robot, CardType> cardsPlayed);
     }
 
-    public void resolveRound(GameBoard board, Map<Robot, List<CardType>> programmedRegisters) {
-        resolveRound(board, programmedRegisters, null);
-    }
-
     public void resolveRound(GameBoard board, Map<Robot, List<CardType>> programmedRegisters,
-                              RegisterCallback callback) {
+                             RegisterCallback callback) {
+        // What each robot's previous register actually did, for AGAIN.
+        Map<Robot, CardType> lastEffective = new HashMap<>();
+
         for (int registerIndex = 0; registerIndex < REGISTER_COUNT; registerIndex++) {
             Map<Robot, CardType> cardsThisRegister = new LinkedHashMap<>();
             for (Map.Entry<Robot, List<CardType>> entry : programmedRegisters.entrySet()) {
                 List<CardType> registers = entry.getValue();
-                if (registerIndex < registers.size()) {
-                    CardType card = registers.get(registerIndex);
-                    applyCard(board, entry.getKey(), card);
-                    cardsThisRegister.put(entry.getKey(), card);
+                if (registerIndex >= registers.size()) continue;
+
+                Robot robot = entry.getKey();
+                CardType card = registers.get(registerIndex);
+                // AGAIN repeats the previous register; with nothing to repeat it does nothing.
+                CardType effective = card == CardType.AGAIN ? lastEffective.get(robot) : card;
+                if (effective != null) {
+                    applyCard(board, robot, effective);
+                    lastEffective.put(robot, effective);
                 }
+                cardsThisRegister.put(robot, card);
             }
             if (callback != null) {
                 callback.onRegisterResolved(registerIndex + 1, cardsThisRegister);
@@ -65,7 +64,7 @@ public class MovementResolver {
             case TURN_RIGHT -> robot.turnRight();
             case U_TURN -> robot.uTurn();
             default -> {
-                // POWER_UP, AGAIN, and damage cards don't move the robot directly.
+                // POWER_UP and damage cards don't move the robot.
             }
         }
     }

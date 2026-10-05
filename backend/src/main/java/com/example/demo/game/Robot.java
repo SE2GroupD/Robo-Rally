@@ -4,12 +4,8 @@ import com.example.demo.model.Direction;
 import com.example.demo.model.Position;
 
 /**
- * A player's robot on the board: its position, the direction it's facing,
- * and the movement/rotation operations that command cards trigger.
- *
- * Collision with other robots or board hazards is not handled here yet -
- * that belongs to a later activation-phase pass once GameBoard grows walls
- * and field elements.
+ * A player's robot on the board: its position, facing, and the movement/rotation
+ * operations that command cards trigger.
  */
 public class Robot {
 
@@ -23,35 +19,28 @@ public class Robot {
         this.direction = startDirection;
     }
 
-    public String getPlayerId() {
-        return playerId;
-    }
+    public String getPlayerId() { return playerId; }
+    public Position getPosition() { return position; }
+    public Direction getDirection() { return direction; }
 
-    public Position getPosition() {
-        return position;
-    }
-
-    public Direction getDirection() {
-        return direction;
-    }
-
+    /** Moves one space at a time to allow walls/pits/pushing */
     public void moveForward(GameBoard board, int spaces) {
-        position = board.clampToBounds(position.moveIn(direction, spaces));
+        for (int i = 0; i < spaces; i++) {
+            step(board, direction);
+        }
     }
 
     public void moveBackward(GameBoard board, int spaces) {
-        position = board.clampToBounds(position.moveIn(direction.opposite(), spaces));
+        for (int i = 0; i < spaces; i++) {
+            step(board, direction.opposite());
+        }
     }
 
-    public void turnRight() {
-        direction = direction.rotateRight();
+    private void step(GameBoard board, Direction stepDirection) {
+        position = board.clampToBounds(position.moveIn(stepDirection, 1));
     }
 
-    public void turnLeft() {
-        direction = direction.rotateLeft();
-    }
-
-    public void uTurn() {
-        direction = direction.opposite();
-    }
+    public void turnRight() { direction = direction.rotateRight(); }
+    public void turnLeft() { direction = direction.rotateLeft(); }
+    public void uTurn() { direction = direction.opposite(); }
 }
