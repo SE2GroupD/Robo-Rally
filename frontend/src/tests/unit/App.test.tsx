@@ -103,18 +103,31 @@ beforeEach(() => {
       playerId: 'host-id',
       hostPlayerId: 'host-id',
       status: roomStatus,
-      players: [{ playerId: 'host-id', playerName: 'pilot' }],
+      startBoardConfig: [
+        { x: 0, y: 1, isSpawnPoint: true },
+        { x: 0, y: 2, isSpawnPoint: true },
+        { x: 0, y: 3, isSpawnPoint: true },
+        { x: 1, y: 1, isSpawnPoint: true },
+        { x: 1, y: 2, isSpawnPoint: true },
+        { x: 1, y: 3, isSpawnPoint: true },
+      ],
+      players: [{ playerId: 'host-id', playerName: 'pilot', startPosition: { x: 0, y: 1 } }],
     };
 
     const guestRoom = {
       ...hostRoom,
       playerId: 'guest-id',
       players: [
-        { playerId: 'host-id', playerName: 'pilot' },
-        { playerId: 'guest-id', playerName: 'guest' },
+        { playerId: 'host-id', playerName: 'pilot', startPosition: { x: 0, y: 1 } },
+        { playerId: 'guest-id', playerName: 'guest', startPosition: { x: 0, y: 2 } },
       ],
     };
 
+    if (endpoint.includes('/start-tile')) {
+      const body = init?.body ? JSON.parse(String(init.body)) : { x: 0, y: 1 };
+      hostRoom.players[0].startPosition = { x: body.x, y: body.y };
+      return createResponse(hostRoom);
+    }
     if (endpoint.includes('/games/join')) return createResponse(guestRoom);
     if (endpoint.endsWith('/start')) {
       roomStatus = 'STARTED';
@@ -216,7 +229,7 @@ describe('room routes after the navigation merge', () => {
     expect(await screen.findByText('ABC234')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Start Battle' }));
-    expect(await screen.findByLabelText('Robot position')).toHaveTextContent('0,1');
+    await waitFor(() => expect(screen.getByLabelText('Robot position')).toHaveTextContent('0,1'));
     await screen.findByRole('img', { name: 'Move 1' });
     const hand = within(screen.getByRole('heading', { name: 'Your Hand' }).parentElement!);
     for (let index = 0; index < 5; index++) await user.click(hand.getAllByRole('button')[0]);
