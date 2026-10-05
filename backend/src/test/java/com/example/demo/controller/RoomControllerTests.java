@@ -141,4 +141,16 @@ class RoomControllerTests {
                     .andExpect(status().isBadRequest());
         }
     }
+
+    @Test
+    void selectStartTileReturnsUpdatedRoom() throws Exception {
+        var room = service.createRoom("Host", hostId);
+        currentMockSubject = hostId;
+        mvc.perform(post("/api/games/" + room.gameId() + "/start-tile")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"x\":1,\"y\":1}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.players[0].startPosition.x").value(1))
+                .andExpect(jsonPath("$.players[0].startPosition.y").value(1));
+    }
 }

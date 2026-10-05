@@ -102,39 +102,40 @@ public class GameServiceImpl implements GameService {
     @Override
     public void submitPlayerRegisters(UUID gameId, String playerId, ProgramRegisterDto request) {
         GameSession session = sessionFor(gameId, playerId);
+        List<CardType> registers = new ArrayList<>(request.registers());
+        if (registers.size() != 5 || registers.contains(null)) {
+            throw new IllegalArgumentException("Exactly 5 non-null registers are required.");
+        }
         synchronized (session) {
             ProgrammingDeck deck = session.getDeck(playerId);
             if (deck.isLockedIn()) {
                 throw new IllegalStateException("Registers are already locked in for this round.");
             }
-            deck.discardRemainingHand(new ArrayList<>(request.registers()));
-            session.submitRegisters(playerId, request.registers());
-
+            if (deck.getCurrentHand().isEmpty()) {
+                throw new IllegalStateException("No hand has been dealt yet.");
+            }
+            deck.discardRemainingHand(registers); // validates against the hand, throws if invalid
+            session.submitRegisters(playerId, registers);
             if (session.allPlayersHaveSubmitted()) {
                 resolveRound(session);
             }
         }
     }
 
-    /** Caller MUST hold the monitor on session. */
+    /** Must be called while holding the session lock. */
     private void resolveRound(GameSession session) {
-        Map<Robot, List<CardType>> resolutionInput = session.buildResolutionInput();
-
-        // Snapshot initial robot poses so the replay has the starting frame
-        // (before register 1 moves anything).
-        List<RobotStateDto> starting = session.getRobots().values().stream()
-                .map(r -> new RobotStateDto(r.getPlayerId(), r.getPosition().x(), r.getPosition().y(), r.getDirection()))
-                .toList();
-
+        List<RobotStateDto> starting = robotStates(session);
+        Map<Robot, List<CardType>> input = session.buildResolutionInput();
         List<RegisterStepDto> steps = new ArrayList<>();
-        movementResolver.resolveRound(session.getBoard(), resolutionInput, (registerNumber, cardsPlayed) -> {
+
+        movementResolver.resolveRound(session.getBoard(), input, (registerNumber, cardsPlayed) -> {
             List<RobotStepDto> robotSteps = cardsPlayed.entrySet().stream()
-                    .map(entry -> new RobotStepDto(
-                            entry.getKey().getPlayerId(),
-                            entry.getValue(),
-                            entry.getKey().getPosition().x(),
-                            entry.getKey().getPosition().y(),
-                            entry.getKey().getDirection()))
+                    .map(e -> new RobotStepDto(
+                            e.getKey().getPlayerId(),
+                            e.getValue(),
+                            e.getKey().getPosition().x(),
+                            e.getKey().getPosition().y(),
+                            e.getKey().getDirection()))
                     .toList();
             steps.add(new RegisterStepDto(registerNumber, robotSteps));
         });

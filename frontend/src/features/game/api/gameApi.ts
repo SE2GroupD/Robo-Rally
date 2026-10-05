@@ -249,7 +249,7 @@ export async function selectStartTile(room: JoinedRoom, x: number, y: number): P
 export async function fetchBoardState(gameId: string, signal?: AbortSignal): Promise<BoardStateDto> {
   const token = await getValidToken();
 
-  const response = await fetch(`${API_BASE_URL}/game/${encodeURIComponent(gameId)}/state`, {
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/game/${encodeURIComponent(gameId)}/state`, {
     headers: { Authorization: `Bearer ${token}` },
     signal,
   });
