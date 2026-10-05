@@ -1,7 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../App';
-import type { RobotState } from '../../features/game/types/Board';
 import { BrowserRouter } from 'react-router-dom';
 import { neon } from '../../features/auth/lib/neon';
 
@@ -36,8 +35,8 @@ async function expectPath(path: string) {
 }
 
 vi.mock('../../features/game/components/map/Map', () => ({
-  Map: ({ robot }: { robot: RobotState }) => (
-    <output aria-label="Robot position">{`${robot.board}:${robot.x},${robot.y}`}</output>
+  Map: ({ robots }: { robots: { x: number; y: number }[] }) => (
+    <output aria-label="Robot position">{robots.map((r) => `${r.x},${r.y}`).join(' ')}</output>
   ),
 }));
 
@@ -54,6 +53,7 @@ beforeEach(() => {
   } as any);
 
   let roomStatus = 'WAITING';
+  let robotX = 0; // the 'server' moves the robot once registers are submitted
 
   mockFetch.mockImplementation(async (url, init) => {
     const endpoint = String(url);
@@ -78,6 +78,23 @@ beforeEach(() => {
         lockedRegisters: [],
         isLockedIn: false,
       });
+    }
+
+    if (endpoint.endsWith('/state')) {
+      return createResponse({
+        gameId: 'real-room',
+        width: 12,
+        height: 12,
+        robots: [{ playerId: 'host-id', x: robotX, y: 1, direction: 'EAST' }],
+        tiles: [],
+        round: 1,
+        lockedInPlayerIds: [],
+        lastResolution: null,
+      });
+    }
+    if (endpoint.endsWith('/registers')) {
+      robotX = 1;
+      return createResponse({});
     }
 
     const hostRoom = {
@@ -131,26 +148,31 @@ describe('application navigation', () => {
     expect(screen.getByRole('button', { name: 'Log In' })).toBeInTheDocument();
   });
 
-  it('preserves the robot position when leaving and reopens training', async () => {
+  it('starts a solo run on the server, lets the server move the robot, and leaves', async () => {
     const user = userEvent.setup();
     renderApp();
     await expectPath('/main-menu');
     await user.click(screen.getByRole('button', { name: 'Start Training Run' }));
     await expectPath('/game');
-    expect(screen.getByLabelText('Robot position')).toHaveTextContent('start:1,1');
+    await waitFor(() => expect(screen.getByLabelText('Robot position')).toHaveTextContent('0,1'));
     await screen.findByRole('button', { name: 'Ready' });
 
     await waitFor(() => expect(screen.getAllByRole('img', { name: /Move 1|Power Up/ })).toHaveLength(5));
     const hand = within(screen.getByRole('heading', { name: 'Your Hand' }).parentElement!);
-    for (let index = 0; index < 5; index++) {
-      await user.click(hand.getAllByRole('button')[0]);
-    }
+    for (let index = 0; index < 5; index++) await user.click(hand.getAllByRole('button')[0]);
     await user.click(screen.getByRole('button', { name: 'Ready' }));
-    await waitFor(() => expect(screen.getByLabelText('Robot position')).toHaveTextContent('start:2,1'));
-    await user.click(screen.getByRole('button', { name: /Back to Menu/ }));
-    await user.click(screen.getByRole('button', { name: 'Start Training Run' }));
-    await expectPath('/game');
-    expect(screen.getByLabelText('Robot position')).toHaveTextContent('start:2,1');
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/game/real-room/registers'),
+      expect.objectContaining({ method: 'POST' }),
+    );
+    await waitFor(() => expect(screen.getByLabelText('Robot position')).toHaveTextContent('1,1'), { timeout: 3000 });
+
+    await user.click(screen.getByRole('button', { name: 'Leave Room' }));
+    await expectPath('/main-menu');
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/games/real-room/leave'),
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 });
 
@@ -185,7 +207,7 @@ describe('URL and session recovery', () => {
 });
 
 describe('room routes after the navigation merge', () => {
-  it('creates a hosted run, moves its robot, and leaves using the server IDs', async () => {
+  it('creates a hosted run, shows the servers robot, and leaves using the server IDs', async () => {
     window.history.replaceState(null, '', '/main-menu');
     const user = userEvent.setup();
     renderApp();
@@ -194,12 +216,12 @@ describe('room routes after the navigation merge', () => {
     expect(await screen.findByText('ABC234')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Start Battle' }));
-    expect(await screen.findByLabelText('Robot position')).toHaveTextContent('start:1,1');
+    expect(await screen.findByLabelText('Robot position')).toHaveTextContent('0,1');
     await screen.findByRole('img', { name: 'Move 1' });
     const hand = within(screen.getByRole('heading', { name: 'Your Hand' }).parentElement!);
-    await user.click(hand.getAllByRole('button')[0]);
+    for (let index = 0; index < 5; index++) await user.click(hand.getAllByRole('button')[0]);
     await user.click(screen.getByRole('button', { name: 'Ready' }));
-    await waitFor(() => expect(screen.getByLabelText('Robot position')).toHaveTextContent('start:2,1'));
+    await waitFor(() => expect(screen.getByLabelText('Robot position')).toHaveTextContent('1,1'), { timeout: 3000 });
 
     expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/game/real-room/hand'), expect.anything());
     await user.click(screen.getByRole('button', { name: 'Leave Room' }));

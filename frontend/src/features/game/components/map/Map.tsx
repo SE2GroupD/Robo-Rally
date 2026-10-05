@@ -3,38 +3,41 @@
 import { useMapViewport } from '../../hooks/useMapViewport';
 import { MapZoomControls } from './MapZoomControls';
 import { cn } from '../../../../utils/cn';
-import { StartBoard } from './boards/StartBoard';
 import { GameBoard } from './boards/GameBoard';
-import {
-  startboard1Layout as start1,
-  gameboard1Layout as game1,
-  gameboard2Layout as game2,
-  gameboard3Layout as game3,
-} from '../../data/mapLayouts';
-import type { BoardId, RobotState, TileData } from '../../types/Board';
+import type { AvatarId, Direction, TileData } from '../../types/Board';
+
+export interface MapRobot {
+  playerId: string;
+  x: number;
+  y: number;
+  direction: Direction;
+  avatarId: AvatarId;
+  hue: number;
+}
 
 interface MapProps {
-  robot?: RobotState;
+  width: number;
+  height: number;
+  tiles: TileData[];
+  robots: MapRobot[];
 }
 
-// Merges the live robot position into a board's static layout, replacing
-// whatever `robot` field it may already have (or adding a tile for it).
-function withRobot(layout: TileData[], robot: RobotState | undefined, boardId: BoardId): TileData[] {
-  const withoutRobot = layout.map(({ robot: _robot, ...tile }) => tile);
-  if (!robot || robot.board !== boardId) return withoutRobot;
+const CELL_PX = 52; // 50px tile + 2px gap
 
-  const robotField = { robot: { avatarId: robot.avatarId, hue: robot.hue, direction: robot.direction } };
-  const index = withoutRobot.findIndex((tile) => tile.x === robot.x && tile.y === robot.y);
-  if (index === -1) {
-    return [...withoutRobot, { x: robot.x, y: robot.y, ...robotField }];
+// Merges the live robots into the server's tile list. (Two robots on one tile
+// is possible while the backend only clamps at edges; the last one drawn wins.)
+function withRobots(tiles: TileData[], robots: MapRobot[]): TileData[] {
+  const layout = tiles.map(({ robot: _robot, ...tile }) => tile);
+  for (const r of robots) {
+    const robotField = { robot: { avatarId: r.avatarId, hue: r.hue, direction: r.direction } };
+    const index = layout.findIndex((tile) => tile.x === r.x && tile.y === r.y);
+    if (index === -1) layout.push({ x: r.x, y: r.y, ...robotField });
+    else layout[index] = { ...layout[index], ...robotField };
   }
-
-  const merged = [...withoutRobot];
-  merged[index] = { ...merged[index], ...robotField };
-  return merged;
+  return layout;
 }
 
-export function Map({ robot }: MapProps) {
+export function Map({ width, height, tiles, robots }: MapProps) {
   const {
     viewportRef,
     scale,
@@ -69,23 +72,18 @@ export function Map({ robot }: MapProps) {
         onLostPointerCapture={onLostPointerCapture}
         onDragStart={onDragStart}
       >
-        <div className="relative" style={{ width: `calc(100% + ${1196 * scale}px)`, height: `calc(100% + ${1040 * scale}px)` }}>
+        <div
+          className="relative"
+          style={{
+            width: `calc(100% + ${width * CELL_PX * scale}px)`,
+            height: `calc(100% + ${height * CELL_PX * scale}px)`,
+          }}
+        >
           <div
-            className="flex flex-row items-start justify-center gap-0.5 absolute min-w-max origin-top-left"
+            className="absolute min-w-max origin-top-left"
             style={{ left: '50vw', top: '50dvh', transform: `scale(${scale})` }}
           >
-            <div className="mt-65">
-              <StartBoard layoutData={withRobot(start1, robot, 'start')} />
-            </div>
-
-            <div className="flex flex-col gap-0.5">
-              <GameBoard layoutData={withRobot(game1, robot, 'game1')} />
-              <GameBoard layoutData={withRobot(game2, robot, 'game2')} />
-            </div>
-
-            <div className="mt-65">
-              <GameBoard layoutData={withRobot(game3, robot, 'game3')} />
-            </div>
+            <GameBoard layoutData={withRobots(tiles, robots)} width={width} height={height} />
           </div>
         </div>
       </section>

@@ -15,7 +15,7 @@ class RobotTests {
     @Test
     void robotCannotMoveThroughWall() {
         GameBoard board = new GameBoard(5, 5,
-            List.of(Tile.withWalls(2, 2, new Walls(false, true, false, false)))
+            List.of(Tile.withWalls(2, 2, new Walls(false, true, false, false))),List.of()
         );
 
         Robot robot = new Robot(
@@ -32,7 +32,8 @@ class RobotTests {
     @Test
     void robotStopsAtWallDuringMultiSpaceMovement() {
         GameBoard board = new GameBoard(5, 5,
-                List.of(Tile.withWalls(2, 2, new Walls(false, true, false, false))));
+                List.of(Tile.withWalls(2, 2, new Walls(false, true, false, false))),List.of()
+                );
 
         Robot robot = new Robot("player1", new Position(1, 2), Direction.EAST);
 
