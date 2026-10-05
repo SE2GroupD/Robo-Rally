@@ -31,6 +31,7 @@ export function useGameReplay(state: BoardStateDto | null) {
   const animatedRound = useRef<number | null>(null);
   const replaying = useRef(false);
   const mounted = useRef(true);
+  const latestState = useRef<BoardStateDto | null>(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -40,6 +41,7 @@ export function useGameReplay(state: BoardStateDto | null) {
   }, []);
 
   useEffect(() => {
+    latestState.current = state;
     if (!state || replaying.current) return;
     const resolution = state.lastResolution;
 
@@ -56,19 +58,21 @@ export function useGameReplay(state: BoardStateDto | null) {
       setIsReplaying(true);
       void replay(resolution).finally(() => {
         replaying.current = false;
-        if (mounted.current) setIsReplaying(false); // effect re-runs and syncs to the final state
+        if (!mounted.current) return;
+        setRobots(latestState.current?.robots ?? []); // settle on the server's final state
+        setIsReplaying(false);
       });
       return;
     }
 
     setRobots(state.robots);
 
-    async function replay(resolution: TurnResolutionDto) {
-      const current = new Map(resolution.startingRobots.map((r) => [r.playerId, { ...r }]));
+    async function replay(played: TurnResolutionDto) {
+      const current = new Map(played.startingRobots.map((r) => [r.playerId, { ...r }]));
       setRobots([...current.values()].map((r) => ({ ...r })));
       await sleep(STEP_DELAY_MS);
 
-      for (const step of resolution.steps) {
+      for (const step of played.steps) {
         for (const phase of step.phases) {
           const paths = phase.robots.map((s) => ({
             step: s,
@@ -87,7 +91,7 @@ export function useGameReplay(state: BoardStateDto | null) {
         }
       }
     }
-  }, [state, isReplaying]);
+  }, [state]);
 
   return {
     robots,

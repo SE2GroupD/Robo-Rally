@@ -64,14 +64,13 @@ export function Tile({ tile }: TileProps) {
       )}
 
       {tile.pushPanel && (
-        <div
-          role="img"
+        <figure
           aria-label={`Push panel ${tile.pushPanel.direction.toLowerCase()}, registers ${tile.pushPanel.activeRegisters.join(', ')}`}
           className="absolute z-10 flex flex-col items-center font-black leading-none text-orange-400"
         >
           <span className="text-xl">{ARROWS[tile.pushPanel.direction]}</span>
           <span className="text-[9px]">{tile.pushPanel.activeRegisters.join('')}</span>
-        </div>
+        </figure>
       )}
 
       <div className="relative z-30 flex w-full h-full items-center justify-center">

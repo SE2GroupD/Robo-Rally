@@ -3,7 +3,7 @@ import { Tile } from '../../features/game/components/map/boards/Tile';
 
 it('shows a push panel with its direction and active registers', () => {
   render(<Tile tile={{ x: 0, y: 0, pushPanel: { direction: 'SOUTH', activeRegisters: [1, 3, 5] } }} />);
-  const panel = screen.getByRole('img', { name: 'Push panel south, registers 1, 3, 5' });
+  const panel = screen.getByRole('figure', { name: 'Push panel south, registers 1, 3, 5' });
   expect(panel).toHaveTextContent('↓');
   expect(panel).toHaveTextContent('135');
 });
