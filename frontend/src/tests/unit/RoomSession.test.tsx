@@ -51,6 +51,7 @@ const boardState: BoardStateDto = {
   tiles: [],
   round: 1,
   lockedInPlayerIds: [],
+  checkpointProgress: [{ playerId: 'host-1', nextCheckpoint: 1, completedCheckpoints: [] }],
   lastResolution: null,
 };
 
@@ -94,6 +95,32 @@ describe('room lifecycle', () => {
     vi.mocked(fetchRoom).mockResolvedValue({ ...host, status: 'STARTED' });
     render(<RoomSession initialRoom={{ ...host, status: 'STARTED' }} onLeft={vi.fn()} />);
     expect(await screen.findByText('Round 1 · Waiting for Host')).toBeInTheDocument();
+  });
+
+  it('shows checkpoint progress for every player', async () => {
+    const room = {
+      ...host,
+      status: 'STARTED' as const,
+      players: [...host.players, { playerId: 'guest-1', playerName: 'Friend' }],
+    };
+    vi.mocked(fetchRoom).mockResolvedValue(room);
+    vi.mocked(fetchBoardState).mockResolvedValue({
+      ...boardState,
+      checkpointProgress: [
+        { playerId: 'host-1', nextCheckpoint: 2, completedCheckpoints: [1] },
+        { playerId: 'guest-1', nextCheckpoint: 1, completedCheckpoints: [] },
+      ],
+    });
+
+    render(<RoomSession initialRoom={room} onLeft={vi.fn()} />);
+
+    expect(await screen.findByRole('region', { name: 'Checkpoint progress' })).toBeInTheDocument();
+    expect(screen.getByText('Host')).toBeInTheDocument();
+    expect(screen.getByText('Next 2')).toBeInTheDocument();
+    expect(screen.getByText('Completed: 1')).toBeInTheDocument();
+    expect(screen.getByText('Friend')).toBeInTheDocument();
+    expect(screen.getByText('Next 1')).toBeInTheDocument();
+    expect(screen.getByText('Completed: None')).toBeInTheDocument();
   });
 
   it('only exits after leaving succeeds and allows retry after failure', async () => {
