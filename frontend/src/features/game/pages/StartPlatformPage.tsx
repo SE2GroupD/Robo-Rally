@@ -48,7 +48,7 @@ export function StartPlatformPage({ username, onBack, onCreated, onJoined }: Sta
   useEffect(() => {
     mounted.current = true;
     const controller = new AbortController();
-    void loadRooms(controller.signal);
+    void Promise.resolve().then(() => loadRooms(controller.signal));
     const refreshTimer = window.setInterval(() => void loadRooms(controller.signal, false), 5000);
     return () => {
       mounted.current = false;
