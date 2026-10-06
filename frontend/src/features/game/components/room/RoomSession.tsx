@@ -15,9 +15,18 @@ interface RoomSessionProps {
 }
 
 function describeStatus(state: BoardStateDto, players: JoinedRoom['players'], isReplaying: boolean) {
+  if (state.winner) return '';
   if (isReplaying) return `Round ${state.round - 1} resolving…`;
   const waitingFor = players.filter((p) => !state.lockedInPlayerIds.includes(p.playerId)).map((p) => p.playerName);
   return waitingFor.length > 0 ? `Round ${state.round} · Waiting for ${waitingFor.join(', ')}` : '';
+}
+
+function winnerLabel(state: BoardStateDto, players: JoinedRoom['players']) {
+  if (!state.winner) return null;
+  const winnerIndex = players.findIndex((player) => player.playerId === state.winner?.playerId);
+  const winner = winnerIndex >= 0 ? players[winnerIndex] : null;
+  const robotNumber = winnerIndex >= 0 ? winnerIndex + 1 : null;
+  return `${winner?.playerName ?? 'Unknown player'}${robotNumber ? ` · Robot ${robotNumber}` : ''}`;
 }
 
 export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
@@ -135,12 +144,23 @@ export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
           {state ? (
             <>
               <Map width={state.width} height={state.height} tiles={state.tiles.map(toTileData)} robots={mapRobots} />
+              {state.winner && (
+                <section
+                  aria-label="Match winner"
+                  className="absolute inset-x-3 top-3 z-30 mx-auto max-w-sm rounded border border-metal-light bg-slate-950/95 p-4 text-center text-white shadow-[0_16px_40px_rgba(0,0,0,0.55)]"
+                >
+                  <h2 className="m-0 text-sm font-bold text-metal-light">Winner</h2>
+                  <p className="m-0 mt-2 text-xl font-bold">{winnerLabel(state, room.players)}</p>
+                </section>
+              )}
               <div className="pointer-events-none absolute inset-x-0 top-2 z-20 text-center text-sm text-white">
                 {describeStatus(state, room.players, isReplaying)}
               </div>
-              <div className="pointer-events-none absolute inset-0 z-10">
-                <ProgrammingPhase roomId={room.gameId} round={programmingRound} />
-              </div>
+              {!state.winner && (
+                <div className="pointer-events-none absolute inset-0 z-10">
+                  <ProgrammingPhase roomId={room.gameId} round={programmingRound} />
+                </div>
+              )}
             </>
           ) : (
             <output className="absolute inset-0 flex items-center justify-center text-white">Loading game…</output>

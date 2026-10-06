@@ -27,6 +27,7 @@ public class GameSession {
     private final Map<String, Integer> nextCheckpointByPlayer = new HashMap<>();
     private int round = 1;
     private TurnResolutionDto lastResolution;
+    private String winnerPlayerId;
 
     public GameSession(GameBoard board) {
         this.board = board;
@@ -35,6 +36,8 @@ public class GameSession {
     public GameBoard getBoard() { return board; }
     public int getRound() { return round; }
     public TurnResolutionDto getLastResolution() { return lastResolution; }
+    public String getWinnerPlayerId() { return winnerPlayerId; }
+    public boolean hasWinner() { return winnerPlayerId != null; }
 
     public Map<String, Robot> getRobots() {
         return Collections.unmodifiableMap(robots);
@@ -83,6 +86,10 @@ public class GameSession {
     }
 
     public boolean claimCheckpointIfNext(Robot robot) {
+        if (hasWinner()) {
+            return false;
+        }
+
         String playerId = robot.getPlayerId();
         Integer nextCheckpoint = nextCheckpointByPlayer.get(playerId);
         if (nextCheckpoint == null) {
@@ -95,6 +102,9 @@ public class GameSession {
         }
 
         nextCheckpointByPlayer.put(playerId, nextCheckpoint + 1);
+        if (nextCheckpoint == board.finalCheckpointNumber()) {
+            winnerPlayerId = playerId;
+        }
         return true;
     }
 
