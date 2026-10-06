@@ -216,7 +216,7 @@ describe('room routes after the navigation merge', () => {
     expect(await screen.findByText('ABC234')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Start Battle' }));
-    expect(await screen.findByLabelText('Robot position')).toHaveTextContent('0,1');
+    await waitFor(() => expect(screen.getByLabelText('Robot position')).toHaveTextContent('0,1'));
     await screen.findByRole('img', { name: 'Move 1' });
     const hand = within(screen.getByRole('heading', { name: 'Your Hand' }).parentElement!);
     for (let index = 0; index < 5; index++) await user.click(hand.getAllByRole('button')[0]);
