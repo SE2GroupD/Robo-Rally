@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchRoom, leaveRoom, startRoom, RoomRequestError, type JoinedRoom } from '../../api/gameApi';
 import { Button } from '../../../../foundation/components/button/Button';
-import { Map } from '../map/Map';
+import { Map as GameMap } from '../map/Map';
 import { useGameState } from '../../hooks/useGameState';
 import { useGameReplay } from '../../hooks/useGameReplay';
 import { toTileData } from '../../data/serverTiles';
 import { ProgrammingPhase } from '../programming/ProgrammingPhase';
 import type { AvatarId } from '../../types/Board';
-import type { BoardStateDto } from '../../types/GameStateDto';
+import type { BoardStateDto, CheckpointProgressDto } from '../../types/GameStateDto';
 
 interface RoomSessionProps {
   initialRoom: JoinedRoom;
@@ -18,6 +18,45 @@ function describeStatus(state: BoardStateDto, players: JoinedRoom['players'], is
   if (isReplaying) return `Round ${state.round - 1} resolving…`;
   const waitingFor = players.filter((p) => !state.lockedInPlayerIds.includes(p.playerId)).map((p) => p.playerName);
   return waitingFor.length > 0 ? `Round ${state.round} · Waiting for ${waitingFor.join(', ')}` : '';
+}
+
+function completedLabel(progress: CheckpointProgressDto) {
+  return progress.completedCheckpoints.length > 0 ? progress.completedCheckpoints.join(', ') : 'None';
+}
+
+function CheckpointProgress({
+  players,
+  progress,
+}: {
+  players: JoinedRoom['players'];
+  progress: readonly CheckpointProgressDto[];
+}) {
+  const progressByPlayer = new Map(progress.map((entry) => [entry.playerId, entry]));
+
+  return (
+    <section
+      aria-label="Checkpoint progress"
+      className="absolute left-3 top-3 z-20 w-64 max-w-[calc(100%-1.5rem)] rounded border border-metal-light bg-slate-950/90 p-3 text-sm text-white shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
+    >
+      <h2 className="m-0 text-sm font-bold text-metal-light">Checkpoint progress</h2>
+      <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0">
+        {players.map((player) => {
+          const playerProgress = progressByPlayer.get(player.playerId);
+          return (
+            <li key={player.playerId} className="border-t border-white/10 pt-2 first:border-t-0 first:pt-0">
+              <div className="flex items-center justify-between gap-3">
+                <span className="truncate font-bold">{player.playerName}</span>
+                <span className="shrink-0 text-metal-light">Next {playerProgress?.nextCheckpoint ?? '-'}</span>
+              </div>
+              <p className="m-0 mt-1 text-xs text-text-muted">
+                Completed: {playerProgress ? completedLabel(playerProgress) : 'None'}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
 }
 
 export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
@@ -134,7 +173,8 @@ export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
         <div className="relative h-[75dvh] overflow-hidden bg-slate-950">
           {state ? (
             <>
-              <Map width={state.width} height={state.height} tiles={state.tiles.map(toTileData)} robots={mapRobots} />
+              <GameMap width={state.width} height={state.height} tiles={state.tiles.map(toTileData)} robots={mapRobots} />
+              <CheckpointProgress players={room.players} progress={state.checkpointProgress} />
               <div className="pointer-events-none absolute inset-x-0 top-2 z-20 text-center text-sm text-white">
                 {describeStatus(state, room.players, isReplaying)}
               </div>
