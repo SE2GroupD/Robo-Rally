@@ -89,6 +89,11 @@ public class GameBoard {
         };
     }
 
+    public Integer checkpointAt(Position position) {
+        Tile tile = specialTiles.get(position);
+        return tile == null ? null : tile.checkpointNumber();
+    }
+
     public static GameBoard classicWithSeedTiles() {
         List<Position> spawns = List.of(
                 new Position(0, 1), new Position(0, 2), new Position(0, 3),
