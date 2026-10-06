@@ -19,5 +19,6 @@ public record BoardStateDto(
         int round,
         List<String> lockedInPlayerIds,
         List<CheckpointProgressDto> checkpointProgress,
+        WinnerDto winner,
         TurnResolutionDto lastResolution) {
 }

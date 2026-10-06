@@ -94,6 +94,15 @@ public class GameBoard {
         return tile == null ? null : tile.checkpointNumber();
     }
 
+    public int finalCheckpointNumber() {
+        return specialTiles.values().stream()
+                .map(Tile::checkpointNumber)
+                .filter(number -> number != null)
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+    }
+
     public static GameBoard classicWithSeedTiles() {
         List<Position> spawns = List.of(
                 new Position(0, 1), new Position(0, 2), new Position(0, 3),

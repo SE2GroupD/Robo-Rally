@@ -23,8 +23,10 @@ public class MovementResolver {
          * Called after all robots' cards for one register have been applied.
          * registerNumber is 1-based. cardsPlayed holds the card as programmed
          * (so AGAIN is reported as AGAIN) for robots that had a card this register.
+         * Return false to stop the rest of activation, for example after a winner
+         * has been declared.
          */
-        void onRegisterResolved(int registerNumber, Map<Robot, CardType> cardsPlayed);
+        boolean onRegisterResolved(int registerNumber, Map<Robot, CardType> cardsPlayed);
     }
 
     public void resolveRound(GameBoard board, Map<Robot, List<CardType>> programmedRegisters,
@@ -49,7 +51,10 @@ public class MovementResolver {
                 cardsThisRegister.put(robot, card);
             }
             if (callback != null) {
-                callback.onRegisterResolved(registerIndex + 1, cardsThisRegister);
+                boolean shouldContinue = callback.onRegisterResolved(registerIndex + 1, cardsThisRegister);
+                if (!shouldContinue) {
+                    return;
+                }
             }
         }
     }

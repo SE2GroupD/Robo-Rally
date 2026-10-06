@@ -89,6 +89,8 @@ beforeEach(() => {
         tiles: [],
         round: 1,
         lockedInPlayerIds: [],
+        checkpointProgress: [{ playerId: 'host-id', nextCheckpoint: 1, completedCheckpoints: [] }],
+        winner: null,
         lastResolution: null,
       });
     }

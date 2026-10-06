@@ -51,6 +51,8 @@ const boardState: BoardStateDto = {
   tiles: [],
   round: 1,
   lockedInPlayerIds: [],
+  checkpointProgress: [{ playerId: 'host-1', nextCheckpoint: 1, completedCheckpoints: [] }],
+  winner: null,
   lastResolution: null,
 };
 
@@ -94,6 +96,20 @@ describe('room lifecycle', () => {
     vi.mocked(fetchRoom).mockResolvedValue({ ...host, status: 'STARTED' });
     render(<RoomSession initialRoom={{ ...host, status: 'STARTED' }} onLeft={vi.fn()} />);
     expect(await screen.findByText('Round 1 · Waiting for Host')).toBeInTheDocument();
+  });
+
+  it('shows the winner and hides programming after the match is complete', async () => {
+    vi.mocked(fetchRoom).mockResolvedValue({ ...host, status: 'STARTED' });
+    vi.mocked(fetchBoardState).mockResolvedValue({
+      ...boardState,
+      winner: { playerId: 'host-1' },
+    });
+
+    render(<RoomSession initialRoom={{ ...host, status: 'STARTED' }} onLeft={vi.fn()} />);
+
+    expect(await screen.findByRole('region', { name: 'Match winner' })).toBeInTheDocument();
+    expect(screen.getByText('Host · Robot 1')).toBeInTheDocument();
+    expect(screen.queryByText('game-1/round-1')).not.toBeInTheDocument();
   });
 
   it('only exits after leaving succeeds and allows retry after failure', async () => {
