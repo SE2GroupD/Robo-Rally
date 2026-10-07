@@ -1,5 +1,6 @@
 package com.example.demo.game;
 
+import com.example.demo.model.BoardDefinition;
 import com.example.demo.model.Conveyor;
 import com.example.demo.model.Direction;
 import com.example.demo.model.GearRotation;
@@ -33,6 +34,13 @@ public class GameBoard {
         this.spawnPositions = List.copyOf(spawnPositions);
     }
 
+    public GameBoard(int width, int height, List<Tile> seedTiles) {
+        this(width, height, seedTiles, seedTiles.stream()
+                .filter(Tile::isSpawnPoint)
+                .map(t -> new Position(t.x(), t.y()))
+                .toList());
+    }
+
     public int getWidth() { return width; }
     public int getHeight() { return height; }
 
@@ -56,6 +64,41 @@ public class GameBoard {
         return new Position(clampedX, clampedY);
     }
 
+    public static GameBoard assemble(List<BoardDefinition> boardDefinitions) {
+        int totalWidth = 0;
+        int maxHeight = 0;
+        List<Tile> combinedTiles = new ArrayList<>();
+        List<Position> combinedSpawns = new ArrayList<>();
+
+        for (BoardDefinition def : boardDefinitions) {
+            if (def == null) continue;
+            int xOffset = totalWidth;
+            if (def.specialTiles() != null) {
+                for (Tile tile : def.specialTiles()) {
+                    Tile translatedTile = new Tile(
+                            tile.x() + xOffset,
+                            tile.y(),
+                            tile.hasPit(),
+                            tile.walls(),
+                            tile.hasAntenna(),
+                            tile.isSpawnPoint(),
+                            tile.gear(),
+                            tile.conveyor(),
+                            tile.checkpointNumber(),
+                            tile.occupyingPlayerId()
+                    );
+                    combinedTiles.add(translatedTile);
+                    if (translatedTile.isSpawnPoint()) {
+                        combinedSpawns.add(new Position(translatedTile.x(), translatedTile.y()));
+                    }
+                }
+            }
+            totalWidth += def.width();
+            maxHeight = Math.max(maxHeight, def.height());
+        }
+
+        return new GameBoard(totalWidth, maxHeight, combinedTiles, combinedSpawns);
+    }
 
     public boolean canMove(Position from, Direction direction) {
         Position to = from.moveIn(direction, 1);
@@ -96,8 +139,8 @@ public class GameBoard {
 
     public static GameBoard classicWithSeedTiles() {
         List<Position> spawns = List.of(
-                new Position(0, 1), new Position(0, 2), new Position(0, 3),
-                new Position(0, 4), new Position(0, 5), new Position(0, 6));
+                new Position(1, 1), new Position(1, 2), new Position(1, 3),
+                new Position(1, 6), new Position(1, 7), new Position(1, 8));
 
         List<Tile> tiles = new ArrayList<>(List.of(
                 Tile.pit(5, 5),
@@ -112,5 +155,26 @@ public class GameBoard {
             tiles.add(Tile.spawnPoint(spawn.x(), spawn.y()));
         }
         return new GameBoard(12, 12, tiles, spawns);
+    }
+
+    public List<Position> getAvailableStartTiles() {
+        return specialTiles.values().stream()
+                .filter(Tile::isAvailableSpawn)
+                .map(tile -> new Position(tile.x(), tile.y()))
+                .toList(); 
+    }
+
+    public void updateTileOccupant(Position pos, String playerId) {
+        Tile existingTile = specialTiles.get(pos);
+        if (existingTile != null && existingTile.isSpawnPoint()) {
+            Tile updatedTile = existingTile.withOccupant(playerId);
+            specialTiles.put(pos, updatedTile);
+        }
+    }
+
+    public List<Tile> getSpawnPointList() {
+        return specialTiles.values().stream()
+                .filter(Tile::isSpawnPoint)
+                .toList(); 
     }
 }

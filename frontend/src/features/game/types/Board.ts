@@ -18,6 +18,7 @@ export type TileData = {
   hasPit?: boolean;
   hasAntenna?: boolean;
   isSpawnPoint?: boolean;
+  occupyingPlayerId?: string;
   gear?: 'CLOCKWISE' | 'COUNTER_CLOCKWISE';
   conveyor?: { direction: Direction; isExpress?: boolean };
 };

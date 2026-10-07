@@ -212,6 +212,7 @@ function App() {
               error={roomError}
               onRetry={handleHostBattle}
               onBack={handleRoomBack}
+              onRoomUpdate={setHostRoom}
             />
           ) : (
             loginRedirect

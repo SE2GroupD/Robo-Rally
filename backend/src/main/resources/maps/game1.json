@@ -1,0 +1,29 @@
+{
+  "id": "game1",
+  "name": "Game Board 1",
+  "width": 10,
+  "height": 10,
+  "specialTiles": [
+    { "x": 2, "y": 8, "conveyor": { "direction": "NORTH", "isExpress": true } },
+    { "x": 2, "y": 7, "conveyor": { "direction": "NORTH", "isExpress": true } },
+    { "x": 2, "y": 6, "conveyor": { "direction": "NORTH", "isExpress": true } },
+    { "x": 2, "y": 5, "conveyor": { "direction": "NORTH", "isExpress": true } },
+    { "x": 2, "y": 4, "conveyor": { "direction": "NORTH", "isExpress": true } },
+    { "x": 2, "y": 3, "conveyor": { "direction": "EAST", "isExpress": true } },
+    { "x": 3, "y": 3, "conveyor": { "direction": "EAST", "isExpress": true } },
+    { "x": 4, "y": 3, "conveyor": { "direction": "EAST", "isExpress": true } },
+    { "x": 5, "y": 3, "conveyor": { "direction": "EAST", "isExpress": true } },
+    { "x": 6, "y": 3, "conveyor": { "direction": "EAST", "isExpress": true } },
+    { "x": 7, "y": 3, "conveyor": { "direction": "SOUTH", "isExpress": true } },
+    { "x": 7, "y": 4, "conveyor": { "direction": "SOUTH", "isExpress": true } },
+    { "x": 7, "y": 5, "conveyor": { "direction": "SOUTH", "isExpress": true } },
+    { "x": 1, "y": 1, "hasPit": true },
+    { "x": 7, "y": 8, "hasPit": true },
+    { "x": 8, "y": 4, "hasPit": true },
+    { "x": 0, "y": 3, "gear": "CLOCKWISE" },
+    { "x": 4, "y": 1, "gear": "COUNTER_CLOCKWISE" },
+    { "x": 9, "y": 5, "gear": "CLOCKWISE" },
+    { "x": 4, "y": 5, "walls": { "north": true, "west": true } },
+    { "x": 5, "y": 7, "walls": { "east": true } }
+  ]
+}

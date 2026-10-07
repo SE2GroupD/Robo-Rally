@@ -1,0 +1,26 @@
+{
+  "id": "game2",
+  "name": "Game Board 2",
+  "width": 10,
+  "height": 10,
+  "specialTiles": [
+    { "x": 3, "y": 3, "checkpointNumber": 1, "gear": "CLOCKWISE" },
+    { "x": 0, "y": 4, "conveyor": { "direction": "EAST", "isExpress": false } },
+    { "x": 1, "y": 4, "conveyor": { "direction": "EAST", "isExpress": false } },
+    { "x": 8, "y": 5, "conveyor": { "direction": "WEST", "isExpress": false } },
+    { "x": 9, "y": 5, "conveyor": { "direction": "WEST", "isExpress": false } },
+    { "x": 4, "y": 4, "hasPit": true },
+    { "x": 5, "y": 4, "hasPit": true },
+    { "x": 4, "y": 5, "hasPit": true },
+    { "x": 5, "y": 5, "hasPit": true },
+    { "x": 1, "y": 8, "hasPit": true },
+    { "x": 8, "y": 1, "hasPit": true },
+    { "x": 8, "y": 8, "hasPit": true },
+    { "x": 5, "y": 2, "gear": "COUNTER_CLOCKWISE" },
+    { "x": 4, "y": 7, "gear": "CLOCKWISE" },
+    { "x": 4, "y": 3, "walls": { "south": true } },
+    { "x": 5, "y": 3, "walls": { "south": true } },
+    { "x": 4, "y": 6, "walls": { "north": true } },
+    { "x": 5, "y": 6, "walls": { "north": true } }
+  ]
+}

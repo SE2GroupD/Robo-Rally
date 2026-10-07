@@ -23,17 +23,24 @@ export interface TurnResolutionDto {
   steps: RegisterStepDto[];
 }
 
-// ASSUMED shape of the Java Tile record's JSON - verify against a real GET /state response.
 export interface TileDto {
   x: number;
   y: number;
+  hasPit?: boolean;
   pit?: boolean;
+  isPit?: boolean;
+  hasAntenna?: boolean;
   antenna?: boolean;
+  isAntenna?: boolean;
+  isSpawnPoint?: boolean;
   spawnPoint?: boolean;
+  checkpointNumber?: number | null;
   checkpoint?: number | null;
+  isCheckpoint?: number | null;
   gear?: 'CLOCKWISE' | 'COUNTER_CLOCKWISE' | null;
-  conveyor?: { direction: Direction; express?: boolean } | null;
-  walls?: { north: boolean; east: boolean; south: boolean; west: boolean } | null;
+  conveyor?: { direction: Direction; isExpress?: boolean; express?: boolean } | null;
+  walls?: { north?: boolean; east?: boolean; south?: boolean; west?: boolean } | null;
+  occupyingPlayerId?: string | null;
 }
 
 export interface BoardStateDto {

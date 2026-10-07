@@ -46,6 +46,11 @@ public class GameSession {
         nextCheckpointByPlayer.put(playerId, 1);
     }
 
+    public void addRobot(Robot robot) {
+        robots.put(robot.getPlayerId(), robot);
+        decks.put(robot.getPlayerId(), new ProgrammingDeck());
+    }
+
     public void removePlayer(String playerId) {
         robots.remove(playerId);
         decks.remove(playerId);

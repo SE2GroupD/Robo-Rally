@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchRoom, leaveRoom, startRoom, RoomRequestError, type JoinedRoom } from '../../api/gameApi';
+import { fetchRoom, leaveRoom, startRoom, selectStartTile, RoomRequestError, type JoinedRoom } from '../../api/gameApi';
 import { Button } from '../../../../foundation/components/button/Button';
 import { Map } from '../map/Map';
 import { useGameState } from '../../hooks/useGameState';
 import { useGameReplay } from '../../hooks/useGameReplay';
 import { toTileData } from '../../data/serverTiles';
 import { ProgrammingPhase } from '../programming/ProgrammingPhase';
-import type { AvatarId } from '../../types/Board';
+import { StartBoard } from '../map/boards/StartBoard';
+import type { TileData, AvatarId } from '../../types/Board';
 import type { BoardStateDto } from '../../types/GameStateDto';
 
 interface RoomSessionProps {
@@ -100,6 +101,31 @@ export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
     }
   }
 
+  async function handleTileClick(x: number, y: number) {
+    if (actionPending.current) return;
+    actionPending.current = true;
+    revision.current += 1;
+    setBusy(true);
+    setError('');
+    try {
+      setRoom(await selectStartTile(room, x, y));
+    } catch (cause) {
+      if (cause instanceof RoomRequestError && [403, 404].includes(cause.status)) {
+        setClosed(true);
+      } else {
+        setError(cause instanceof Error ? cause.message : 'Could not select this tile.');
+      }
+    } finally {
+      actionPending.current = false;
+      setBusy(false);
+    }
+  }
+
+  const startTilesConfig: TileData[] = (room.startBoardConfig || []).map((tile: TileData) => {
+    const occupant = room.players.find((p) => p.startPosition?.x === tile.x && p.startPosition?.y === tile.y);
+    return { ...tile, occupyingPlayerId: occupant?.playerId };
+  });
+
   async function copyCode() {
     try {
       await navigator.clipboard.writeText(room.roomCode);
@@ -156,6 +182,10 @@ export function RoomSession({ initialRoom, onLeft }: RoomSessionProps) {
             </Button>
             <p className="mb-0 mt-3 text-sm text-text-muted">Share this code so friends can join.</p>
             <output className="mb-0 mt-2 text-sm">{copyMessage}</output>
+          </section>
+          <section className="rounded border border-metal-light p-4 flex flex-col items-center">
+            <h2 className="mb-3 mt-0 text-lg font-bold">Select Start Position</h2>
+            <StartBoard layoutData={startTilesConfig} currentPlayerId={room.playerId} onTileClick={handleTileClick} />
           </section>
           <section className="rounded border border-metal-light p-4">
             <h2 className="mb-3 mt-0 text-lg font-bold">Players</h2>

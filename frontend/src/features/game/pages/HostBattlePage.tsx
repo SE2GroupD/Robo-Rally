@@ -11,6 +11,7 @@ interface HostBattlePageProps {
   error: string;
   onRetry: () => void;
   onBack: () => void;
+  onRoomUpdate: (room: CreatedRoom | null) => void;
 }
 
 export function HostBattlePage({ username, room, isCreating, error, onRetry, onBack }: HostBattlePageProps) {
