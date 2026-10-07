@@ -25,19 +25,21 @@ public class Robot {
 
     /** Moves one space at a time to allow walls/pits/pushing */
     public void moveForward(GameBoard board, int spaces) {
-        for (int i = 0; i < spaces; i++) {
-            step(board, direction);
-        }
+        move(board, direction, spaces);
     }
 
     public void moveBackward(GameBoard board, int spaces) {
-        for (int i = 0; i < spaces; i++) {
-            step(board, direction.opposite());
-        }
+        move(board, direction.opposite(), spaces);
     }
 
-    private void step(GameBoard board, Direction stepDirection) {
-        position = board.clampToBounds(position.moveIn(stepDirection, 1));
+    private void move(GameBoard board, Direction movementDirection, int spaces) {
+        for (int i = 0; i < spaces; i++) {
+            if (!board.canMove(position, movementDirection)) {
+                break;
+            }
+
+            position = position.moveIn(movementDirection, 1);
+        }
     }
 
     public void turnRight() { direction = direction.rotateRight(); }

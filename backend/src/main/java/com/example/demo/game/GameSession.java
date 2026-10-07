@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 /**
  * Live state of one started room: board, robots, each player's deck, the
@@ -23,6 +24,7 @@ public class GameSession {
     private final Map<String, Robot> robots = new LinkedHashMap<>();
     private final Map<String, ProgrammingDeck> decks = new HashMap<>();
     private final Map<String, List<CardType>> submittedRegisters = new HashMap<>();
+    private final Map<String, Integer> nextCheckpointByPlayer = new HashMap<>();
     private int round = 1;
     private TurnResolutionDto lastResolution;
 
@@ -41,6 +43,7 @@ public class GameSession {
     public void addPlayer(String playerId, Position start, Direction facing) {
         robots.put(playerId, new Robot(playerId, start, facing));
         decks.put(playerId, new ProgrammingDeck());
+        nextCheckpointByPlayer.put(playerId, 1);
     }
 
     public void addRobot(Robot robot) {
@@ -52,6 +55,7 @@ public class GameSession {
         robots.remove(playerId);
         decks.remove(playerId);
         submittedRegisters.remove(playerId);
+        nextCheckpointByPlayer.remove(playerId);
     }
 
     public ProgrammingDeck getDeck(String playerId) {
@@ -81,6 +85,39 @@ public class GameSession {
             if (registers != null) input.put(entry.getValue(), registers);
         }
         return input;
+    }
+
+    public boolean claimCheckpointIfNext(Robot robot) {
+        String playerId = robot.getPlayerId();
+        Integer nextCheckpoint = nextCheckpointByPlayer.get(playerId);
+        if (nextCheckpoint == null) {
+            throw new IllegalStateException("Player " + playerId + " has no checkpoint progress.");
+        }
+
+        Integer reachedCheckpoint = board.checkpointAt(robot.getPosition());
+        if (!nextCheckpoint.equals(reachedCheckpoint)) {
+            return false;
+        }
+
+        nextCheckpointByPlayer.put(playerId, nextCheckpoint + 1);
+        return true;
+    }
+
+    public void claimCheckpointsForRobots() {
+        robots.values().forEach(this::claimCheckpointIfNext);
+    }
+
+    public int getNextCheckpointFor(String playerId) {
+        Integer nextCheckpoint = nextCheckpointByPlayer.get(playerId);
+        if (nextCheckpoint == null) {
+            throw new IllegalStateException("Player " + playerId + " has no checkpoint progress.");
+        }
+        return nextCheckpoint;
+    }
+
+    public List<Integer> getCompletedCheckpointsFor(String playerId) {
+        int nextCheckpoint = getNextCheckpointFor(playerId);
+        return IntStream.range(1, nextCheckpoint).boxed().toList();
     }
 
     public void finishRound(TurnResolutionDto resolution) {

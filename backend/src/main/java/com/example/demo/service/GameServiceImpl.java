@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.BoardStateDto;
+import com.example.demo.dto.CheckpointProgressDto;
 import com.example.demo.dto.PlayerHandDto;
 import com.example.demo.dto.ProgramRegisterDto;
 import com.example.demo.dto.RegisterStepDto;
@@ -129,6 +130,7 @@ public class GameServiceImpl implements GameService {
         List<RegisterStepDto> steps = new ArrayList<>();
 
         movementResolver.resolveRound(session.getBoard(), input, (registerNumber, cardsPlayed) -> {
+            session.claimCheckpointsForRobots();
             List<RobotStepDto> robotSteps = cardsPlayed.entrySet().stream()
                     .map(e -> new RobotStepDto(
                             e.getKey().getPlayerId(),
@@ -163,6 +165,7 @@ public class GameServiceImpl implements GameService {
                     board.getSpecialTiles(),
                     session.getRound(),
                     lockedIn,
+                    checkpointProgress(session),
                     session.getLastResolution());
         }
     }
@@ -188,6 +191,15 @@ public class GameServiceImpl implements GameService {
     private List<RobotStateDto> robotStates(GameSession session) {
         return session.getRobots().values().stream()
                 .map(r -> new RobotStateDto(r.getPlayerId(), r.getPosition().x(), r.getPosition().y(), r.getDirection()))
+                .toList();
+    }
+
+    private List<CheckpointProgressDto> checkpointProgress(GameSession session) {
+        return session.getRobots().keySet().stream()
+                .map(playerId -> new CheckpointProgressDto(
+                        playerId,
+                        session.getNextCheckpointFor(playerId),
+                        session.getCompletedCheckpointsFor(playerId)))
                 .toList();
     }
 }
