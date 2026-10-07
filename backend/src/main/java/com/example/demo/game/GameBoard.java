@@ -98,6 +98,7 @@ public class GameBoard {
         }
 
         return new GameBoard(totalWidth, maxHeight, combinedTiles, combinedSpawns);
+    }
 
     public boolean canMove(Position from, Direction direction) {
         Position to = from.moveIn(direction, 1);
