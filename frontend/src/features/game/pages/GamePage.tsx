@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { Button } from '../../../foundation/components/button/Button';
-import { RoomSession } from '../components/room/RoomSession'; // adjust to where RoomSession lives
+import { RoomSession } from '../components/room/RoomSession';
 import type { JoinedRoom } from '../api/gameApi';
 
 interface GamePageProps {
@@ -19,7 +19,7 @@ export function GamePage({ room, isStarting, error, onRetry, onBack }: GamePageP
   if (!room && !isStarting && !error) return <Navigate to="/main-menu" replace />;
 
   return (
-    <div className="flex min-h-dvh flex-col gap-3 bg-slate-950 p-3 text-white">
+    <div className="flex h-dvh flex-col gap-3 bg-slate-950 p-3 text-white">
       {isStarting && <output className="m-0">Starting game…</output>}
       {error && (
         <>
