@@ -24,6 +24,24 @@ public class Robot {
     public Position getPosition() { return position; }
     public Direction getDirection() { return direction; }
 
+    /** Moves one space at a time to allow walls/pits/pushing */
+    public void moveForward(GameBoard board, int spaces) {
+        move(board, direction, spaces);
+    }
+
+    public void moveBackward(GameBoard board, int spaces) {
+        move(board, direction.opposite(), spaces);
+    }
+
+    private void move(GameBoard board, Direction movementDirection, int spaces) {
+        for (int i = 0; i < spaces; i++) {
+            if (!board.canMove(position, movementDirection)) {
+                break;
+            }
+
+            position = position.moveIn(movementDirection, 1);
+        }
+    }
     public void moveTo(Position newPosition) { position = newPosition; }
 
     public void turnRight() { direction = direction.rotateRight(); }

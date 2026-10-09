@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.BoardStateDto;
+import com.example.demo.dto.CheckpointProgressDto;
 import com.example.demo.dto.PlayerHandDto;
 import com.example.demo.dto.ProgramRegisterDto;
 import com.example.demo.dto.PhaseStepDto;
@@ -124,6 +125,7 @@ public class GameServiceImpl implements GameService {
         AtomicReference<List<RobotStateDto>> previous = new AtomicReference<>(starting);
 
         movementResolver.resolveRound(session.getBoard(), input, (registerNumber, phase, cardsPlayed) -> {
+            session.claimCheckpointsForRobots();
             List<RobotStateDto> now = robotStates(session);
             // Always keep the CARD phase; keep later phases only if something moved or turned.
             if (phase == ResolutionPhase.CARD || !now.equals(previous.get())) {
@@ -165,6 +167,7 @@ public class GameServiceImpl implements GameService {
                     board.getSpecialTiles(),
                     session.getRound(),
                     lockedIn,
+                    checkpointProgress(session),
                     session.getLastResolution());
         }
     }
@@ -190,6 +193,15 @@ public class GameServiceImpl implements GameService {
     private List<RobotStateDto> robotStates(GameSession session) {
         return session.getRobots().values().stream()
                 .map(r -> new RobotStateDto(r.getPlayerId(), r.getPosition().x(), r.getPosition().y(), r.getDirection()))
+                .toList();
+    }
+
+    private List<CheckpointProgressDto> checkpointProgress(GameSession session) {
+        return session.getRobots().keySet().stream()
+                .map(playerId -> new CheckpointProgressDto(
+                        playerId,
+                        session.getNextCheckpointFor(playerId),
+                        session.getCompletedCheckpointsFor(playerId)))
                 .toList();
     }
 }

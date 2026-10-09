@@ -31,4 +31,5 @@ export interface RobotState {
   y: number;
   direction: Direction;
   hue: number;
+  avatarId?: AvatarId;
 }

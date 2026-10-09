@@ -94,6 +94,44 @@ public class GameBoard {
         return tile == null ? null : tile.pushPanel();
     }
 
+
+    public boolean canMove(Position from, Direction direction) {
+        Position to = from.moveIn(direction, 1);
+
+        // Prevent movement outside the board
+        if (to.x() < 0 || to.x() >= width || to.y() < 0 || to.y() >= height) {
+            return false;
+        }
+
+        // A wall can be stored either on the current tile
+        // or on the neighbouring tile.
+        return !hasWall(from, direction)
+                && !hasWall(to, direction.opposite());
+    }
+
+    private boolean hasWall(Position position, Direction direction) {
+        Tile tile = specialTiles.get(position);
+
+        // Normal tiles have no walls
+        if (tile == null || tile.walls() == null) {
+            return false;
+        }
+
+        Walls walls = tile.walls();
+
+        return switch (direction) {
+            case NORTH -> walls.north();
+            case EAST -> walls.east();
+            case SOUTH -> walls.south();
+            case WEST -> walls.west();
+        };
+    }
+
+    public Integer checkpointAt(Position position) {
+        Tile tile = specialTiles.get(position);
+        return tile == null ? null : tile.checkpointNumber();
+    }
+
     public static GameBoard classicWithSeedTiles() {
         List<Position> spawns = List.of(
                 new Position(0, 1), new Position(0, 2), new Position(0, 3),
