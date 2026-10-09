@@ -4,8 +4,9 @@ import com.example.demo.model.Direction;
 import com.example.demo.model.Position;
 
 /**
- * A player's robot on the board: its position, facing, and the movement/rotation
- * operations that command cards trigger.
+ * A player's robot: position and facing. Anything that moves a robot across the
+ * board (cards, belts, pushing) lives in MovementResolver, since it needs to know
+ * about walls and other robots.
  */
 public class Robot {
 
@@ -41,6 +42,7 @@ public class Robot {
             position = position.moveIn(movementDirection, 1);
         }
     }
+    public void moveTo(Position newPosition) { position = newPosition; }
 
     public void turnRight() { direction = direction.rotateRight(); }
     public void turnLeft() { direction = direction.rotateLeft(); }
