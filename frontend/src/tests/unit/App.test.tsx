@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../App';
 import { BrowserRouter } from 'react-router-dom';
@@ -125,10 +125,9 @@ beforeEach(() => {
       },
     ];
 
-    if (endpoint.endsWith('/public/rooms')) return createResponse(publicRooms);
     if (endpoint.endsWith('/games/public')) {
       if (init?.method === 'POST') return createResponse(hostRoom);
-      return createResponse([]);
+      return createResponse(publicRooms);
     }
     if (endpoint.endsWith('/games/public/public-room/join')) return createResponse(guestRoom);
     if (endpoint.includes('/games/join')) return createResponse(guestRoom);
@@ -234,7 +233,12 @@ describe('room routes after the navigation merge', () => {
     expect(screen.getByText('Host: Mia · 2/6 pilots')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Refresh' }));
-    await waitFor(() => expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/public/rooms'), expect.anything()));
+    await waitFor(() =>
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/games/public'),
+        expect.objectContaining({ headers: expect.objectContaining({ Authorization: expect.stringMatching(/^Bearer /) }) }),
+      ),
+    );
 
     await user.click(screen.getByRole('button', { name: 'Join' }));
     await expectPath('/join-battle');
@@ -260,6 +264,29 @@ describe('room routes after the navigation merge', () => {
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('/games/public'),
       expect.objectContaining({ method: 'POST', body: JSON.stringify({ roomName: 'Robot Rush', playerName: 'pilot' }) }),
+    );
+  });
+
+  it('leaves a hosted room when browser navigation returns to the menu', async () => {
+    window.history.replaceState(null, '', '/main-menu');
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(screen.getByRole('button', { name: 'Host Battle' }));
+    await expectPath('/host-battle');
+    await screen.findByText('ABC234');
+
+    await act(async () => {
+      window.history.replaceState(null, '', '/main-menu');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+
+    await expectPath('/main-menu');
+    await waitFor(() =>
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/games/real-room/leave'),
+        expect.objectContaining({ method: 'POST' }),
+      ),
     );
   });
 

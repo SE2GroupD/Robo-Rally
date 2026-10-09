@@ -184,7 +184,9 @@ function publicRoomError(status: number): Error {
 export async function listPublicRooms(signal?: AbortSignal): Promise<PublicRoom[]> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
 
-  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/public/rooms`, {
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/games/public`, {
+    headers: { Authorization: `Bearer ${token}` },
     signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
   });
   if (!response.ok) throw new Error('Could not load public rooms. Please try again.');

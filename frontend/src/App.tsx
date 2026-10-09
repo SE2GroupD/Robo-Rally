@@ -1,9 +1,9 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAppNavigation } from './app/useAppNavigation';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { MainMenuPage } from './features/menu/pages/MainMenuPage';
 import { GamePage } from './features/game/pages/GamePage';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createRoom, startRoom, leaveRoom, type CreatedRoom, type JoinedRoom } from './features/game/api/gameApi';
 import { HostBattlePage } from './features/game/pages/HostBattlePage';
 import { JoinBattlePage } from './features/game/pages/JoinBattlePage';
@@ -18,6 +18,7 @@ import { neon } from './features/auth/lib/neon';
 
 function App() {
   const { navigate } = useAppNavigation();
+  const location = useLocation();
 
   const { data: session, isPending } = neon.useSession();
   const user = session?.user;
@@ -36,8 +37,32 @@ function App() {
   const [isStartingSolo, setIsStartingSolo] = useState(false);
   const [soloError, setSoloError] = useState('');
   const startingSolo = useRef(false);
+  const leavingRoom = useRef(false);
+  const previousPathname = useRef(location.pathname);
 
   const activeRoom = soloRoom || hostRoom || joinedRoom;
+
+  useEffect(() => {
+    const isRoomRoute = ['/game', '/host-battle', '/join-battle'].includes(location.pathname);
+    const wasOnRoomRoute = ['/game', '/host-battle', '/join-battle'].includes(previousPathname.current);
+    previousPathname.current = location.pathname;
+
+    if (!activeRoom || isRoomRoute || !wasOnRoomRoute || leavingRoom.current) return;
+
+    leavingRoom.current = true;
+    void leaveRoom(activeRoom)
+      .catch(() => {
+        // Navigating away should not trap a player on the old route if cleanup fails.
+      })
+      .finally(() => {
+        setHostRoom(null);
+        setJoinedRoom(null);
+        setSoloRoom(null);
+        setRoomError('');
+        setSoloError('');
+        leavingRoom.current = false;
+      });
+  }, [activeRoom, location.pathname]);
 
   if (isPending) {
     return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">Loading...</div>;
@@ -92,6 +117,7 @@ function App() {
   };
 
   const handleLogout = async () => {
+    if (activeRoom) await leaveRoom(activeRoom).catch(() => {});
     setHostRoom(null);
     setJoinedRoom(null);
     setRoomError('');
