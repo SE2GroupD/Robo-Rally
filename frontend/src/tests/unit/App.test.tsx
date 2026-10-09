@@ -103,15 +103,15 @@ beforeEach(() => {
       playerId: 'host-id',
       hostPlayerId: 'host-id',
       status: roomStatus,
-      players: [{ playerId: 'host-id', playerName: 'pilot' }],
+      players: [{ playerId: 'host-id', playerName: 'pilot', avatarId: null }],
     };
 
     const guestRoom = {
       ...hostRoom,
       playerId: 'guest-id',
       players: [
-        { playerId: 'host-id', playerName: 'pilot' },
-        { playerId: 'guest-id', playerName: 'guest' },
+        { playerId: 'host-id', playerName: 'pilot', avatarId: null },
+        { playerId: 'guest-id', playerName: 'guest', avatarId: null },
       ],
     };
 
