@@ -37,6 +37,8 @@ function App() {
   const [soloError, setSoloError] = useState('');
   const startingSolo = useRef(false);
 
+  const activeRoom = soloRoom || hostRoom || joinedRoom;
+
   if (isPending) {
     return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">Loading...</div>;
   }
@@ -54,7 +56,7 @@ function App() {
       created = await createRoom(playerInfo.username);
       setSoloRoom(await startRoom(created));
     } catch {
-      if (created) void leaveRoom(created).catch(() => {}); // don't leave an orphan room behind
+      if (created) void leaveRoom(created).catch(() => {});
       setSoloError('Could not start the game. Please try again.');
     } finally {
       startingSolo.current = false;
@@ -213,7 +215,7 @@ function App() {
         element={
           playerInfo ? (
             <GamePage
-              room={soloRoom}
+              room={activeRoom}
               isStarting={isStartingSolo}
               error={soloError}
               onRetry={handleStartGame}
@@ -236,6 +238,7 @@ function App() {
               error={roomError}
               onRetry={handleHostBattle}
               onBack={handleRoomBack}
+              onRoomChange={setHostRoom}
             />
           ) : (
             loginRedirect
@@ -247,7 +250,13 @@ function App() {
         path="/join-battle"
         element={
           playerInfo ? (
-            <JoinBattlePage username={playerInfo.username} room={joinedRoom} onJoined={setJoinedRoom} onBack={handleRoomBack} />
+            <JoinBattlePage
+              username={playerInfo.username}
+              room={joinedRoom}
+              onJoined={setJoinedRoom}
+              onBack={handleRoomBack}
+              onRoomChange={setJoinedRoom}
+            />
           ) : (
             loginRedirect
           )

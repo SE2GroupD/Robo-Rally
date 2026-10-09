@@ -40,7 +40,7 @@ public class RoomService {
         } while (roomsByCode.containsKey(code));
 
         // Use the actual JWT subject instead of generating a random UUID
-        RoomPlayer host = new RoomPlayer(playerId, playerName.strip());
+        RoomPlayer host = new RoomPlayer(playerId, playerName.strip(), null);
         GameRoom room = new GameRoom(UUID.randomUUID(), code, host.playerId(), List.of(host), RoomStatus.WAITING);
         roomsByCode.put(code, room);
         return room;
@@ -119,7 +119,7 @@ public class RoomService {
         }
 
         var players = new ArrayList<>(room.players());
-        players.add(new RoomPlayer(playerId, playerName.strip()));
+        players.add(new RoomPlayer(playerId, playerName.strip(), null));
         GameRoom updated = new GameRoom(room.gameId(), code, room.hostPlayerId(), players, room.status());
         roomsByCode.put(code, updated);
         return updated;
@@ -159,6 +159,32 @@ public class RoomService {
             roomsByCode.put(room.roomCode(),
                     new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), remaining, room.status()));
         }
+    }
+
+
+    public synchronized GameRoom selectRobot(UUID gameId, String playerId, int avatarId) {
+        if (avatarId < 1 || avatarId > 6) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Avatar must be between 1 and 6.");
+        }
+        GameRoom room = getRoom(gameId, playerId);
+        if (room.status() != RoomStatus.WAITING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Robot cannot be changed after the game has started.");
+        }
+        boolean avatarTaken = room.players().stream()
+                .anyMatch(player -> player.avatarId() != null
+                        && player.avatarId().equals(avatarId)
+                        && !player.playerId().equals(playerId));
+        if (avatarTaken) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This robot is already selected.");
+        }
+        var players = room.players().stream()
+                .map(player -> player.playerId().equals(playerId)
+                        ? new RoomPlayer(player.playerId(), player.playerName(), avatarId)
+                        : player)
+                .toList();
+        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players, room.status());
+        roomsByCode.put(room.roomCode(), updated);
+        return updated;
     }
 
     public synchronized GameRoom getRoomByGameId(UUID gameId) {

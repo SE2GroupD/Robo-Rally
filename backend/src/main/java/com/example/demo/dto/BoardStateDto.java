@@ -18,5 +18,6 @@ public record BoardStateDto(
         List<Tile> tiles,
         int round,
         List<String> lockedInPlayerIds,
+        List<CheckpointProgressDto> checkpointProgress,
         TurnResolutionDto lastResolution) {
 }

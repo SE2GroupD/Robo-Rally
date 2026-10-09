@@ -27,7 +27,7 @@ export interface CreatedRoom {
   playerId: string;
   hostPlayerId: string;
   status: 'WAITING' | 'STARTED';
-  players: { playerId: string; playerName: string }[];
+  players: { playerId: string; playerName: string; avatarId: number | null }[];
 }
 
 export async function createRoom(playerName: string): Promise<CreatedRoom> {
@@ -62,7 +62,10 @@ export async function createRoom(playerName: string): Promise<CreatedRoom> {
     !Array.isArray(room.players) ||
     !room.players.every(
       (player: CreatedRoom['players'][number]) =>
-        player && typeof player.playerId === 'string' && typeof player.playerName === 'string',
+        player &&
+        typeof player.playerId === 'string' &&
+        typeof player.playerName === 'string' &&
+        (player.avatarId === null || typeof player.avatarId === 'number'),
     ) ||
     !room.players.some((player: CreatedRoom['players'][number]) => player.playerId === room.playerId)
   ) {
@@ -77,7 +80,7 @@ export interface JoinedRoom {
   playerId: string;
   hostPlayerId: string;
   status: 'WAITING' | 'STARTED';
-  players: { playerId: string; playerName: string }[];
+  players: { playerId: string; playerName: string; avatarId: number | null }[];
 }
 
 export async function joinRoom(roomCode: string, playerName: string): Promise<JoinedRoom> {
@@ -120,7 +123,10 @@ export async function joinRoom(roomCode: string, playerName: string): Promise<Jo
     !Array.isArray(room.players) ||
     !room.players.every(
       (player: JoinedRoom['players'][number]) =>
-        player && typeof player.playerId === 'string' && typeof player.playerName === 'string',
+        player &&
+        typeof player.playerId === 'string' &&
+        typeof player.playerName === 'string' &&
+        (player.avatarId === null || typeof player.avatarId === 'number'),
     ) ||
     !room.players.some((player: JoinedRoom['players'][number]) => player.playerId === room.playerId) ||
     !room.players.some((player: JoinedRoom['players'][number]) => player.playerId === room.hostPlayerId)
@@ -310,7 +316,10 @@ async function readRoom(response: Response, expected: JoinedRoom): Promise<Joine
     !Array.isArray(room.players) ||
     !room.players.every(
       (player: JoinedRoom['players'][number]) =>
-        player && typeof player.playerId === 'string' && typeof player.playerName === 'string',
+        player &&
+        typeof player.playerId === 'string' &&
+        typeof player.playerName === 'string' &&
+        (player.avatarId === null || typeof player.avatarId === 'number'),
     ) ||
     !room.players.some((player: JoinedRoom['players'][number]) => player.playerId === room.playerId)
   ) {
@@ -329,6 +338,37 @@ export async function startRoom(room: JoinedRoom): Promise<JoinedRoom> {
 
 export async function leaveRoom(room: JoinedRoom): Promise<void> {
   await roomRequest(room, 'leave');
+}
+
+export async function selectRobot(room: JoinedRoom, avatarId: number): Promise<JoinedRoom> {
+  if (!API_BASE_URL) throw new Error('Room service is unavailable.');
+
+  const token = await getValidToken();
+  const base = `${API_BASE_URL.replace(/\/$/, '')}/games/${encodeURIComponent(room.gameId)}`;
+
+  const response = await fetch(`${base}/robot`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ avatarId }),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (response.status === 409) {
+    throw new RoomRequestError('This robot is already selected.', response.status);
+  }
+
+  if (response.status === 400) {
+    throw new RoomRequestError('Invalid robot selection.', response.status);
+  }
+
+  if (!response.ok) {
+    throw new RoomRequestError('Could not select robot.', response.status);
+  }
+
+  return readRoom(response, room);
 }
 
 export async function fetchBoardState(gameId: string, signal?: AbortSignal): Promise<BoardStateDto> {

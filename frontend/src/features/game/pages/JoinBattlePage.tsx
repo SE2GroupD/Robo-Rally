@@ -1,4 +1,5 @@
 import { useRef, useState, type SubmitEvent } from 'react';
+import { Navigate } from 'react-router-dom';
 import roboRallyImage from '../../../assets/hero.png';
 import { Button } from '../../../foundation/components/button/Button';
 import { TextInput } from '../../../foundation/components/text-input/TextInput';
@@ -11,13 +12,18 @@ interface JoinBattlePageProps {
   room: JoinedRoom | null;
   onJoined: (room: JoinedRoom) => void;
   onBack: () => void;
+  onRoomChange?: (room: JoinedRoom) => void;
 }
 
-export function JoinBattlePage({ username, room, onJoined, onBack }: JoinBattlePageProps) {
+export function JoinBattlePage({ username, room, onJoined, onBack, onRoomChange }: JoinBattlePageProps) {
   const [roomCode, setRoomCode] = useState('');
   const [error, setError] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const joining = useRef(false);
+
+  if (room?.status === 'STARTED') {
+    return <Navigate to="/game" replace />;
+  }
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,9 +50,14 @@ export function JoinBattlePage({ username, room, onJoined, onBack }: JoinBattleP
   }
 
   return (
-    <MenuScreen img={roboRallyImage} subtitle={`Pilot ${username}`} title={room ? 'Battle Room' : 'Join Battle'}>
+    <MenuScreen
+      img={roboRallyImage}
+      subtitle={`Pilot ${username}`}
+      title={room ? 'Battle Room' : 'Join Battle'}
+      panelClassName={room ? 'max-w-6xl' : undefined}
+    >
       {room ? (
-        <RoomSession initialRoom={room} onLeft={onBack} />
+        <RoomSession initialRoom={room} onLeft={onBack} onRoomChange={onRoomChange} />
       ) : (
         <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
           <p className="m-0 text-center text-text-muted">Enter the room code shared by your host.</p>
