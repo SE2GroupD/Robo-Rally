@@ -1,8 +1,9 @@
+import { Navigate } from 'react-router-dom';
 import roboRallyImage from '../../../assets/hero.png';
 import { Button } from '../../../foundation/components/button/Button';
 import { MenuScreen } from '../../../shared/components/menu-screen/MenuScreen';
 import { RoomSession } from '../components/room/RoomSession';
-import type { CreatedRoom } from '../api/gameApi';
+import type { CreatedRoom, JoinedRoom } from '../api/gameApi';
 
 interface HostBattlePageProps {
   username: string;
@@ -11,9 +12,14 @@ interface HostBattlePageProps {
   error: string;
   onRetry: () => void;
   onBack: () => void;
+  onRoomChange?: (room: JoinedRoom) => void;
 }
 
-export function HostBattlePage({ username, room, isCreating, error, onRetry, onBack }: HostBattlePageProps) {
+export function HostBattlePage({ username, room, isCreating, error, onRetry, onBack, onRoomChange }: HostBattlePageProps) {
+  if (room?.status === 'STARTED') {
+    return <Navigate to="/game" replace />;
+  }
+
   return (
     <MenuScreen
       img={roboRallyImage}
@@ -22,7 +28,7 @@ export function HostBattlePage({ username, room, isCreating, error, onRetry, onB
       panelClassName={room ? 'max-w-6xl' : undefined}
     >
       {room ? (
-        <RoomSession initialRoom={room} onLeft={onBack} />
+        <RoomSession initialRoom={room} onLeft={onBack} onRoomChange={onRoomChange} />
       ) : (
         <>
           {isCreating && <output>Creating room…</output>}
