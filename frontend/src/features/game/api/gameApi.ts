@@ -136,6 +136,115 @@ export async function joinRoom(roomCode: string, playerName: string): Promise<Jo
   return room;
 }
 
+export interface PublicRoom {
+  gameId: string;
+  roomName: string;
+  hostPlayerName: string;
+  playerCount: number;
+  maxPlayers: number;
+}
+
+function validateRoom(room: unknown, playerId?: string): room is JoinedRoom {
+  return Boolean(
+    room &&
+    typeof room === 'object' &&
+    'gameId' in room &&
+    typeof room.gameId === 'string' &&
+    room.gameId &&
+    'roomCode' in room &&
+    typeof room.roomCode === 'string' &&
+    room.roomCode &&
+    'playerId' in room &&
+    typeof room.playerId === 'string' &&
+    room.playerId &&
+    'hostPlayerId' in room &&
+    typeof room.hostPlayerId === 'string' &&
+    room.hostPlayerId &&
+    (!playerId || room.playerId === playerId) &&
+    'status' in room &&
+    room.status === 'WAITING' &&
+    'players' in room &&
+    Array.isArray(room.players) &&
+    room.players.every(
+      (player: JoinedRoom['players'][number]) =>
+        player && typeof player.playerId === 'string' && typeof player.playerName === 'string',
+    ) &&
+    room.players.some((player: JoinedRoom['players'][number]) => player.playerId === room.playerId) &&
+    room.players.some((player: JoinedRoom['players'][number]) => player.playerId === room.hostPlayerId),
+  );
+}
+
+function publicRoomError(status: number): Error {
+  if (status === 400) return new Error('Check the room details and try again.');
+  if (status === 404) return new Error('That public room is no longer available.');
+  if (status === 409) return new Error('This room is full or has already started.');
+  return new Error('The public room request could not be completed. Please try again.');
+}
+
+export async function listPublicRooms(signal?: AbortSignal): Promise<PublicRoom[]> {
+  if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
+
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/games/public`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
+  });
+  if (!response.ok) throw new Error('Could not load public rooms. Please try again.');
+
+  const rooms = await response.json();
+  if (
+    !Array.isArray(rooms) ||
+    !rooms.every(
+      (room) =>
+        room &&
+        typeof room.gameId === 'string' &&
+        typeof room.roomName === 'string' &&
+        typeof room.hostPlayerName === 'string' &&
+        Number.isInteger(room.playerCount) &&
+        Number.isInteger(room.maxPlayers) &&
+        room.playerCount >= 1 &&
+        room.maxPlayers >= room.playerCount,
+    )
+  ) {
+    throw new Error('The room service returned an unexpected response.');
+  }
+  return rooms;
+}
+
+export async function createPublicRoom(roomName: string, playerName: string): Promise<CreatedRoom> {
+  if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
+
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/games/public`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ roomName: roomName.trim(), playerName }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) throw publicRoomError(response.status);
+
+  const room = await response.json();
+  if (!validateRoom(room)) throw new Error('The room service returned an unexpected response.');
+  return room;
+}
+
+export async function joinPublicRoom(gameId: string, playerName: string): Promise<JoinedRoom> {
+  if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
+
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/games/public/${encodeURIComponent(gameId)}/join`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ playerName }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) throw publicRoomError(response.status);
+
+  const room = await response.json();
+  if (!validateRoom(room)) throw new Error('The room service returned an unexpected response.');
+  return room;
+}
+
 export async function fetchPlayerHand(roomId: string): Promise<PlayerHandDto> {
   const token = await getValidToken();
 

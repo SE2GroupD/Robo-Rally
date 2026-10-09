@@ -1,7 +1,10 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.CreatePublicRoomRequest;
 import com.example.demo.dto.CreateRoomRequest;
+import com.example.demo.dto.JoinPublicRoomRequest;
 import com.example.demo.dto.JoinRoomRequest;
+import com.example.demo.dto.PublicRoomResponse;
 import com.example.demo.dto.RoomResponse;
 import com.example.demo.dto.SelectRobotRequest;
 import com.example.demo.model.GameRoom;
@@ -13,6 +16,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -34,6 +38,33 @@ public class RoomController {
         GameRoom room = roomService.createRoom(request.playerName(), jwt.getSubject());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(RoomResponse.forPlayer(room, room.hostPlayerId()));
+    }
+
+    @GetMapping("/public")
+    public List<PublicRoomResponse> listPublicRooms(@AuthenticationPrincipal Jwt jwt) {
+        jwt.getSubject(); // Listing rooms is restricted to authenticated pilots.
+        return roomService.listPublicRooms().stream().map(PublicRoomResponse::from).toList();
+    }
+
+    @PostMapping("/public")
+    public ResponseEntity<RoomResponse> createPublicRoom(
+            @RequestBody CreatePublicRoomRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        GameRoom room = roomService.createPublicRoom(request.playerName(), jwt.getSubject(), request.roomName());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(RoomResponse.forPlayer(room, room.hostPlayerId()));
+    }
+
+    @PostMapping("/public/{gameId}/join")
+    public ResponseEntity<RoomResponse> joinPublicRoom(
+            @PathVariable UUID gameId,
+            @RequestBody JoinPublicRoomRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        String playerId = jwt.getSubject();
+        GameRoom room = roomService.joinPublicRoom(gameId, request.playerName(), playerId);
+        return ResponseEntity.ok(RoomResponse.forPlayer(room, playerId));
     }
 
     @PostMapping("/join")
