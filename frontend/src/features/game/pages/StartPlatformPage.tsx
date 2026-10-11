@@ -49,9 +49,11 @@ export function StartPlatformPage({ username, onBack, onCreated, onJoined }: Sta
     mounted.current = true;
     const controller = new AbortController();
     void Promise.resolve().then(() => loadRooms(controller.signal));
+    const refreshTimer = window.setInterval(() => void loadRooms(undefined, false), 5000);
     return () => {
       mounted.current = false;
       controller.abort();
+      window.clearInterval(refreshTimer);
     };
   }, [loadRooms]);
 

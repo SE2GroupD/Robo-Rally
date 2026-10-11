@@ -281,7 +281,12 @@ export class RoomRequestError extends Error {
   }
 }
 
-async function roomRequest(room: JoinedRoom, action?: 'start' | 'leave', signal?: AbortSignal): Promise<Response> {
+async function roomRequest(
+  room: JoinedRoom,
+  action?: 'start' | 'leave',
+  signal?: AbortSignal,
+  keepalive = false,
+): Promise<Response> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable.');
 
   const token = await getValidToken();
@@ -300,7 +305,8 @@ async function roomRequest(room: JoinedRoom, action?: 'start' | 'leave', signal?
     method: action ? 'POST' : 'GET',
     headers,
     body: action ? JSON.stringify({ playerId: room.playerId }) : undefined,
-    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
+    keepalive,
+    signal: keepalive ? undefined : signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
   });
   if (!response.ok) throw new RoomRequestError('Room request failed.', response.status);
   return response;
@@ -338,8 +344,8 @@ export async function startRoom(room: JoinedRoom): Promise<JoinedRoom> {
   return readRoom(await roomRequest(room, 'start'), room);
 }
 
-export async function leaveRoom(room: JoinedRoom): Promise<void> {
-  await roomRequest(room, 'leave');
+export async function leaveRoom(room: JoinedRoom, options?: { keepalive?: boolean }): Promise<void> {
+  await roomRequest(room, 'leave', undefined, options?.keepalive);
 }
 
 export async function selectRobot(room: JoinedRoom, avatarId: number): Promise<JoinedRoom> {

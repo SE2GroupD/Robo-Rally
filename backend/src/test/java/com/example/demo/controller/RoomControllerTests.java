@@ -1,8 +1,9 @@
 package com.example.demo.controller;
 
 import com.example.demo.service.GameService;
+import com.example.demo.service.PublicRoomService;
+import com.example.demo.service.PublicRoomServiceImpl;
 import com.example.demo.service.RoomService;
-import com.example.demo.service.RoomServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
@@ -23,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RoomControllerTests {
         private MockMvc mvc;
         private RoomService service;
+        private PublicRoomService publicRoomService;
         private GameService gameService;
         private final String hostId = "host-123";
         private final String guestId = "guest-456";
@@ -31,7 +33,8 @@ class RoomControllerTests {
 
         @BeforeEach
         void setUp() {
-                service = new RoomServiceImpl();
+                service = new RoomService();
+                publicRoomService = new PublicRoomServiceImpl(service);
                 gameService = mock(GameService.class);
 
                 HandlerMethodArgumentResolver principalResolver = new HandlerMethodArgumentResolver() {
@@ -47,7 +50,7 @@ class RoomControllerTests {
                         }
                 };
 
-                mvc = MockMvcBuilders.standaloneSetup(new RoomController(service, gameService))
+                mvc = MockMvcBuilders.standaloneSetup(new RoomController(service, publicRoomService, gameService))
                         .setCustomArgumentResolvers(principalResolver)
                         .build();
         }

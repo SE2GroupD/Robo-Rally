@@ -9,6 +9,7 @@ import com.example.demo.dto.RoomResponse;
 import com.example.demo.dto.SelectRobotRequest;
 import com.example.demo.model.GameRoom;
 import com.example.demo.service.GameService;
+import com.example.demo.service.PublicRoomService;
 import com.example.demo.service.RoomService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,10 +24,12 @@ import java.util.UUID;
 @RequestMapping("/api/games")
 public class RoomController {
     private final RoomService roomService;
+    private final PublicRoomService publicRoomService;
     private final GameService gameService;
 
-    public RoomController(RoomService roomService, GameService gameService) {
+    public RoomController(RoomService roomService, PublicRoomService publicRoomService, GameService gameService) {
         this.roomService = roomService;
+        this.publicRoomService = publicRoomService;
         this.gameService = gameService;
     }
 
@@ -43,7 +46,7 @@ public class RoomController {
     @GetMapping("/public")
     public List<PublicRoomResponse> listPublicRooms(@AuthenticationPrincipal Jwt jwt) {
         jwt.getSubject(); // Listing rooms is restricted to authenticated pilots.
-        return roomService.listPublicRooms().stream().map(PublicRoomResponse::from).toList();
+        return publicRoomService.listPublicRooms().stream().map(PublicRoomResponse::from).toList();
     }
 
     @PostMapping("/public")
@@ -51,7 +54,7 @@ public class RoomController {
             @RequestBody CreatePublicRoomRequest request,
             @AuthenticationPrincipal Jwt jwt) {
 
-        GameRoom room = roomService.createPublicRoom(request.playerName(), jwt.getSubject(), request.roomName());
+        GameRoom room = publicRoomService.createPublicRoom(request.playerName(), jwt.getSubject(), request.roomName());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(RoomResponse.forPlayer(room, room.hostPlayerId()));
     }
@@ -63,7 +66,7 @@ public class RoomController {
             @AuthenticationPrincipal Jwt jwt) {
 
         String playerId = jwt.getSubject();
-        GameRoom room = roomService.joinPublicRoom(gameId, request.playerName(), playerId);
+        GameRoom room = publicRoomService.joinPublicRoom(gameId, request.playerName(), playerId);
         return ResponseEntity.ok(RoomResponse.forPlayer(room, playerId));
     }
 

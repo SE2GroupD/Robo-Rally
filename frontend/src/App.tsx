@@ -64,6 +64,17 @@ function App() {
       });
   }, [activeRoom, location.pathname]);
 
+  useEffect(() => {
+    if (!activeRoom) return;
+
+    const leaveOnUnload = () => {
+      void leaveRoom(activeRoom, { keepalive: true }).catch(() => {});
+    };
+
+    window.addEventListener('pagehide', leaveOnUnload);
+    return () => window.removeEventListener('pagehide', leaveOnUnload);
+  }, [activeRoom]);
+
   if (isPending) {
     return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">Loading...</div>;
   }

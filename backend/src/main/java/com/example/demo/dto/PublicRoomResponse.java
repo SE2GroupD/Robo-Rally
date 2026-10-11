@@ -1,6 +1,6 @@
 package com.example.demo.dto;
 
-import com.example.demo.service.RoomService;
+import com.example.demo.service.PublicRoomService;
 
 import java.util.UUID;
 
@@ -10,7 +10,7 @@ public record PublicRoomResponse(
         String hostPlayerName,
         int playerCount,
         int maxPlayers) {
-    public static PublicRoomResponse from(RoomService.PublicRoom publicRoom) {
+    public static PublicRoomResponse from(PublicRoomService.PublicRoom publicRoom) {
         var room = publicRoom.room();
         String hostName = room.players().stream()
                 .filter(player -> player.playerId().equals(room.hostPlayerId()))
