@@ -94,6 +94,11 @@ public class GameBoard {
         return tile == null ? null : tile.pushPanel();
     }
 
+    public GearRotation gearAt(Position p) {
+        Tile tile = specialTiles.get(p);
+        return tile == null ? null : tile.gear();
+    }
+
     public Integer checkpointAt(Position position) {
         Tile tile = specialTiles.get(position);
         return tile == null ? null : tile.checkpointNumber();
