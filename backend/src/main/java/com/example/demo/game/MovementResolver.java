@@ -1,11 +1,6 @@
 package com.example.demo.game;
 
-import com.example.demo.model.CardType;
-import com.example.demo.model.Conveyor;
-import com.example.demo.model.Direction;
-import com.example.demo.model.Position;
-import com.example.demo.model.PushPanel;
-import com.example.demo.model.ResolutionPhase;
+import com.example.demo.model.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,13 +45,16 @@ public class MovementResolver {
             doPushPanels(board, robots, registerNumber);
             notify(callback, registerNumber, ResolutionPhase.PUSH_PANEL, Map.of());
 
-            // doGears(board, robots);          // TODO: gear activation
+            doGears(board, robots);
+            notify(callback, registerNumber, ResolutionPhase.GEAR, Map.of());
+
             // doBoardLasers(board, robots);    // TODO: board laser activation
             // doRobotLasers(board, robots);    // TODO: robot laser activation
             // doEnergySpaces(board, robots);   // TODO: energy space activation
             // doCheckpoints(board, robots);    // TODO: checkpoint activation
         }
     }
+
 
     private void notify(RegisterCallback callback, int register, ResolutionPhase phase, Map<Robot, CardType> cards) {
         if (callback != null) callback.onPhaseResolved(register, phase, cards);
@@ -176,6 +174,19 @@ public class MovementResolver {
             moves.put(robot, robot.getPosition().moveIn(panel.direction(), 1));
         }
         applyMoves(robots, moves);
+    }
+
+    // gears
+    private void doGears(GameBoard board, List<Robot> robots) {
+        for (Robot robot : robots) {
+            GearRotation gear = board.gearAt(robot.getPosition());
+            if (gear == null) continue;
+            if(gear == GearRotation.CLOCKWISE) {
+                robot.turnRight();
+            } else if(gear == GearRotation.COUNTERCLOCKWISE) {
+                robot.turnLeft();
+            }
+        }
     }
 
     /**
