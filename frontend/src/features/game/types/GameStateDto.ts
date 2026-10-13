@@ -41,7 +41,7 @@ export interface TileDto {
   walls?: { north: boolean; east: boolean; south: boolean; west: boolean } | null;
   hasAntenna?: boolean;
   isSpawnPoint?: boolean;
-  gear?: 'CLOCKWISE' | 'COUNTER_CLOCKWISE' | null;
+  gear?: 'CLOCKWISE' | 'COUNTERCLOCKWISE' | 'COUNTER_CLOCKWISE' | null;
   conveyor?: { direction: Direction; isExpress?: boolean } | null;
   checkpointNumber?: number | null;
   pushPanel?: { direction: Direction; activeRegisters: number[] } | null;

@@ -52,7 +52,9 @@ export function Tile({ tile }: TileProps) {
       )}
 
       {tile.gear === 'CLOCKWISE' && <div className="absolute z-10 text-emerald-500 text-2xl font-black">↻</div>}
-      {tile.gear === 'COUNTER_CLOCKWISE' && <div className="absolute z-10 text-red-500 text-2xl font-black">↺</div>}
+      {(tile.gear === 'COUNTERCLOCKWISE' || tile.gear === 'COUNTER_CLOCKWISE') && (
+        <div className="absolute z-10 text-red-500 text-2xl font-black">↺</div>
+      )}
 
       {tile.conveyor && (
         <div className={`absolute z-10 font-black text-2xl ${tile.conveyor.isExpress ? 'text-blue-500' : 'text-green-500'}`}>

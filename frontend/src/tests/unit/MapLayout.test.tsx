@@ -118,7 +118,7 @@ it('renders 30 start tiles and 100 game tiles with a continuous tile pitch', () 
   const startBoard = screen.getByRole('region', { name: 'Start board start' });
   const gameBoard = screen.getByRole('region', { name: 'Game board game-1' });
   expect(within(startBoard).getAllByAltText('Steel Tile')).toHaveLength(30);
-  expect(within(gameBoard).getAllByAltText('Steel Tile')).toHaveLength(100);
+  expect(within(gameBoard).getAllByAltText('Steel Tile')).toHaveLength(92);
   expect(gameBoard).toHaveStyle({ left: '156px', top: '0px' });
   expect(startBoard.firstElementChild).toHaveStyle({ gridTemplateColumns: 'repeat(3, 50px)', gap: '2px' });
   expect(screen.getByRole('region', { name: 'Map layout' })).toHaveStyle({ width: '674px', height: '518px' });
@@ -126,7 +126,7 @@ it('renders 30 start tiles and 100 game tiles with a continuous tile pitch', () 
 
 it('leaves missing board areas empty and offsets the entire map into view', () => {
   render(<MapLayout layout={offsetMapLayout} />);
-  expect(screen.getAllByAltText('Steel Tile')).toHaveLength(230);
+  expect(screen.getAllByAltText('Steel Tile')).toHaveLength(222);
   expect(screen.getByRole('region', { name: 'Start board start' })).toHaveStyle({ left: '0px', top: '0px' });
   expect(screen.getByRole('region', { name: 'Game board game-1' })).toHaveStyle({ left: '260px', top: '156px' });
   expect(screen.getByRole('region', { name: 'Map layout' })).toHaveStyle({ width: '1298px', height: '934px' });

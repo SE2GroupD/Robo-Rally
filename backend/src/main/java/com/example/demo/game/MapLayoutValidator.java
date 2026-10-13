@@ -5,6 +5,7 @@ import com.example.demo.model.Position;
 import com.example.demo.model.layout.BoardKind;
 import com.example.demo.model.layout.MapLayout;
 import com.example.demo.model.layout.PlacedBoard;
+import com.example.demo.model.layout.StartBoardTemplate;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -41,6 +42,11 @@ public final class MapLayoutValidator {
             }
             if (board.rotation() != 0 && board.rotation() != 90 && board.rotation() != 180 && board.rotation() != 270) {
                 errors.add("Board " + board.id() + " has an invalid rotation.");
+            }
+
+            if (board.kind() == BoardKind.START
+                    && !new HashSet<>(board.tiles()).equals(new HashSet<>(StartBoardTemplate.tiles()))) {
+                errors.add("Start board must match the permanent template.");
             }
 
             Set<Position> positions = new HashSet<>();

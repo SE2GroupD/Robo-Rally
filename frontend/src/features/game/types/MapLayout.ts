@@ -17,5 +17,7 @@ export interface PlacedBoard {
 }
 
 export interface MapLayoutData {
+  id?: string;
+  name?: string;
   boards: PlacedBoard[];
 }

@@ -28,8 +28,8 @@ class TrainingMapTests {
         assertEquals(10, state.height());
         assertEquals(layouts.getDefaultLayout(), state.layout());
         assertEquals(1, state.robots().getFirst().x());
-        assertEquals(4, state.robots().getFirst().y());
-        assertTrue(state.tiles().stream().anyMatch(tile -> tile.x() == 11 && tile.y() == 4 && Integer.valueOf(1).equals(tile.checkpointNumber())));
+        assertEquals(1, state.robots().getFirst().y());
+        assertTrue(state.tiles().stream().anyMatch(tile -> tile.x() == 10 && tile.y() == 2 && Integer.valueOf(1).equals(tile.checkpointNumber())));
 
         var multiplayer = rooms.createRoom("Host", "host");
         rooms.startRoom(multiplayer.gameId(), "host");
@@ -46,12 +46,11 @@ class TrainingMapTests {
         var robot = new Robot("pilot", board.getSpawnPositions().getFirst(), Direction.EAST);
 
         robot.moveForward(board, 2);
-        assertEquals(new Position(3, 4), robot.getPosition());
+        assertEquals(new Position(3, 1), robot.getPosition());
 
-        robot.moveForward(board, 8);
-        assertEquals(Integer.valueOf(1), board.checkpointAt(robot.getPosition()));
+        assertEquals(Integer.valueOf(1), board.checkpointAt(new Position(10, 2)));
 
         robot.moveForward(board, 20);
-        assertEquals(new Position(12, 4), robot.getPosition());
+        assertEquals(new Position(12, 1), robot.getPosition());
     }
 }

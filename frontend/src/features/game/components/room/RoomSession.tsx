@@ -224,6 +224,7 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
               />
 
               <div className="pointer-events-none absolute inset-x-0 top-2 z-20 text-center text-sm text-white">
+                {state.layout?.name && <div className="font-semibold">{state.layout.name}</div>}
                 {describeStatus(state, room.players, isReplaying)}
               </div>
 

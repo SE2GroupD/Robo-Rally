@@ -18,7 +18,7 @@ export type TileData = {
   hasPit?: boolean;
   hasAntenna?: boolean;
   isSpawnPoint?: boolean;
-  gear?: 'CLOCKWISE' | 'COUNTER_CLOCKWISE';
+  gear?: 'CLOCKWISE' | 'COUNTERCLOCKWISE' | 'COUNTER_CLOCKWISE';
   conveyor?: { direction: Direction; isExpress?: boolean };
   pushPanel?: { direction: Direction; activeRegisters: number[] };
 };
