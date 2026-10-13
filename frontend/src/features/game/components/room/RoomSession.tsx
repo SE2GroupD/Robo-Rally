@@ -17,7 +17,6 @@ import { ProgrammingPhase } from '../programming/ProgrammingPhase';
 import { StartBoard } from '../map/boards/StartBoard';
 import type { TileData, AvatarId } from '../../types/Board';
 import { RobotSelection } from './RobotSelection';
-import type { AvatarId } from '../../types/Board';
 import type { BoardStateDto } from '../../types/GameStateDto';
 
 import avatar1 from '../../../../assets/avatars/avatar1.svg';

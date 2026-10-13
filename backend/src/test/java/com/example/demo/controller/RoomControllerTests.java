@@ -59,7 +59,7 @@ class RoomControllerTests {
 
     @Test
     void roomLifecycleEndpointsReturnUpdatedState() throws Exception {
-        var room = service.createRoom("Host", hostId);
+        var room = service.createRoom("Host", hostId, "classic_start");
 
         currentMockSubject = hostId;
 
@@ -89,7 +89,7 @@ class RoomControllerTests {
 
     @Test
     void joinsRoomAndReturnsGuestIdentity() throws Exception {
-        var room = service.createRoom("Host", hostId);
+        var room = service.createRoom("Host", hostId, "classic_start");
 
         currentMockSubject = guestId;
         mvc.perform(post("/api/games/join").contentType(MediaType.APPLICATION_JSON)
@@ -144,7 +144,7 @@ class RoomControllerTests {
 
     @Test
     void selectStartTileReturnsUpdatedRoom() throws Exception {
-        var room = service.createRoom("Host", hostId);
+        var room = service.createRoom("Host", hostId, "classic_start");
         currentMockSubject = hostId;
         mvc.perform(post("/api/games/" + room.gameId() + "/start-tile")
                 .contentType(MediaType.APPLICATION_JSON)

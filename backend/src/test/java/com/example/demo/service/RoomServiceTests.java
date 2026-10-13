@@ -28,7 +28,7 @@ class RoomServiceTests {
 
     @Test
     void hostStartsAloneAndRepeatedStartIsSafe() {
-        GameRoom room = service.createRoom("Host", hostId);
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
         assertEquals(com.example.demo.model.RoomStatus.STARTED,
                 service.startRoom(room.gameId(), room.hostPlayerId()).status());
         assertEquals(com.example.demo.model.RoomStatus.STARTED,
@@ -40,7 +40,7 @@ class RoomServiceTests {
 
     @Test
     void guestLeavesWithoutClosingRoomAndHostClosesIt() {
-        GameRoom room = service.createRoom("Host", hostId);
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
         var joined = service.joinRoom(room.roomCode(), "Guest", guestId);
 
         assertEquals(2, service.getRoom(room.gameId(), room.hostPlayerId()).players().size());
@@ -62,7 +62,7 @@ class RoomServiceTests {
 
     @Test
     void unknownPlayersCannotReadStartOrLeave() {
-        GameRoom room = service.createRoom("Host", hostId);
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
         String outsider = "outsider-id";
 
         assertEquals(403, assertThrows(ResponseStatusException.class,
@@ -77,7 +77,7 @@ class RoomServiceTests {
 
     @Test
     void joinsExistingRoomWithNormalizedCodeAndPreservesHost() {
-        GameRoom original = service.createRoom("Host", hostId);
+        GameRoom original = service.createRoom("Host", hostId, "classic_start");
         GameRoom joined = service.joinRoom(" " + original.roomCode().toLowerCase(java.util.Locale.ROOT) + " ",
                 " Guest ", guestId);
 
@@ -107,8 +107,8 @@ class RoomServiceTests {
 
     @Test
     void concurrentJoinsAreRetainedAndOtherRoomsAreUnaffected() throws Exception {
-        GameRoom room = service.createRoom("Host", hostId);
-        GameRoom other = service.createRoom("Other host", "other-host-id");
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
+        GameRoom other = service.createRoom("Other host", "other-host-id", "classic_start");
 
         List<Callable<GameRoom>> tasks = IntStream.range(0, 30)
                 .mapToObj(i -> (Callable<GameRoom>) () -> service.joinRoom(room.roomCode(), "Guest", "guest-" + i))
@@ -128,7 +128,7 @@ class RoomServiceTests {
 
     @Test
     void createsRoomWithItsHostAndTrimsName() {
-        GameRoom room = service.createRoom("  Guest_1234  ", hostId);
+        GameRoom room = service.createRoom("  Guest_1234  ", hostId, "classic_start");
         assertNotNull(room.gameId());
         assertTrue(room.roomCode().matches("[A-HJ-NP-Z2-9]{6}"));
         assertEquals(1, room.players().size());
@@ -140,7 +140,7 @@ class RoomServiceTests {
     @Test
     void rejectsMissingBlankAndMalformedInput() {
         for (String name : new String[] { null, "", " \t\n " }) {
-            var error = assertThrows(ResponseStatusException.class, () -> service.createRoom(name, hostId));
+            var error = assertThrows(ResponseStatusException.class, () -> service.createRoom(name, hostId, "classic_start"));
             assertEquals(400, error.getStatusCode().value());
         }
     }
@@ -148,7 +148,7 @@ class RoomServiceTests {
     @Test
     void concurrentCreationsHaveDistinctCodesRoomsAndPlayers() throws Exception {
         List<Callable<GameRoom>> tasks = IntStream.range(0, 200)
-                .mapToObj(i -> (Callable<GameRoom>) () -> service.createRoom("Guest", "host-" + i))
+                .mapToObj(i -> (Callable<GameRoom>) () -> service.createRoom("Guest", "host-" + i, "classic_start"))
                 .toList();
 
         try (var executor = Executors.newFixedThreadPool(8)) {
@@ -167,7 +167,7 @@ class RoomServiceTests {
 
         @Test
     void selectStartTileAssignsValidSpawnPointSuccessfully() {
-        GameRoom room = service.createRoom("Host", hostId);
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
         com.example.demo.model.Position validSpawn = new com.example.demo.model.Position(1, 1);
 
         GameRoom updated = service.selectStartTile(room.gameId(), hostId, validSpawn);
@@ -177,7 +177,7 @@ class RoomServiceTests {
 
     @Test
     void selectStartTileRejectsTileAlreadyTakenByAnotherPlayer() {
-        GameRoom room = service.createRoom("Host", hostId);
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
         service.joinRoom(room.roomCode(), "Guest", guestId);
 
         com.example.demo.model.Position sharedSpawn = new com.example.demo.model.Position(1, 1);
@@ -192,7 +192,7 @@ class RoomServiceTests {
 
     @Test
     void selectStartTileRejectsNonSpawnCoordinates() {
-        GameRoom room = service.createRoom("Host", hostId);
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
 
         // Position (0, 0) est une case normale (pas un spawner)
         com.example.demo.model.Position invalidSpawn = new com.example.demo.model.Position(0, 0);
@@ -205,7 +205,7 @@ class RoomServiceTests {
 
     @Test
     void allowsPlayerToChangeTheirOwnSelection() {
-        GameRoom room = service.createRoom("Host", hostId);
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
         com.example.demo.model.Position firstChoice = new com.example.demo.model.Position(1, 1);
         com.example.demo.model.Position secondChoice = new com.example.demo.model.Position(1, 2);
 

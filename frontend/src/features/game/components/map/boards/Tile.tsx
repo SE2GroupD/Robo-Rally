@@ -100,5 +100,6 @@ export function Tile({ tile, currentPlayerId, onTileClick }: TileProps) {
           ) : null}
         </div>
       </div>
+    </div>
   );
 }
