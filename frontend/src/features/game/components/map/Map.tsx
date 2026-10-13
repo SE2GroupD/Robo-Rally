@@ -3,6 +3,8 @@
 import { useMapViewport } from '../../hooks/useMapViewport';
 import { MapZoomControls } from './MapZoomControls';
 import { cn } from '../../../../utils/cn';
+import { MapLayout } from './MapLayout';
+import type { MapLayoutData } from '../../types/MapLayout';
 import { TileGrid } from './boards/TileGrid';
 import { TILE_PITCH } from '../../data/boardGeometry';
 import type { AvatarId, Direction, TileData } from '../../types/Board';
@@ -17,6 +19,7 @@ export interface MapRobot {
 }
 
 interface MapProps {
+  layout?: MapLayoutData;
   width: number;
   height: number;
   tiles: TileData[];
@@ -38,7 +41,7 @@ function withRobots(tiles: TileData[], robots: MapRobot[]): TileData[] {
   return layout;
 }
 
-export function Map({ width, height, tiles, robots }: MapProps) {
+export function Map({ width, height, tiles, robots, layout }: MapProps) {
   const {
     viewportRef,
     scale,
@@ -84,7 +87,11 @@ export function Map({ width, height, tiles, robots }: MapProps) {
             className="absolute min-w-max origin-top-left"
             style={{ left: '50vw', top: '50dvh', transform: `scale(${scale})` }}
           >
-            <TileGrid layoutData={withRobots(tiles, robots)} width={width} height={height} />
+            {layout ? (
+              <MapLayout layout={layout} robots={robots} />
+            ) : (
+              <TileGrid layoutData={withRobots(tiles, robots)} width={width} height={height} />
+            )}
           </div>
         </div>
       </section>

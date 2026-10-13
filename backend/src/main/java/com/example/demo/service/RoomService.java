@@ -24,6 +24,10 @@ public class RoomService {
 
     // Now accepts secure playerId from the controller/JWT
     public synchronized GameRoom createRoom(String playerName, String playerId) {
+        return createRoom(playerName, playerId, false);
+    }
+
+    public synchronized GameRoom createRoom(String playerName, String playerId, boolean training) {
         if (playerName == null || playerName.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Player name is required.");
         }
@@ -35,7 +39,7 @@ public class RoomService {
 
         // Use the actual JWT subject instead of generating a random UUID
         RoomPlayer host = new RoomPlayer(playerId, playerName.strip(), null);
-        GameRoom room = new GameRoom(UUID.randomUUID(), code, host.playerId(), List.of(host), RoomStatus.WAITING);
+        GameRoom room = new GameRoom(UUID.randomUUID(), code, host.playerId(), List.of(host), RoomStatus.WAITING, training);
         roomsByCode.put(code, room);
         return room;
     }
@@ -57,6 +61,10 @@ public class RoomService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found.");
         }
 
+        if (room.training()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Training rooms are solo only.");
+        }
+
         if (room.status() != RoomStatus.WAITING) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This room has already started.");
         }
@@ -68,7 +76,7 @@ public class RoomService {
 
         var players = new ArrayList<>(room.players());
         players.add(new RoomPlayer(playerId, playerName.strip(), null));
-        GameRoom updated = new GameRoom(room.gameId(), code, room.hostPlayerId(), players, room.status());
+        GameRoom updated = new GameRoom(room.gameId(), code, room.hostPlayerId(), players, room.status(), room.training());
         roomsByCode.put(code, updated);
         return updated;
     }
@@ -92,7 +100,7 @@ public class RoomService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can start.");
         }
         GameRoom started = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), room.players(),
-                RoomStatus.STARTED);
+                RoomStatus.STARTED, room.training());
         roomsByCode.put(room.roomCode(), started);
         return started;
     }
@@ -105,7 +113,7 @@ public class RoomService {
         } else {
             var remaining = room.players().stream().filter(player -> !player.playerId().equals(playerId)).toList();
             roomsByCode.put(room.roomCode(),
-                    new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), remaining, room.status()));
+                    new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), remaining, room.status(), room.training()));
         }
     }
 
@@ -130,7 +138,7 @@ public class RoomService {
                         ? new RoomPlayer(player.playerId(), player.playerName(), avatarId)
                         : player)
                 .toList();
-        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players, room.status());
+        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players, room.status(), room.training());
         roomsByCode.put(room.roomCode(), updated);
         return updated;
     }

@@ -168,3 +168,16 @@ it('preserves arbitrary backend grid dimensions and special tile placement', () 
 it('allows a game board to attach to the west of another game board away from the start', () => {
   expect(errorsFor(start, game, { ...game, id: 'south', x: 3, y: 10 }, { ...game, id: 'west', x: -7, y: 11 })).toBe('');
 });
+
+it('places a live robot using global coordinates across the board seam', () => {
+  const robot = { playerId: 'pilot', x: 2, y: 4, direction: 'EAST' as const, avatarId: 1 as const, hue: 0 };
+  const { rerender } = render(<MapLayout layout={defaultMapLayout} robots={[robot]} />);
+
+  expect(screen.getByAltText('Robot Player 1').parentElement).toHaveStyle({ left: '104px', top: '208px' });
+
+  rerender(<MapLayout layout={defaultMapLayout} robots={[{ ...robot, x: 3 }]} />);
+
+  expect(screen.getByAltText('Robot Player 1').parentElement).toHaveStyle({ left: '156px', top: '208px' });
+  expect(screen.getByRole('region', { name: 'Start board start' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Game board game-1' })).toBeInTheDocument();
+});

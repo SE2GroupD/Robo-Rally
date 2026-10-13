@@ -37,11 +37,13 @@ public class GameServiceImpl implements GameService {
     private static final int HAND_SIZE = 9;
 
     private final RoomService roomService;
+    private final MapLayoutService mapLayoutService;
     private final MovementResolver movementResolver = new MovementResolver();
     private final Map<UUID, GameSession> sessions = new ConcurrentHashMap<>();
 
-    public GameServiceImpl(RoomService roomService) {
+    public GameServiceImpl(RoomService roomService, MapLayoutService mapLayoutService) {
         this.roomService = roomService;
+        this.mapLayoutService = mapLayoutService;
     }
 
     /**
@@ -57,7 +59,9 @@ public class GameServiceImpl implements GameService {
     }
 
     private GameSession createSession(GameRoom room) {
-        GameBoard board = GameBoard.classicWithSeedTiles();
+        GameBoard board = room.training()
+                ? GameBoard.training(mapLayoutService.getDefaultLayout())
+                : GameBoard.classicWithSeedTiles();
         List<Position> spawns = board.getSpawnPositions();
         if (room.players().size() > spawns.size()) {
             throw new IllegalStateException("Too many players for this board (max " + spawns.size() + ").");
@@ -168,7 +172,8 @@ public class GameServiceImpl implements GameService {
                     session.getRound(),
                     lockedIn,
                     checkpointProgress(session),
-                    session.getLastResolution());
+                    session.getLastResolution(),
+                    board.getLayout());
         }
     }
 

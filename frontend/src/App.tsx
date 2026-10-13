@@ -52,7 +52,7 @@ function App() {
 
     let created: CreatedRoom | null = null;
     try {
-      created = await createRoom(playerInfo.username);
+      created = await createRoom(playerInfo.username, true);
       setSoloRoom(await startRoom(created));
     } catch {
       if (created) void leaveRoom(created).catch(() => {});

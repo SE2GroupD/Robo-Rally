@@ -31,7 +31,7 @@ public class RoomController {
             @RequestBody CreateRoomRequest request,
             @AuthenticationPrincipal Jwt jwt) {
 
-        GameRoom room = roomService.createRoom(request.playerName(), jwt.getSubject());
+        GameRoom room = roomService.createRoom(request.playerName(), jwt.getSubject(), Boolean.TRUE.equals(request.training()));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(RoomResponse.forPlayer(room, room.hostPlayerId()));
     }

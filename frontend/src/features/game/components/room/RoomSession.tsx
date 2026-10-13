@@ -215,7 +215,13 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
         <div className="relative flex-1 min-h-0 overflow-hidden bg-slate-950">
           {state ? (
             <>
-              <Map width={state.width} height={state.height} tiles={state.tiles.map(toTileData)} robots={mapRobots} />
+              <Map
+                layout={state.layout}
+                width={state.width}
+                height={state.height}
+                tiles={state.tiles.map(toTileData)}
+                robots={mapRobots}
+              />
 
               <div className="pointer-events-none absolute inset-x-0 top-2 z-20 text-center text-sm text-white">
                 {describeStatus(state, room.players, isReplaying)}

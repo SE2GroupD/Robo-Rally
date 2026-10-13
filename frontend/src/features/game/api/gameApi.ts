@@ -30,7 +30,7 @@ export interface CreatedRoom {
   players: { playerId: string; playerName: string; avatarId: number | null }[];
 }
 
-export async function createRoom(playerName: string): Promise<CreatedRoom> {
+export async function createRoom(playerName: string, training = false): Promise<CreatedRoom> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
 
   const token = await getValidToken();
@@ -41,7 +41,7 @@ export async function createRoom(playerName: string): Promise<CreatedRoom> {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ playerName }),
+    body: JSON.stringify({ playerName, ...(training ? { training: true } : {}) }),
     signal: AbortSignal.timeout(15000),
   });
 

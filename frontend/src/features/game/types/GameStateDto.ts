@@ -1,3 +1,4 @@
+import type { MapLayoutData } from './MapLayout';
 import type { CardType } from './CardType';
 import type { Direction } from './Board';
 
@@ -47,6 +48,7 @@ export interface TileDto {
 }
 
 export interface BoardStateDto {
+  layout?: MapLayoutData;
   gameId: string;
   width: number;
   height: number;
