@@ -10,5 +10,7 @@ it('shows a push panel with its direction and active registers', () => {
 
 it('shows an express conveyor in its direction', () => {
   render(<Tile tile={{ x: 0, y: 0, conveyor: { direction: 'EAST', isExpress: true } }} />);
-  expect(screen.getByText('→')).toHaveClass('text-blue-500');
+  const belt = screen.getByRole('img', { name: 'Express conveyor east' });
+  expect(belt).toHaveAttribute('src', expect.stringContaining('conveyor2.png'));
+  expect(belt).toHaveStyle({ transform: 'rotate(0deg)' });
 });

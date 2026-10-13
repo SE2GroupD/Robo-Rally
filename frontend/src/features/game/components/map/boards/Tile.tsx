@@ -2,6 +2,8 @@ import type { Direction, TileData } from '../../../types/Board';
 import { Robot } from '../objects/Robot';
 import { Checkpoint } from '../objects/Checkpoint';
 import steelTileImage from '../../../../../assets/steel.png';
+import conveyorImage from '../../../../../assets/objects/conveyor1.png';
+import expressConveyorImage from '../../../../../assets/objects/conveyor2.png';
 
 const getRotationDegrees = (dir: Direction): number => {
   // Adjusted for the new South-facing SVG avatars
@@ -18,6 +20,9 @@ const getRotationDegrees = (dir: Direction): number => {
       return 0;
   }
 };
+
+// Both conveyor images point east before rotation.
+const CONVEYOR_ROTATION: Record<Direction, number> = { NORTH: 270, EAST: 0, SOUTH: 90, WEST: 180 };
 
 const ARROWS: Record<Direction, string> = { NORTH: '↑', EAST: '→', SOUTH: '↓', WEST: '←' };
 
@@ -57,12 +62,13 @@ export function Tile({ tile }: TileProps) {
       )}
 
       {tile.conveyor && (
-        <div className={`absolute z-10 font-black text-2xl ${tile.conveyor.isExpress ? 'text-blue-500' : 'text-green-500'}`}>
-          {tile.conveyor.direction === 'NORTH' && '↑'}
-          {tile.conveyor.direction === 'EAST' && '→'}
-          {tile.conveyor.direction === 'SOUTH' && '↓'}
-          {tile.conveyor.direction === 'WEST' && '←'}
-        </div>
+        <img
+          src={tile.conveyor.isExpress ? expressConveyorImage : conveyorImage}
+          alt={`${tile.conveyor.isExpress ? 'Express' : 'Regular'} conveyor ${tile.conveyor.direction.toLowerCase()}`}
+          draggable={false}
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ transform: `rotate(${CONVEYOR_ROTATION[tile.conveyor.direction]}deg)` }}
+        />
       )}
 
       {tile.pushPanel && (
