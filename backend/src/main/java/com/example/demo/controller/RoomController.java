@@ -117,6 +117,7 @@ public class RoomController {
         String playerId = jwt.getSubject();
         GameRoom room = roomService.selectRobot(gameId, playerId, request.avatarId());
 
-        return RoomResponse.forPlayer(room, playerId);
+        return RoomResponse.forPlayer(room, playerId, getSpawnsForRoom(room));
     }
+
 }

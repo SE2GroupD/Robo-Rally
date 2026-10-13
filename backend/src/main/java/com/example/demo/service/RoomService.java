@@ -164,12 +164,13 @@ public class RoomService {
         }
         var players = room.players().stream()
                 .map(player -> player.playerId().equals(playerId)
-                        ? new RoomPlayer(player.playerId(), player.playerName(), avatarId)
+                        ? new RoomPlayer(player.playerId(), player.playerName(), player.startPosition(), avatarId)
                         : player)
                 .toList();
-        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players, room.status());
+        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players, room.status(), room.startBoardId());
         roomsByCode.put(room.roomCode(), updated);
         return updated;
+
     }
 
     public synchronized GameRoom getRoomByGameId(UUID gameId) {

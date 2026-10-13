@@ -28,7 +28,7 @@ export interface CreatedRoom {
   playerId: string;
   hostPlayerId: string;
   status: 'WAITING' | 'STARTED';
-  players: { playerId: string; playerName: string; startPosition?: { x: number; y: number }; avatarId: number | null  }[];
+  players: { playerId: string; playerName: string; startPosition?: { x: number; y: number }; avatarId: number | null }[];
 }
 
 export async function createRoom(playerName: string): Promise<CreatedRoom> {
@@ -82,7 +82,7 @@ export interface JoinedRoom {
   hostPlayerId: string;
   startBoardConfig?: TileData[];
   status: 'WAITING' | 'STARTED';
-  players: { playerId: string; playerName: string; startPosition?: { x: number; y: number }; avatarId: number | null  }[];
+  players: { playerId: string; playerName: string; startPosition?: { x: number; y: number }; avatarId: number | null }[];
 }
 
 export async function joinRoom(roomCode: string, playerName: string): Promise<JoinedRoom> {
@@ -274,21 +274,6 @@ export async function selectRobot(room: JoinedRoom, avatarId: number): Promise<J
   if (response.status === 409) throw new RoomRequestError('This robot is already selected.', response.status);
   if (response.status === 400) throw new RoomRequestError('Invalid robot selection.', response.status);
   if (!response.ok) throw new RoomRequestError('Could not select robot.', response.status);
-
-  return readRoom(response, room);
-}
-
-  if (response.status === 409) {
-    throw new RoomRequestError('This robot is already selected.', response.status);
-  }
-
-  if (response.status === 400) {
-    throw new RoomRequestError('Invalid robot selection.', response.status);
-  }
-
-  if (!response.ok) {
-    throw new RoomRequestError('Could not select robot.', response.status);
-  }
 
   return readRoom(response, room);
 }

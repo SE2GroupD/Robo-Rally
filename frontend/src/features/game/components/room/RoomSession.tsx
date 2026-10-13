@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchRoom, leaveRoom, startRoom, selectStartTile, selectRobot, RoomRequestError, type JoinedRoom } from '../../api/gameApi';
+import {
+  fetchRoom,
+  leaveRoom,
+  startRoom,
+  selectStartTile,
+  selectRobot,
+  RoomRequestError,
+  type JoinedRoom,
+} from '../../api/gameApi';
 import { Button } from '../../../../foundation/components/button/Button';
 import { Map } from '../map/Map';
 import { useGameState } from '../../hooks/useGameState';
@@ -281,7 +289,6 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
             disabled={busy}
             onSelect={handleSelectRobot}
           />
-
 
           <section className="rounded border border-metal-light p-4">
             <h2 className="mb-3 mt-0 text-lg font-bold">Players</h2>
