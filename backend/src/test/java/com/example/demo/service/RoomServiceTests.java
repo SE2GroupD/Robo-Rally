@@ -22,7 +22,7 @@ class RoomServiceTests {
 
     @Test
     void hostStartsAloneAndRepeatedStartIsSafe() {
-        RoomService service = new RoomService();
+        RoomService service = new RoomServiceImpl();
         GameRoom room = service.createRoom("Host", hostId);
         assertEquals(com.example.demo.model.RoomStatus.STARTED,
                 service.startRoom(room.gameId(), room.hostPlayerId()).status());
@@ -35,7 +35,7 @@ class RoomServiceTests {
 
     @Test
     void guestLeavesWithoutClosingRoomAndHostClosesIt() {
-        RoomService service = new RoomService();
+        RoomService service = new RoomServiceImpl();
         GameRoom room = service.createRoom("Host", hostId);
         var joined = service.joinRoom(room.roomCode(), "Guest", guestId);
 
@@ -58,7 +58,7 @@ class RoomServiceTests {
 
     @Test
     void unknownPlayersCannotReadStartOrLeave() {
-        RoomService service = new RoomService();
+        RoomService service = new RoomServiceImpl();
         GameRoom room = service.createRoom("Host", hostId);
         String outsider = "outsider-id";
 
@@ -74,7 +74,7 @@ class RoomServiceTests {
 
     @Test
     void joinsExistingRoomWithNormalizedCodeAndPreservesHost() {
-        RoomService service = new RoomService();
+        RoomService service = new RoomServiceImpl();
         GameRoom original = service.createRoom("Host", hostId);
         GameRoom joined = service.joinRoom(" " + original.roomCode().toLowerCase(java.util.Locale.ROOT) + " ",
                 " Guest ", guestId);
@@ -93,7 +93,7 @@ class RoomServiceTests {
 
     @Test
     void rejectsInvalidJoinInputAndUnknownRooms() {
-        RoomService service = new RoomService();
+        RoomService service = new RoomServiceImpl();
         for (String code : new String[] { null, "", "  ", "ABC", "!!!!!!" }) {
             var error = assertThrows(ResponseStatusException.class, () -> service.joinRoom(code, "Guest", guestId));
             assertEquals(400, error.getStatusCode().value());
@@ -108,7 +108,7 @@ class RoomServiceTests {
 
     @Test
     void concurrentJoinsAreRetainedAndOtherRoomsAreUnaffected() throws Exception {
-        RoomService service = new RoomService();
+        RoomService service = new RoomServiceImpl();
         GameRoom room = service.createRoom("Host", hostId);
         GameRoom other = service.createRoom("Other host", "other-host-id");
 
@@ -130,7 +130,7 @@ class RoomServiceTests {
 
     @Test
     void listsOnlyWaitingPublicRoomsWithAvailableSpace() {
-        RoomService service = new RoomService();
+        RoomService service = new RoomServiceImpl();
         PublicRoomService publicRooms = publicRooms(service);
         GameRoom publicRoom = publicRooms.createPublicRoom("Host", hostId, "  Friday race  ");
         GameRoom privateRoom = service.createRoom("Private host", "private-host");
@@ -150,7 +150,7 @@ class RoomServiceTests {
 
     @Test
     void joiningPublicRoomsKeepsPrivateRoomsOnTheExistingJoinFlow() {
-        RoomService service = new RoomService();
+        RoomService service = new RoomServiceImpl();
         PublicRoomService publicRooms = publicRooms(service);
         GameRoom publicRoom = publicRooms.createPublicRoom("Host", hostId, "Public race");
         GameRoom privateRoom = service.createRoom("Private host", "private-host");
@@ -163,7 +163,7 @@ class RoomServiceTests {
 
     @Test
     void publicRoomRemainsListedWhenAGuestLeavesAndClosesWhenTheHostLeaves() {
-        RoomService service = new RoomService();
+        RoomService service = new RoomServiceImpl();
         PublicRoomService publicRooms = publicRooms(service);
         GameRoom publicRoom = publicRooms.createPublicRoom("Host", hostId, "Public race");
         publicRooms.joinPublicRoom(publicRoom.gameId(), "Guest", guestId);
@@ -180,7 +180,7 @@ class RoomServiceTests {
 
     @Test
     void createsRoomWithItsHostAndTrimsName() {
-        GameRoom room = new RoomService().createRoom("  Guest_1234  ", hostId);
+        GameRoom room = new RoomServiceImpl().createRoom("  Guest_1234  ", hostId);
         assertNotNull(room.gameId());
         assertTrue(room.roomCode().matches("[A-HJ-NP-Z2-9]{6}"));
         assertEquals(1, room.players().size());
@@ -191,7 +191,7 @@ class RoomServiceTests {
 
     @Test
     void rejectsMissingOrBlankNames() {
-        RoomService service = new RoomService();
+        RoomService service = new RoomServiceImpl();
         for (String name : new String[] { null, "", " \t\n " }) {
             var error = assertThrows(ResponseStatusException.class, () -> service.createRoom(name, hostId));
             assertEquals(400, error.getStatusCode().value());
@@ -200,7 +200,7 @@ class RoomServiceTests {
 
     @Test
     void concurrentCreationsHaveDistinctCodesRoomsAndPlayers() throws Exception {
-        RoomService service = new RoomService();
+        RoomService service = new RoomServiceImpl();
         List<Callable<GameRoom>> tasks = IntStream.range(0, 200)
                 .mapToObj(i -> (Callable<GameRoom>) () -> service.createRoom("Guest", "host-" + i))
                 .toList();

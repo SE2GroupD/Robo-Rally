@@ -4,6 +4,7 @@ import com.example.demo.service.GameService;
 import com.example.demo.service.PublicRoomService;
 import com.example.demo.service.PublicRoomServiceImpl;
 import com.example.demo.service.RoomService;
+import com.example.demo.service.RoomServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
@@ -33,7 +34,7 @@ class RoomControllerTests {
 
         @BeforeEach
         void setUp() {
-                service = new RoomService();
+                service = new RoomServiceImpl();
                 publicRoomService = new PublicRoomServiceImpl(service);
                 gameService = mock(GameService.class);
 

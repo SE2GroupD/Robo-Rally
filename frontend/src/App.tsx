@@ -3,8 +3,6 @@ import { useAppNavigation } from './app/useAppNavigation';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { MainMenuPage } from './features/menu/pages/MainMenuPage';
 import { GamePage } from './features/game/pages/GamePage';
-import { useEffect, useRef, useState } from 'react';
-import { createRoom, startRoom, leaveRoom, type CreatedRoom, type JoinedRoom } from './features/game/api/gameApi';
 import { HostBattlePage } from './features/game/pages/HostBattlePage';
 import { JoinBattlePage } from './features/game/pages/JoinBattlePage';
 import { StartPlatformPage } from './features/game/pages/StartPlatformPage';
@@ -15,6 +13,7 @@ import { ForgotPasswordForm } from './features/auth/pages/ForgotPasswordForm';
 import { RegisterForm } from './features/auth/components/RegisterForm';
 import roboRallyImage from './assets/hero.png';
 import { neon } from './features/auth/lib/neon';
+import { useRoomManager } from './features/game/hooks/useRoomManager';
 
 function App() {
   const { navigate } = useAppNavigation();
@@ -28,112 +27,14 @@ function App() {
   const menuRedirect = <Navigate to="/main-menu" replace />;
   const loginRedirect = <Navigate to="/login" replace />;
 
-  const [hostRoom, setHostRoom] = useState<CreatedRoom | null>(null);
-  const [joinedRoom, setJoinedRoom] = useState<JoinedRoom | null>(null);
-  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
-  const [roomError, setRoomError] = useState('');
-  const creatingRoom = useRef(false);
-  const [soloRoom, setSoloRoom] = useState<JoinedRoom | null>(null);
-  const [isStartingSolo, setIsStartingSolo] = useState(false);
-  const [soloError, setSoloError] = useState('');
-  const startingSolo = useRef(false);
-  const leavingRoom = useRef(false);
-  const previousPathname = useRef(location.pathname);
-
-  const activeRoom = soloRoom || hostRoom || joinedRoom;
-
-  useEffect(() => {
-    const isRoomRoute = ['/game', '/host-battle', '/join-battle'].includes(location.pathname);
-    const wasOnRoomRoute = ['/game', '/host-battle', '/join-battle'].includes(previousPathname.current);
-    previousPathname.current = location.pathname;
-
-    if (!activeRoom || isRoomRoute || !wasOnRoomRoute || leavingRoom.current) return;
-
-    leavingRoom.current = true;
-    void leaveRoom(activeRoom)
-      .catch(() => {
-        // Navigating away should not trap a player on the old route if cleanup fails.
-      })
-      .finally(() => {
-        setHostRoom(null);
-        setJoinedRoom(null);
-        setSoloRoom(null);
-        setRoomError('');
-        setSoloError('');
-        leavingRoom.current = false;
-      });
-  }, [activeRoom, location.pathname]);
-
-  useEffect(() => {
-    if (!activeRoom) return;
-
-    const leaveOnUnload = () => {
-      void leaveRoom(activeRoom, { keepalive: true }).catch(() => {});
-    };
-
-    window.addEventListener('pagehide', leaveOnUnload);
-    return () => window.removeEventListener('pagehide', leaveOnUnload);
-  }, [activeRoom]);
+  const roomManager = useRoomManager({ username: playerInfo?.username, pathname: location.pathname, navigate });
 
   if (isPending) {
     return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">Loading...</div>;
   }
 
-  const handleStartGame = async () => {
-    if (!playerInfo || startingSolo.current) return;
-    navigate('/game');
-    if (soloRoom) return;
-    startingSolo.current = true;
-    setIsStartingSolo(true);
-    setSoloError('');
-
-    let created: CreatedRoom | null = null;
-    try {
-      created = await createRoom(playerInfo.username);
-      setSoloRoom(await startRoom(created));
-    } catch {
-      if (created) void leaveRoom(created).catch(() => {});
-      setSoloError('Could not start the game. Please try again.');
-    } finally {
-      startingSolo.current = false;
-      setIsStartingSolo(false);
-    }
-  };
-
-  const handleHostBattle = async () => {
-    if (!playerInfo || creatingRoom.current) return;
-    navigate('/host-battle');
-    if (hostRoom) return;
-    creatingRoom.current = true;
-    setIsCreatingRoom(true);
-    setRoomError('');
-
-    try {
-      setHostRoom(await createRoom(playerInfo.username));
-    } catch {
-      setRoomError('Could not create a room. Please try again.');
-    } finally {
-      creatingRoom.current = false;
-      setIsCreatingRoom(false);
-    }
-  };
-
-  const handleRoomBack = () => {
-    setHostRoom(null);
-    setJoinedRoom(null);
-    setRoomError('');
-    setSoloRoom(null);
-    setSoloError('');
-    navigate('/main-menu');
-  };
-
   const handleLogout = async () => {
-    if (activeRoom) await leaveRoom(activeRoom).catch(() => {});
-    setHostRoom(null);
-    setJoinedRoom(null);
-    setRoomError('');
-    setSoloRoom(null);
-    setSoloError('');
+    await roomManager.leaveActiveRoom();
     await neon.signOut();
     navigate('/login');
   };
@@ -212,9 +113,9 @@ function App() {
         element={
           playerInfo ? (
             <MainMenuPage
-              onStartGame={handleStartGame}
+              onStartGame={roomManager.startSoloGame}
               onStartPlatform={() => navigate('/start-platform')}
-              onHostBattle={handleHostBattle}
+              onHostBattle={roomManager.hostBattle}
               onJoinBattle={() => navigate('/join-battle')}
               onLogout={handleLogout}
               username={playerInfo.username}
@@ -231,15 +132,9 @@ function App() {
           playerInfo ? (
             <StartPlatformPage
               username={playerInfo.username}
-              onBack={handleRoomBack}
-              onCreated={(room) => {
-                setHostRoom(room);
-                navigate('/host-battle');
-              }}
-              onJoined={(room) => {
-                setJoinedRoom(room);
-                navigate('/join-battle');
-              }}
+              onBack={roomManager.returnToMenu}
+              onCreated={roomManager.hostPublicRoom}
+              onJoined={roomManager.joinPublicRoom}
             />
           ) : (
             loginRedirect
@@ -252,11 +147,11 @@ function App() {
         element={
           playerInfo ? (
             <GamePage
-              room={activeRoom}
-              isStarting={isStartingSolo}
-              error={soloError}
-              onRetry={handleStartGame}
-              onBack={handleRoomBack}
+              room={roomManager.activeRoom}
+              isStarting={roomManager.isStartingSolo}
+              error={roomManager.soloError}
+              onRetry={roomManager.startSoloGame}
+              onBack={roomManager.returnToMenu}
             />
           ) : (
             loginRedirect
@@ -270,12 +165,12 @@ function App() {
           playerInfo ? (
             <HostBattlePage
               username={playerInfo.username}
-              room={hostRoom}
-              isCreating={isCreatingRoom}
-              error={roomError}
-              onRetry={handleHostBattle}
-              onBack={handleRoomBack}
-              onRoomChange={setHostRoom}
+              room={roomManager.hostRoom}
+              isCreating={roomManager.isCreatingRoom}
+              error={roomManager.roomError}
+              onRetry={roomManager.hostBattle}
+              onBack={roomManager.returnToMenu}
+              onRoomChange={roomManager.setHostRoom}
             />
           ) : (
             loginRedirect
@@ -289,10 +184,10 @@ function App() {
           playerInfo ? (
             <JoinBattlePage
               username={playerInfo.username}
-              room={joinedRoom}
-              onJoined={setJoinedRoom}
-              onBack={handleRoomBack}
-              onRoomChange={setJoinedRoom}
+              room={roomManager.joinedRoom}
+              onJoined={roomManager.setJoinedRoom}
+              onBack={roomManager.returnToMenu}
+              onRoomChange={roomManager.setJoinedRoom}
             />
           ) : (
             loginRedirect

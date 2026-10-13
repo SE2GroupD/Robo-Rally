@@ -44,8 +44,7 @@ public class RoomController {
     }
 
     @GetMapping("/public")
-    public List<PublicRoomResponse> listPublicRooms(@AuthenticationPrincipal Jwt jwt) {
-        jwt.getSubject(); // Listing rooms is restricted to authenticated pilots.
+    public List<PublicRoomResponse> listPublicRooms() {
         return publicRoomService.listPublicRooms().stream().map(PublicRoomResponse::from).toList();
     }
 
