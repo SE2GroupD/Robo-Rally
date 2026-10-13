@@ -1,3 +1,4 @@
+import { Button } from '../../../../../foundation/components/button/Button';
 import { memo, useRef, type ReactNode } from 'react';
 import type { MapLayoutData } from '../../../types/MapLayout';
 import { mapBounds, TILE_GAP, TILE_PITCH } from '../../../data/boardGeometry';
@@ -90,15 +91,15 @@ export function MapCarusel({ maps, selectedId, disabled, onSelect, children }: M
 
       <div className="flex items-center justify-center gap-4">
         {maps.length > 1 && (
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             aria-label="Previous map"
             disabled={disabled}
             onClick={() => move(-1)}
-            className="min-h-11 min-w-11 rounded border border-metal-light disabled:opacity-40"
+            className="flex h-12 w-12 shrink-0 items-center justify-center p-0"
           >
             ←
-          </button>
+          </Button>
         )}
         <p aria-live="polite" className="m-0 text-center font-bold">
           {maps[index].name}
@@ -109,15 +110,15 @@ export function MapCarusel({ maps, selectedId, disabled, onSelect, children }: M
           )}
         </p>
         {maps.length > 1 && (
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             aria-label="Next map"
             disabled={disabled}
             onClick={() => move(1)}
-            className="min-h-11 min-w-11 rounded border border-metal-light disabled:opacity-40"
+            className="flex h-12 w-12 shrink-0 items-center justify-center p-0"
           >
             →
-          </button>
+          </Button>
         )}
       </div>
     </section>

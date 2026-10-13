@@ -96,28 +96,29 @@ export function MapSelection({ room, disabled, error, onMap, onStart }: MapSelec
             const mine = owner?.playerId === room.playerId;
 
             return (
-              <button
+              <Button
                 key={index}
-                type="button"
+                variant="secondary"
+                size="small"
                 aria-pressed={mine}
                 disabled={locked || (!!owner && !mine)}
                 onClick={() => onStart(position)}
-                className={`min-h-11 rounded border p-2 text-left text-sm disabled:opacity-60 ${mine ? 'border-hazard bg-hazard/10' : 'border-metal-light'}`}
+                className="min-h-14 text-center break-words"
               >
                 {label(index)}
-              </button>
+              </Button>
             );
           })}
         </div>
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           disabled={locked}
           aria-pressed={!current?.startPosition}
           onClick={() => onStart(null)}
-          className="min-h-11 w-full rounded border border-metal-light p-2 text-sm"
+          className="w-full"
         >
           {!current?.startPosition ? '✓ ' : ''}Assign me a free tile automatically
-        </button>
+        </Button>
         <p className="m-0 text-sm text-text-muted">Unselected players receive a free tile when the battle starts.</p>
       </div>
       {error && (
