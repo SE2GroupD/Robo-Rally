@@ -25,5 +25,6 @@ export function toTileData(tile: TileDto): TileData {
         }
       : undefined,
     occupyingPlayerId: tile.occupyingPlayerId ?? undefined,
+    pushPanel: tile.pushPanel ?? undefined,
   };
 }

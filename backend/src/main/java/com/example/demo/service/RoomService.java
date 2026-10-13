@@ -43,14 +43,13 @@ public class RoomService {
             code = generateCode();
         } while (roomsByCode.containsKey(code));
         String boardId = (requestedBoardId != null && !requestedBoardId.isBlank()) ? requestedBoardId : "classic_start";
-        RoomPlayer host = new RoomPlayer(playerId, playerName.strip(), null);
+        
+        // On passe deux 'null' : un pour la startPosition, un pour l'avatarId
+        RoomPlayer host = new RoomPlayer(playerId, playerName.strip(), null, null);
         GameRoom room = new GameRoom(UUID.randomUUID(), code, host.playerId(), List.of(host), RoomStatus.WAITING, boardId);
+        
         roomsByCode.put(code, room);
         return room;
-    }
-
-    public synchronized GameRoom createRoom(String playerName, String playerId) {
-        return createRoom(playerName, playerId, "classic_start");
     }
 
     // Now accepts secure playerId from the controller/JWT
@@ -80,8 +79,10 @@ public class RoomService {
         }
 
         var players = new ArrayList<>(room.players());
-        players.add(new RoomPlayer(playerId, playerName.strip(), null));
+        // On ajoute le deuxième 'null' ici aussi
+        players.add(new RoomPlayer(playerId, playerName.strip(), null, null));
         GameRoom updated = new GameRoom(room.gameId(), code, room.hostPlayerId(), players, room.status(), room.startBoardId());
+        
         roomsByCode.put(code, updated);
         return updated;
     }
@@ -143,6 +144,32 @@ public class RoomService {
             var remaining = room.players().stream().filter(player -> !player.playerId().equals(playerId)).toList();
             roomsByCode.put(room.roomCode(), new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), remaining, room.status(), room.startBoardId()));
         }
+    }
+
+
+    public synchronized GameRoom selectRobot(UUID gameId, String playerId, int avatarId) {
+        if (avatarId < 1 || avatarId > 6) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Avatar must be between 1 and 6.");
+        }
+        GameRoom room = getRoom(gameId, playerId);
+        if (room.status() != RoomStatus.WAITING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Robot cannot be changed after the game has started.");
+        }
+        boolean avatarTaken = room.players().stream()
+                .anyMatch(player -> player.avatarId() != null
+                        && player.avatarId().equals(avatarId)
+                        && !player.playerId().equals(playerId));
+        if (avatarTaken) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This robot is already selected.");
+        }
+        var players = room.players().stream()
+                .map(player -> player.playerId().equals(playerId)
+                        ? new RoomPlayer(player.playerId(), player.playerName(), avatarId)
+                        : player)
+                .toList();
+        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players, room.status());
+        roomsByCode.put(room.roomCode(), updated);
+        return updated;
     }
 
     public synchronized GameRoom getRoomByGameId(UUID gameId) {

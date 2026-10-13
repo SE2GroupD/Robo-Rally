@@ -111,15 +111,15 @@ beforeEach(() => {
         { x: 1, y: 2, isSpawnPoint: true },
         { x: 1, y: 3, isSpawnPoint: true },
       ],
-      players: [{ playerId: 'host-id', playerName: 'pilot', startPosition: { x: 0, y: 1 } }],
+      players: [{ playerId: 'host-id', playerName: 'pilot', startPosition: { x: 0, y: 1 }, avatarId: 1 }],
     };
 
     const guestRoom = {
       ...hostRoom,
       playerId: 'guest-id',
       players: [
-        { playerId: 'host-id', playerName: 'pilot', startPosition: { x: 0, y: 1 } },
-        { playerId: 'guest-id', playerName: 'guest', startPosition: { x: 0, y: 2 } },
+        { playerId: 'host-id', playerName: 'pilot', startPosition: { x: 0, y: 1 }, avatarId: 1 },
+        { playerId: 'guest-id', playerName: 'guest', startPosition: { x: 0, y: 2 }, avatarId: 2 },
       ],
     };
 

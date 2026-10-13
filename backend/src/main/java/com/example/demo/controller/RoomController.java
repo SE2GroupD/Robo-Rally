@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.dto.CreateRoomRequest;
 import com.example.demo.dto.JoinRoomRequest;
 import com.example.demo.dto.RoomResponse;
+import com.example.demo.dto.SelectRobotRequest;
 import com.example.demo.model.GameRoom;
 import com.example.demo.model.Position;
 import com.example.demo.model.Tile;
@@ -105,5 +106,17 @@ public class RoomController {
         String securePlayerId = jwt.getSubject();
         GameRoom updatedRoom = roomService.selectStartTile(gameId, securePlayerId, position);
         return ResponseEntity.ok(RoomResponse.forPlayer(updatedRoom, securePlayerId, getSpawnsForRoom(updatedRoom)));
+    }
+
+    @PostMapping("/{gameId}/robot")
+    public RoomResponse selectRobot(
+            @PathVariable UUID gameId,
+            @RequestBody SelectRobotRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        String playerId = jwt.getSubject();
+        GameRoom room = roomService.selectRobot(gameId, playerId, request.avatarId());
+
+        return RoomResponse.forPlayer(room, playerId);
     }
 }

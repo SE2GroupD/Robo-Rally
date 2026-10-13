@@ -8,13 +8,22 @@ export interface RobotStateDto {
   direction: Direction;
 }
 
+export type ResolutionPhase = 'CARD' | 'EXPRESS_BELT' | 'BELT' | 'PUSH_PANEL';
+
+// `card` is only set in the CARD phase.
 export interface RobotStepDto extends RobotStateDto {
-  card: CardType;
+  card: CardType | null;
+}
+
+// Every robot's state right after one phase of a register.
+export interface PhaseStepDto {
+  phase: ResolutionPhase;
+  robots: RobotStepDto[];
 }
 
 export interface RegisterStepDto {
   registerNumber: number;
-  robots: RobotStepDto[];
+  phases: PhaseStepDto[];
 }
 
 export interface TurnResolutionDto {
@@ -23,6 +32,7 @@ export interface TurnResolutionDto {
   steps: RegisterStepDto[];
 }
 
+// Mirrors the Java Tile record's JSON (null fields are omitted by the server).
 export interface TileDto {
   x: number;
   y: number;
@@ -41,6 +51,7 @@ export interface TileDto {
   conveyor?: { direction: Direction; isExpress?: boolean; express?: boolean } | null;
   walls?: { north?: boolean; east?: boolean; south?: boolean; west?: boolean } | null;
   occupyingPlayerId?: string | null;
+  pushPanel?: { direction: Direction; activeRegisters: number[] } | null;
 }
 
 export interface BoardStateDto {

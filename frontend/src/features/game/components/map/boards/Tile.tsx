@@ -19,6 +19,8 @@ const getRotationDegrees = (dir: Direction): number => {
   }
 };
 
+const ARROWS: Record<Direction, string> = { NORTH: '↑', EAST: '→', SOUTH: '↓', WEST: '←' };
+
 interface TileProps {
   tile: TileData;
   currentPlayerId?: string;
@@ -81,12 +83,22 @@ export function Tile({ tile, currentPlayerId, onTileClick }: TileProps) {
       )}
 
       <div className="relative z-30 flex w-full h-full items-center justify-center pointer-events-none">
-        {tile.robot ? (
-          <Robot avatarId={tile.robot.avatarId || 1} rotation={getRotationDegrees(tile.robot.direction)} />
-        ) : tile.checkpointNumber !== undefined ? (
-          <Checkpoint num={tile.checkpointNumber} />
-        ) : null}
+        {tile.pushPanel && (
+          <figure
+            aria-label={`Push panel ${tile.pushPanel.direction.toLowerCase()}, registers ${tile.pushPanel.activeRegisters.join(', ')}`}
+            className="absolute z-10 flex flex-col items-center font-black leading-none text-orange-400"
+          >
+            <span className="text-xl">{ARROWS[tile.pushPanel.direction]}</span>
+            <span className="text-[9px]">{tile.pushPanel.activeRegisters.join('')}</span>
+          </figure>
+        )}
+        <div className="relative z-30 flex w-full h-full items-center justify-center">
+          {tile.robot ? (
+            <Robot avatarId={tile.robot.avatarId || 1} rotation={getRotationDegrees(tile.robot.direction)} />
+          ) : tile.checkpointNumber !== undefined ? (
+            <Checkpoint num={tile.checkpointNumber} />
+          ) : null}
+        </div>
       </div>
-    </div>
   );
 }

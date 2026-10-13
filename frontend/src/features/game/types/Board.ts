@@ -21,6 +21,7 @@ export type TileData = {
   occupyingPlayerId?: string;
   gear?: 'CLOCKWISE' | 'COUNTER_CLOCKWISE';
   conveyor?: { direction: Direction; isExpress?: boolean };
+  pushPanel?: { direction: Direction; activeRegisters: number[] };
 };
 
 export type BoardId = 'start' | 'game1' | 'game2' | 'game3';
@@ -31,4 +32,5 @@ export interface RobotState {
   y: number;
   direction: Direction;
   hue: number;
+  avatarId?: AvatarId;
 }
