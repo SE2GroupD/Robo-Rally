@@ -35,7 +35,7 @@ export function MapCarusel({ maps, selectedId, disabled, onSelect, children }: M
     if (!disabled && maps.length > 1) onSelect(maps[(index + delta + maps.length) % maps.length].id!);
   };
 
-  const slots = maps.length === 1 ? [0] : maps.length === 2 ? [0, 1] : [-1, 0, 1];
+  const slots = maps.length === 1 ? [0] : maps.length === 2 ? [0, index === 0 ? 1 : -1] : [-1, 0, 1];
 
   return (
     // Carousel arrow-key and swipe handlers complement the native navigation buttons.
@@ -65,19 +65,19 @@ export function MapCarusel({ maps, selectedId, disabled, onSelect, children }: M
         pointerStart.current = null;
       }}
     >
-      <div className="relative mx-auto flex items-center justify-center py-3">
+      <div className="relative mx-auto grid w-3/4 max-w-lg items-center py-3">
         {slots.map((offset) => {
           const map = maps[(index + offset + maps.length) % maps.length];
 
           return (
             <div
-              key={offset}
+              key={map.id}
               aria-hidden={offset !== 0}
-              className={
-                offset === 0
-                  ? 'relative z-10 w-3/4 max-w-lg border-2 border-hazard bg-slate-950 p-2'
-                  : `pointer-events-none absolute w-1/2 max-w-sm opacity-40 ${offset < 0 ? '-left-1/4' : '-right-1/4'}`
-              }
+              className={`relative col-start-1 row-start-1 w-full border-2 bg-slate-950 p-2 transition-[transform,opacity,border-color] duration-500 ease-in-out motion-reduce:transition-none ${offset === 0 ? 'z-10 border-hazard' : 'pointer-events-none z-0 border-transparent'}`}
+              style={{
+                transform: `translateX(${offset * 85}%) scale(${offset === 0 ? 1 : 0.7})`,
+                opacity: offset === 0 ? 1 : 0.4,
+              }}
             >
               <div className="relative">
                 <MapPreview layout={map} />

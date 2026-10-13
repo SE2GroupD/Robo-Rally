@@ -46,4 +46,11 @@ Room responses include `mapId` and nullable `players[].startPosition` (zero-base
 - All actions use the authenticated identity and require room membership. Reservations, joins and game start are synchronized. Rooms reject joins beyond the number of spawn tiles.
 - At start, selected tiles are preserved, then remaining players receive free tiles in template order. Gameplay uses these positions and the selected layout. Setup is locked after start.
 
-The frontend renders at most three memoized previews, with a shared selection for the room. Extra Crispy is the only production entry; multiple-map navigation is covered with test fixtures.
+The frontend renders at most three memoized previews, with a shared selection for the room. Extra Crispy remains the default; Risky Crossing is also available in the catalog.
+
+
+## Risky Crossing (5A)
+
+`risky-crossing` uses the same start template and a game board at global `(3,0)`. In 1-based local coordinates, checkpoint 1 is at `(6,8)`, checkpoint 2 at `(9,1)`, and a clockwise gear at `(2,10)`. The supplied image defines a closed loop of 28 regular conveyor tiles and four corner paths totaling 16 express conveyor tiles. Game-board energy spaces are omitted because their mechanics are not implemented. There are no game-board pits or walls in this definition.
+
+The host selects it through the existing map endpoint; the frontend catalog and carousel require no hardcoded map additions.

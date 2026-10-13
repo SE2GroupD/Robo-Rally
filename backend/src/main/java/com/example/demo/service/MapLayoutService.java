@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.game.GameBoard;
 import com.example.demo.model.layout.MapLayout;
 import com.example.demo.model.layout.ExtraCrispy;
+import com.example.demo.model.layout.RiskyCrossing;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -13,7 +14,7 @@ import java.util.List;
 public class MapLayoutService {
 
     // Add playable definitions here. The first entry is the default map.
-    private final List<MapLayout> layouts = List.of(ExtraCrispy.layout());
+    private final List<MapLayout> layouts = List.of(ExtraCrispy.layout(), RiskyCrossing.layout());
 
     public MapLayoutService() {
         // Validate both the layout and its supported gameplay geometry at startup.

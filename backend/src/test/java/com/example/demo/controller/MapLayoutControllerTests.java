@@ -46,7 +46,12 @@ class MapLayoutControllerTests {
         mvc.perform(get("/api/maps").header("Authorization", "Bearer preview-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("extra-crispy"))
-                .andExpect(jsonPath("$[0].boards.length()").value(2));
+                .andExpect(jsonPath("$[0].boards.length()").value(2))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[1].id").value("risky-crossing"))
+                .andExpect(jsonPath("$[1].name").value("Risky Crossing"))
+                .andExpect(jsonPath("$[1].boards[1].tiles[?(@.checkpointNumber == 1)].x").value(5))
+                .andExpect(jsonPath("$[1].boards[1].tiles[?(@.checkpointNumber == 2)].y").value(0));
 
         var first = mvc.perform(get("/api/maps/default").header("Authorization", "Bearer preview-token"))
                 .andExpect(status().isOk())
