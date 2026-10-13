@@ -90,7 +90,7 @@ export function MapSelection({ room, disabled, error, onMap, onStart }: MapSelec
 
       <h3 className="m-0 font-bold">Choose your start tile</h3>
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid auto-cols-[minmax(9rem,1fr)] grid-flow-col gap-2 overflow-x-auto pb-1">
           {spawns.map((position, index) => {
             const owner = occupiedBy(position);
             const mine = owner?.playerId === room.playerId;
