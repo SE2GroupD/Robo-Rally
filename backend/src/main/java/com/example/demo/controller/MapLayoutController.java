@@ -16,6 +16,11 @@ public class MapLayoutController {
         this.mapLayoutService = mapLayoutService;
     }
 
+    @GetMapping
+    public java.util.List<MapLayout> getLayouts() {
+        return mapLayoutService.getLayouts();
+    }
+
     @GetMapping("/default")
     public MapLayout getDefaultLayout() {
         return mapLayoutService.getDefaultLayout();

@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class TrainingMapTests {
 
     @Test
-    void trainingUsesDefaultLayoutAndMultiplayerKeepsClassicBoard() {
+    void trainingAndNewMultiplayerRoomsUseDefaultLayout() {
         var rooms = new RoomService();
         var layouts = new MapLayoutService();
         var games = new GameServiceImpl(rooms, layouts);
@@ -35,9 +35,9 @@ class TrainingMapTests {
         rooms.startRoom(multiplayer.gameId(), "host");
         var classic = games.getBoardState(multiplayer.gameId(), "host");
 
-        assertEquals(12, classic.width());
-        assertEquals(12, classic.height());
-        assertNull(classic.layout());
+        assertEquals(13, classic.width());
+        assertEquals(10, classic.height());
+        assertEquals(layouts.getDefaultLayout(), classic.layout());
     }
 
     @Test

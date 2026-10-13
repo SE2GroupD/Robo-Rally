@@ -75,6 +75,8 @@ beforeEach(() => {
       json: async () => body,
     });
 
+    if (endpoint.endsWith('/maps')) return createResponse([defaultMapLayout]);
+
     if (endpoint.includes('/hand')) {
       return createResponse({
         cards: ['MOVE_1', 'POWER_UP', 'POWER_UP', 'POWER_UP', 'POWER_UP'],

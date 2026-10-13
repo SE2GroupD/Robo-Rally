@@ -108,7 +108,7 @@ class RoomServiceTests {
         GameRoom room = service.createRoom("Host", hostId);
         GameRoom other = service.createRoom("Other host", "other-host-id");
 
-        List<Callable<GameRoom>> tasks = IntStream.range(0, 30)
+        List<Callable<GameRoom>> tasks = IntStream.range(0, 4)
                 .mapToObj(i -> (Callable<GameRoom>) () -> service.joinRoom(room.roomCode(), "Guest", "guest-" + i))
                 .toList();
 
@@ -118,7 +118,7 @@ class RoomServiceTests {
                 assertTrue(guestIds.add(result.get().players().getLast().playerId()));
             }
             GameRoom finalRoom = service.joinRoom(room.roomCode(), "Last guest", "last-guest");
-            assertEquals(32, finalRoom.players().size());
+            assertEquals(6, finalRoom.players().size());
             assertTrue(finalRoom.players().stream().map(p -> p.playerId()).toList().containsAll(guestIds));
             assertEquals(2, service.joinRoom(other.roomCode(), "Other guest", guestId).players().size());
         }

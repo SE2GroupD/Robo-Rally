@@ -1,5 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
-import { fetchRoom, leaveRoom, startRoom, selectRobot, RoomRequestError, type JoinedRoom } from '../../api/gameApi';
+import { MapSelection } from './map-selection/MapSelection';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import {
+  updateRoomSetup,
+  fetchRoom,
+  leaveRoom,
+  startRoom,
+  selectRobot,
+  RoomRequestError,
+  type JoinedRoom,
+} from '../../api/gameApi';
 import { Button } from '../../../../foundation/components/button/Button';
 import { Map } from '../map/Map';
 import { useGameState } from '../../hooks/useGameState';
@@ -45,6 +54,7 @@ function describeStatus(state: BoardStateDto, players: JoinedRoom['players'], is
 export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionProps) {
   const [room, setRoom] = useState(initialRoom);
   const [error, setError] = useState('');
+  const [setupError, setSetupError] = useState('');
   const [closed, setClosed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [copyMessage, setCopyMessage] = useState('');
@@ -79,8 +89,20 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
     };
   });
 
+  const { gameId, playerId } = initialRoom;
+
+  const refreshRoom = useEffectEvent(async (signal: AbortSignal, version: number) => {
+    const updated = await fetchRoom(initialRoom, signal);
+
+    if (!signal.aborted && version === revision.current) {
+      setRoom(updated);
+      onRoomChange?.(updated);
+      setError('');
+    }
+  });
+
   useEffect(() => {
-    if (closed) return;
+    if (closed || !gameId || !playerId) return;
 
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
@@ -90,13 +112,7 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
 
       try {
         if (!actionPending.current) {
-          const updated = await fetchRoom(initialRoom, controller.signal);
-
-          if (!controller.signal.aborted && version === revision.current) {
-            setRoom(updated);
-            onRoomChange?.(updated);
-            setError('');
-          }
+          await refreshRoom(controller.signal, version);
         }
       } catch (cause) {
         if (!controller.signal.aborted && version === revision.current) {
@@ -117,7 +133,7 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
       controller.abort();
       clearTimeout(timer);
     };
-  }, [initialRoom, closed, onRoomChange]);
+  }, [gameId, playerId, closed]);
 
   async function handleAction(action: 'start' | 'leave') {
     if (actionPending.current) return;
@@ -166,6 +182,33 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
       } else {
         setError('Could not select robot. Please try again.');
       }
+    } finally {
+      actionPending.current = false;
+      setBusy(false);
+    }
+  }
+
+  async function handleSetup(
+    action: 'map' | 'start-tile',
+    value: { mapId: string } | { mapId: string; position: { x: number; y: number } | null },
+  ) {
+    if (actionPending.current) return;
+
+    actionPending.current = true;
+    revision.current += 1;
+    setBusy(true);
+    setSetupError('');
+
+    try {
+      const updated = await updateRoomSetup(room, action, value);
+      setRoom(updated);
+      onRoomChange?.(updated);
+    } catch (cause) {
+      setSetupError(
+        cause instanceof RoomRequestError && cause.status === 409
+          ? 'The tile is taken or the setup changed. Choose an available tile after the room refreshes.'
+          : 'Could not update your selection. Please try again.',
+      );
     } finally {
       actionPending.current = false;
       setBusy(false);
@@ -250,6 +293,14 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
 
             <output className="mb-0 mt-2 text-sm">{copyMessage}</output>
           </section>
+
+          <MapSelection
+            room={room}
+            disabled={busy}
+            error={setupError}
+            onMap={(mapId) => handleSetup('map', { mapId })}
+            onStart={(position) => handleSetup('start-tile', { mapId: room.mapId!, position })}
+          />
 
           <RobotSelection
             selectedAvatarId={selectedAvatarId}

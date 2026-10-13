@@ -1,3 +1,6 @@
+import { validateMapLayout } from '../data/boardGeometry';
+import type { MapLayoutData } from '../types/MapLayout';
+
 import { type BoardStateDto } from '../types/GameStateDto';
 import { type PlayerHandDto } from '../types/PlayerHandDto';
 import { type ProgramRegisterDto } from '../types/ProgramRegisterDto';
@@ -27,7 +30,8 @@ export interface CreatedRoom {
   playerId: string;
   hostPlayerId: string;
   status: 'WAITING' | 'STARTED';
-  players: { playerId: string; playerName: string; avatarId: number | null }[];
+  mapId?: string;
+  players: { playerId: string; playerName: string; avatarId: number | null; startPosition?: { x: number; y: number } | null }[];
 }
 
 export async function createRoom(playerName: string, training = false): Promise<CreatedRoom> {
@@ -80,7 +84,8 @@ export interface JoinedRoom {
   playerId: string;
   hostPlayerId: string;
   status: 'WAITING' | 'STARTED';
-  players: { playerId: string; playerName: string; avatarId: number | null }[];
+  mapId?: string;
+  players: { playerId: string; playerName: string; avatarId: number | null; startPosition?: { x: number; y: number } | null }[];
 }
 
 export async function joinRoom(roomCode: string, playerName: string): Promise<JoinedRoom> {
@@ -273,4 +278,39 @@ export async function fetchBoardState(gameId: string, signal?: AbortSignal): Pro
   });
   if (!response.ok) throw new RoomRequestError('Board state request failed.', response.status);
   return response.json();
+}
+
+export async function fetchMaps(signal?: AbortSignal): Promise<MapLayoutData[]> {
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL?.replace(/\/$/, '')}/maps`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
+  });
+
+  if (!response.ok) throw new Error('Could not load maps.');
+
+  const maps: MapLayoutData[] = await response.json();
+  if (!Array.isArray(maps) || maps.some((map) => !map.id || !map.name || validateMapLayout(map).length)) {
+    throw new Error('Invalid map catalog.');
+  }
+
+  return maps;
+}
+
+export async function updateRoomSetup(
+  room: JoinedRoom,
+  action: 'map' | 'start-tile',
+  value: { mapId: string } | { position: { x: number; y: number } | null; mapId: string },
+): Promise<JoinedRoom> {
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL?.replace(/\/$/, '')}/games/${room.gameId}/${action}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(value),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (!response.ok) throw new RoomRequestError('Could not update setup.', response.status);
+
+  return readRoom(response, room);
 }

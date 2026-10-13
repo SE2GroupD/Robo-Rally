@@ -1,23 +1,40 @@
 package com.example.demo.service;
 
-import com.example.demo.game.MapLayoutValidator;
+import com.example.demo.game.GameBoard;
 import com.example.demo.model.layout.MapLayout;
 import com.example.demo.model.layout.ExtraCrispy;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 @Service
 public class MapLayoutService {
 
-    private final MapLayout defaultLayout;
+    // Add playable definitions here. The first entry is the default map.
+    private final List<MapLayout> layouts = List.of(ExtraCrispy.layout());
 
     public MapLayoutService() {
-        defaultLayout = ExtraCrispy.layout();
+        // Validate both the layout and its supported gameplay geometry at startup.
+        layouts.forEach(GameBoard::training);
 
-        MapLayoutValidator.requireValid(defaultLayout);
+        if (layouts.stream().anyMatch(layout -> layout.id() == null || layout.id().isBlank())
+                || layouts.stream().map(MapLayout::id).distinct().count() != layouts.size()) {
+            throw new IllegalArgumentException("Map IDs must be nonempty and unique.");
+        }
     }
 
-    /** Canonical definition shared by the layout endpoint and new training games. */
+    public List<MapLayout> getLayouts() {
+        return layouts;
+    }
+
     public MapLayout getDefaultLayout() {
-        return defaultLayout;
+        return layouts.getFirst();
+    }
+
+    public MapLayout getLayout(String id) {
+        return layouts.stream().filter(layout -> layout.id().equals(id)).findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Map not found."));
     }
 }

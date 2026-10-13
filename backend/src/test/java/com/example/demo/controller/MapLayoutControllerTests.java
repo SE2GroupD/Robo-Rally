@@ -32,6 +32,8 @@ class MapLayoutControllerTests {
     void requiresAuthentication() throws Exception {
         mvc.perform(get("/api/maps/default"))
                 .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/maps"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -40,6 +42,11 @@ class MapLayoutControllerTests {
                 .header("alg", "test")
                 .subject("preview-user")
                 .build());
+
+        mvc.perform(get("/api/maps").header("Authorization", "Bearer preview-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("extra-crispy"))
+                .andExpect(jsonPath("$[0].boards.length()").value(2));
 
         var first = mvc.perform(get("/api/maps/default").header("Authorization", "Bearer preview-token"))
                 .andExpect(status().isOk())

@@ -52,6 +52,58 @@ class RoomControllerTests {
         }
 
         @Test
+        void rejectsNonIntegerCoordinatesWithoutChangingTheReservation() throws Exception {
+                var room = service.createRoom("Host", hostId);
+                currentMockSubject = hostId;
+                service.selectStart(room.gameId(), hostId, new com.example.demo.model.Position(1, 8), room.mapId());
+
+                for (String position : new String[] {
+                        "{\"x\":1.9,\"y\":1}", "{\"x\":1,\"y\":1.9}",
+                        "{\"x\":2147483648,\"y\":1}", "{\"y\":3}",
+                        "{\"x\":null,\"y\":3}", "{\"x\":\"1\",\"y\":1}", "[]"
+                }) {
+                        mvc.perform(post("/api/games/" + room.gameId() + "/start-tile")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content("{\"mapId\":\"extra-crispy\",\"position\":" + position + "}"))
+                                .andExpect(status().isBadRequest());
+                }
+
+                mvc.perform(get("/api/games/" + room.gameId()))
+                        .andExpect(jsonPath("$.players[0].startPosition.y").value(8));
+
+                mvc.perform(post("/api/games/" + room.gameId() + "/start-tile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"mapId\":\"extra-crispy\",\"position\":null}"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.players[0].startPosition").isEmpty());
+        }
+
+        @Test
+        void startSelectionEndpointUsesAuthenticatedIdentityAndSerializesCoordinates() throws Exception {
+                var room = service.createRoom("Host", hostId);
+                service.joinRoom(room.roomCode(), "Guest", guestId);
+                currentMockSubject = hostId;
+
+                mvc.perform(post("/api/games/" + room.gameId() + "/start-tile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"mapId\":\"extra-crispy\",\"position\":{\"x\":1,\"y\":8},\"playerId\":\"guest-456\"}"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.mapId").value("extra-crispy"))
+                        .andExpect(jsonPath("$.players[0].startPosition.y").value(8))
+                        .andExpect(jsonPath("$.players[1].startPosition").isEmpty());
+
+                currentMockSubject = guestId;
+                mvc.perform(post("/api/games/" + room.gameId() + "/start-tile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"mapId\":\"extra-crispy\",\"position\":{\"x\":1,\"y\":8}}"))
+                        .andExpect(status().isConflict());
+                mvc.perform(post("/api/games/" + room.gameId() + "/map")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"mapId\":\"extra-crispy\"}"))
+                        .andExpect(status().isForbidden());
+        }
+
+        @Test
         void roomLifecycleEndpointsReturnUpdatedState() throws Exception {
                 var room = service.createRoom("Host", hostId);
 

@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import type * as RoomApi from '../../features/game/api/gameApi';
-import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import { act, render, screen, waitFor, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RoomSession } from '../../features/game/components/room/RoomSession';
@@ -64,9 +65,53 @@ beforeEach(() => {
   vi.mocked(fetchBoardState).mockResolvedValue(boardState);
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 describe('room lifecycle', () => {
+  it('keeps the polling interval when a parent returns fresh room objects and callbacks', async () => {
+    vi.useFakeTimers();
+
+    vi.mocked(fetchRoom).mockImplementation(async () => {
+      // Bound a regression's immediate loop so the test fails instead of hanging.
+      if (vi.mocked(fetchRoom).mock.calls.length > 5) return new Promise(() => {});
+
+      return { ...host, players: [...host.players] };
+    });
+
+    function StatefulLobby() {
+      const [room, setRoom] = useState(host);
+
+      return <RoomSession initialRoom={room} onLeft={() => {}} onRoomChange={(updated) => setRoom(updated)} />;
+    }
+
+    const { unmount } = render(<StatefulLobby />);
+
+    await act(async () => {});
+    expect(fetchRoom).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1999);
+    });
+    expect(fetchRoom).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(fetchRoom).toHaveBeenCalledTimes(2);
+
+    const signal = vi.mocked(fetchRoom).mock.calls[1][1];
+    unmount();
+    expect(signal?.aborted).toBe(true);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4000);
+    });
+    expect(fetchRoom).toHaveBeenCalledTimes(2);
+  });
+
   it('refreshes the host player list and aborts polling on unmount', async () => {
     vi.mocked(fetchRoom).mockResolvedValue({
       ...host,

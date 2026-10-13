@@ -1,6 +1,9 @@
 package com.example.demo.service;
 
 import com.example.demo.model.GameRoom;
+import com.example.demo.model.Position;
+import com.example.demo.game.GameBoard;
+import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.model.RoomStatus;
 import com.example.demo.model.RoomPlayer;
 import org.springframework.http.HttpStatus;
@@ -22,6 +25,23 @@ public class RoomService {
     private final SecureRandom random = new SecureRandom();
     private static final String CODE_CHARACTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
+    private final MapLayoutService mapLayoutService;
+
+    public RoomService() {
+        this(new MapLayoutService());
+    }
+
+    @Autowired
+    public RoomService(MapLayoutService mapLayoutService) {
+        this.mapLayoutService = mapLayoutService;
+    }
+
+    private List<Position> spawnPositions(GameRoom room) {
+        return room.mapId() == null
+                ? GameBoard.classicWithSeedTiles().getSpawnPositions()
+                : GameBoard.training(mapLayoutService.getLayout(room.mapId())).getSpawnPositions();
+    }
+
     // Now accepts secure playerId from the controller/JWT
     public synchronized GameRoom createRoom(String playerName, String playerId) {
         return createRoom(playerName, playerId, false);
@@ -39,7 +59,7 @@ public class RoomService {
 
         // Use the actual JWT subject instead of generating a random UUID
         RoomPlayer host = new RoomPlayer(playerId, playerName.strip(), null);
-        GameRoom room = new GameRoom(UUID.randomUUID(), code, host.playerId(), List.of(host), RoomStatus.WAITING, training);
+        GameRoom room = new GameRoom(UUID.randomUUID(), code, host.playerId(), List.of(host), RoomStatus.WAITING, training, mapLayoutService.getDefaultLayout().id());
         roomsByCode.put(code, room);
         return room;
     }
@@ -74,9 +94,13 @@ public class RoomService {
             return room;
         }
 
+        if (room.players().size() >= spawnPositions(room).size()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This room has no free start tiles.");
+        }
+
         var players = new ArrayList<>(room.players());
         players.add(new RoomPlayer(playerId, playerName.strip(), null));
-        GameRoom updated = new GameRoom(room.gameId(), code, room.hostPlayerId(), players, room.status(), room.training());
+        GameRoom updated = new GameRoom(room.gameId(), code, room.hostPlayerId(), players, room.status(), room.training(), room.mapId());
         roomsByCode.put(code, updated);
         return updated;
     }
@@ -99,8 +123,19 @@ public class RoomService {
         if (!room.hostPlayerId().equals(playerId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can start.");
         }
-        GameRoom started = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), room.players(),
-                RoomStatus.STARTED, room.training());
+        if (room.status() == RoomStatus.STARTED) {
+            return room;
+        }
+
+        var available = new ArrayList<>(spawnPositions(room));
+        room.players().stream().map(RoomPlayer::startPosition).forEach(available::remove);
+
+        var players = room.players().stream().map(player -> player.startPosition() != null ? player
+                : new RoomPlayer(player.playerId(), player.playerName(), player.avatarId(), available.removeFirst()))
+                .toList();
+
+        GameRoom started = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players,
+                RoomStatus.STARTED, room.training(), room.mapId());
         roomsByCode.put(room.roomCode(), started);
         return started;
     }
@@ -113,7 +148,7 @@ public class RoomService {
         } else {
             var remaining = room.players().stream().filter(player -> !player.playerId().equals(playerId)).toList();
             roomsByCode.put(room.roomCode(),
-                    new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), remaining, room.status(), room.training()));
+                    new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), remaining, room.status(), room.training(), room.mapId()));
         }
     }
 
@@ -135,12 +170,70 @@ public class RoomService {
         }
         var players = room.players().stream()
                 .map(player -> player.playerId().equals(playerId)
-                        ? new RoomPlayer(player.playerId(), player.playerName(), avatarId)
+                        ? new RoomPlayer(player.playerId(), player.playerName(), avatarId, player.startPosition())
                         : player)
                 .toList();
-        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players, room.status(), room.training());
+        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players, room.status(), room.training(), room.mapId());
         roomsByCode.put(room.roomCode(), updated);
         return updated;
+    }
+
+    /** Reservation and conflict checking share the same room lock, including game start. */
+    public synchronized GameRoom selectStart(UUID gameId, String playerId, Position position, String mapId) {
+        GameRoom room = getRoom(gameId, playerId);
+        requireWaiting(room);
+
+        if (mapId == null || !mapId.equals(room.mapId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "The map changed. Refresh your start selection.");
+        }
+
+        if (position != null && !spawnPositions(room).contains(position)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose a start tile on this map.");
+        }
+
+        if (position != null && room.players().stream().anyMatch(player ->
+                !player.playerId().equals(playerId) && position.equals(player.startPosition()))) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This start tile is already selected.");
+        }
+
+        var players = room.players().stream().map(player -> player.playerId().equals(playerId)
+                ? new RoomPlayer(player.playerId(), player.playerName(), player.avatarId(), position) : player).toList();
+
+        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players,
+                room.status(), room.training(), room.mapId());
+        roomsByCode.put(room.roomCode(), updated);
+        return updated;
+    }
+
+    public synchronized GameRoom selectMap(UUID gameId, String playerId, String mapId) {
+        GameRoom room = getRoom(gameId, playerId);
+        requireWaiting(room);
+
+        if (!room.hostPlayerId().equals(playerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can choose the map.");
+        }
+
+        var layout = mapLayoutService.getLayout(mapId);
+        if (layout.id().equals(room.mapId())) {
+            return room;
+        }
+
+        if (GameBoard.training(layout).getSpawnPositions().size() < room.players().size()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This map has too few start tiles.");
+        }
+
+        var players = room.players().stream().map(player ->
+                new RoomPlayer(player.playerId(), player.playerName(), player.avatarId())).toList();
+        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players,
+                room.status(), room.training(), layout.id());
+        roomsByCode.put(room.roomCode(), updated);
+        return updated;
+    }
+
+    private void requireWaiting(GameRoom room) {
+        if (room.status() != RoomStatus.WAITING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Setup cannot change after the game has started.");
+        }
     }
 
     public synchronized GameRoom getRoomByGameId(UUID gameId) {

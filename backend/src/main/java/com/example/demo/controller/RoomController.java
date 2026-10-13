@@ -4,6 +4,8 @@ import com.example.demo.dto.CreateRoomRequest;
 import com.example.demo.dto.JoinRoomRequest;
 import com.example.demo.dto.RoomResponse;
 import com.example.demo.dto.SelectRobotRequest;
+import com.example.demo.dto.SelectStartRequest;
+import com.example.demo.dto.SelectMapRequest;
 import com.example.demo.model.GameRoom;
 import com.example.demo.service.GameService;
 import com.example.demo.service.RoomService;
@@ -93,5 +95,25 @@ public class RoomController {
         GameRoom room = roomService.selectRobot(gameId, playerId, request.avatarId());
 
         return RoomResponse.forPlayer(room, playerId);
+    }
+
+    @PostMapping("/{gameId}/start-tile")
+    public RoomResponse selectStart(
+            @PathVariable UUID gameId,
+            @RequestBody SelectStartRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        return RoomResponse.forPlayer(
+                roomService.selectStart(gameId, jwt.getSubject(), request.position(), request.mapId()), jwt.getSubject());
+    }
+
+    @PostMapping("/{gameId}/map")
+    public RoomResponse selectMap(
+            @PathVariable UUID gameId,
+            @RequestBody SelectMapRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        return RoomResponse.forPlayer(
+                roomService.selectMap(gameId, jwt.getSubject(), request.mapId()), jwt.getSubject());
     }
 }

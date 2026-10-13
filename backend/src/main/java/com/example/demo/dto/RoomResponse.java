@@ -11,7 +11,8 @@ public record RoomResponse(
         String playerId,
         String hostPlayerId,
         String status,
-        List<RoomPlayer> players) {
+        List<RoomPlayer> players,
+        String mapId) {
 
     public static RoomResponse forPlayer(GameRoom room, String securePlayerId) {
         return new RoomResponse(
@@ -20,6 +21,7 @@ public record RoomResponse(
                 securePlayerId,
                 room.hostPlayerId(),
                 room.status().name(),
-                room.players());
+                room.players(),
+                room.mapId());
     }
 }

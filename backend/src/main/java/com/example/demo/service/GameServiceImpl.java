@@ -59,8 +59,9 @@ public class GameServiceImpl implements GameService {
     }
 
     private GameSession createSession(GameRoom room) {
-        GameBoard board = room.training()
-                ? GameBoard.training(mapLayoutService.getDefaultLayout())
+        GameBoard board = room.mapId() != null
+                ? GameBoard.training(mapLayoutService.getLayout(room.mapId()))
+                : room.training() ? GameBoard.training(mapLayoutService.getDefaultLayout())
                 : GameBoard.classicWithSeedTiles();
         List<Position> spawns = board.getSpawnPositions();
         if (room.players().size() > spawns.size()) {
@@ -68,7 +69,9 @@ public class GameServiceImpl implements GameService {
         }
         GameSession session = new GameSession(board);
         for (int i = 0; i < room.players().size(); i++) {
-            session.addPlayer(room.players().get(i).playerId(), spawns.get(i), Direction.EAST);
+            var player = room.players().get(i);
+            Position spawn = player.startPosition() == null ? spawns.get(i) : player.startPosition();
+            session.addPlayer(player.playerId(), spawn, Direction.EAST);
         }
         return session;
     }
