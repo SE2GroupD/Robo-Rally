@@ -4,6 +4,8 @@ import { Checkpoint } from '../objects/Checkpoint';
 import steelTileImage from '../../../../../assets/steel.png';
 import conveyorImage from '../../../../../assets/objects/conveyor1.png';
 import expressConveyorImage from '../../../../../assets/objects/conveyor2.png';
+import gearRightImage from '../../../../../assets/objects/gearRight.png';
+import gearLeftImage from '../../../../../assets/objects/gearLeft.png';
 
 const getRotationDegrees = (dir: Direction): number => {
   // Adjusted for the new South-facing SVG avatars
@@ -56,9 +58,13 @@ export function Tile({ tile }: TileProps) {
         </div>
       )}
 
-      {tile.gear === 'CLOCKWISE' && <div className="absolute z-10 text-emerald-500 text-2xl font-black">↻</div>}
-      {(tile.gear === 'COUNTERCLOCKWISE' || tile.gear === 'COUNTER_CLOCKWISE') && (
-        <div className="absolute z-10 text-red-500 text-2xl font-black">↺</div>
+      {tile.gear && (
+        <img
+          src={tile.gear === 'CLOCKWISE' ? gearRightImage : gearLeftImage}
+          alt={tile.gear === 'CLOCKWISE' ? 'Gear turning right (clockwise)' : 'Gear turning left (counterclockwise)'}
+          draggable={false}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
       )}
 
       {tile.conveyor && (
