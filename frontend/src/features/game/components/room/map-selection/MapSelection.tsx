@@ -73,7 +73,7 @@ export function MapSelection({ room, disabled, error, onMap, onStart }: MapSelec
               aria-pressed={mine}
               disabled={locked || (!!owner && !mine)}
               onClick={() => onStart(position)}
-              className={`absolute flex items-center justify-center border-2 text-xs font-bold focus-visible:z-40 focus-visible:outline-2 focus-visible:outline-white ${mine ? 'border-white bg-hazard text-black' : owner ? 'border-metal bg-slate-800 text-white' : 'border-hazard bg-slate-950 text-hazard'}`}
+              className={`absolute flex items-center justify-center border-2 text-xs font-bold focus-visible:z-40 focus-visible:outline-2 focus-visible:outline-white ${mine ? 'border-white bg-hazard/30 text-black' : owner ? 'border-metal bg-slate-800/70 text-white' : 'border-hazard bg-transparent text-black'}`}
               style={{
                 fontSize: 'clamp(6px, 1.5vw, 12px)',
                 left: `${(((position.x - bounds.x) * TILE_PITCH) / (bounds.width * TILE_PITCH - TILE_GAP)) * 100}%`,

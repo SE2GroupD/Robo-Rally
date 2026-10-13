@@ -2,10 +2,12 @@ import type { Direction, TileData } from '../../../types/Board';
 import { Robot } from '../objects/Robot';
 import { Checkpoint } from '../objects/Checkpoint';
 import steelTileImage from '../../../../../assets/steel.png';
-import conveyorImage from '../../../../../assets/objects/conveyor1.png';
-import expressConveyorImage from '../../../../../assets/objects/conveyor2.png';
-import gearRightImage from '../../../../../assets/objects/gearRight.png';
-import gearLeftImage from '../../../../../assets/objects/gearLeft.png';
+import { Conveyor } from '../objects/Conveyor';
+import { Gear } from '../objects/Gear';
+import { SpawnPoint } from '../objects/SpawnPoint';
+import { PushPanel } from '../objects/PushPanel';
+import { Antenna } from '../objects/Antenna';
+import { Walls } from '../objects/Walls';
 
 const getRotationDegrees = (dir: Direction): number => {
   // Adjusted for the new South-facing SVG avatars
@@ -23,11 +25,6 @@ const getRotationDegrees = (dir: Direction): number => {
   }
 };
 
-// Both conveyor images point east before rotation.
-const CONVEYOR_ROTATION: Record<Direction, number> = { NORTH: 270, EAST: 0, SOUTH: 90, WEST: 180 };
-
-const ARROWS: Record<Direction, string> = { NORTH: '↑', EAST: '→', SOUTH: '↓', WEST: '←' };
-
 interface TileProps {
   tile: TileData;
 }
@@ -41,51 +38,17 @@ export function Tile({ tile }: TileProps) {
         <img src={steelTileImage} alt="Steel Tile" className="absolute inset-0 w-full h-full object-cover" />
       )}
 
-      {tile.walls?.north && <div className="absolute top-0 left-0 right-0 h-1.25 bg-yellow-400 z-20 shadow-md" />}
-      {tile.walls?.east && <div className="absolute top-0 right-0 bottom-0 w-1.25 bg-yellow-400 z-20 shadow-md" />}
-      {tile.walls?.south && <div className="absolute bottom-0 left-0 right-0 h-1.25 bg-yellow-400 z-20 shadow-md" />}
-      {tile.walls?.west && <div className="absolute top-0 left-0 bottom-0 w-1.25 bg-yellow-400 z-20 shadow-md" />}
+      {tile.walls && <Walls walls={tile.walls} />}
 
-      {tile.hasAntenna && (
-        <div className="absolute z-10 w-7 h-7 rounded-full bg-emerald-500 border border-white flex items-center justify-center shadow-lg text-xs">
-          📡
-        </div>
-      )}
+      {tile.hasAntenna && <Antenna />}
 
-      {tile.isSpawnPoint && (
-        <div className="absolute z-10 w-6 h-6 rounded-full border-2 border-dashed border-gray-400 bg-black/40 flex items-center justify-center text-white text-[10px]">
-          ⚙️
-        </div>
-      )}
+      {tile.isSpawnPoint && <SpawnPoint />}
 
-      {tile.gear && (
-        <img
-          src={tile.gear === 'CLOCKWISE' ? gearRightImage : gearLeftImage}
-          alt={tile.gear === 'CLOCKWISE' ? 'Gear turning right (clockwise)' : 'Gear turning left (counterclockwise)'}
-          draggable={false}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      )}
+      {tile.gear && <Gear rotation={tile.gear} />}
 
-      {tile.conveyor && (
-        <img
-          src={tile.conveyor.isExpress ? expressConveyorImage : conveyorImage}
-          alt={`${tile.conveyor.isExpress ? 'Express' : 'Regular'} conveyor ${tile.conveyor.direction.toLowerCase()}`}
-          draggable={false}
-          className="absolute inset-0 h-full w-full object-cover"
-          style={{ transform: `rotate(${CONVEYOR_ROTATION[tile.conveyor.direction]}deg)` }}
-        />
-      )}
+      {tile.conveyor && <Conveyor {...tile.conveyor} />}
 
-      {tile.pushPanel && (
-        <figure
-          aria-label={`Push panel ${tile.pushPanel.direction.toLowerCase()}, registers ${tile.pushPanel.activeRegisters.join(', ')}`}
-          className="absolute z-10 flex flex-col items-center font-black leading-none text-orange-400"
-        >
-          <span className="text-xl">{ARROWS[tile.pushPanel.direction]}</span>
-          <span className="text-[9px]">{tile.pushPanel.activeRegisters.join('')}</span>
-        </figure>
-      )}
+      {tile.pushPanel && <PushPanel {...tile.pushPanel} />}
 
       <div className="relative z-30 flex w-full h-full items-center justify-center">
         {tile.robot ? (
