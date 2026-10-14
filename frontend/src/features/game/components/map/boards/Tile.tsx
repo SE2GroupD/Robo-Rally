@@ -23,9 +23,11 @@ const ARROWS: Record<Direction, string> = { NORTH: '↑', EAST: '→', SOUTH: '�
 
 interface TileProps {
   tile: TileData;
+  currentPlayerId?: string;
+  onTileClick?: (x: number, y: number) => void;
 }
 
-export function Tile({ tile }: TileProps) {
+export function Tile({ tile, currentPlayerId, onTileClick }: TileProps) {
   return (
     <div className="relative w-12.5 h-12.5 border border-[#555] text-black flex items-center justify-center overflow-hidden">
       {tile.hasPit ? (
@@ -46,9 +48,26 @@ export function Tile({ tile }: TileProps) {
       )}
 
       {tile.isSpawnPoint && (
-        <div className="absolute z-10 w-6 h-6 rounded-full border-2 border-dashed border-gray-400 bg-black/40 flex items-center justify-center text-white text-[10px]">
-          ⚙️
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            if (onTileClick && !tile.occupyingPlayerId) {
+              onTileClick(tile.x, tile.y);
+            }
+          }}
+          className={`absolute z-10 w-6 h-6 rounded-full border-2 border-dashed flex items-center justify-center text-[10px] transition-colors p-0
+            ${
+              onTileClick
+                ? tile.occupyingPlayerId === currentPlayerId
+                  ? 'border-emerald-500 bg-emerald-500/40 text-emerald-200'
+                  : tile.occupyingPlayerId
+                    ? 'border-red-500 bg-red-500/40 text-red-200 cursor-not-allowed'
+                    : 'border-gray-400 bg-black/40 text-white cursor-pointer hover:border-white hover:bg-white/20'
+                : 'border-gray-400 bg-black/40 text-gray-300 cursor-default'
+            }`}
+        >
+          {onTileClick ? (tile.occupyingPlayerId === currentPlayerId ? '✓' : tile.occupyingPlayerId ? '✗' : '⚙️') : '⚙️'}
+        </button>
       )}
 
       {tile.gear === 'CLOCKWISE' && <div className="absolute z-10 text-emerald-500 text-2xl font-black">↻</div>}
@@ -63,22 +82,23 @@ export function Tile({ tile }: TileProps) {
         </div>
       )}
 
-      {tile.pushPanel && (
-        <figure
-          aria-label={`Push panel ${tile.pushPanel.direction.toLowerCase()}, registers ${tile.pushPanel.activeRegisters.join(', ')}`}
-          className="absolute z-10 flex flex-col items-center font-black leading-none text-orange-400"
-        >
-          <span className="text-xl">{ARROWS[tile.pushPanel.direction]}</span>
-          <span className="text-[9px]">{tile.pushPanel.activeRegisters.join('')}</span>
-        </figure>
-      )}
-
-      <div className="relative z-30 flex w-full h-full items-center justify-center">
-        {tile.robot ? (
-          <Robot avatarId={tile.robot.avatarId || 1} rotation={getRotationDegrees(tile.robot.direction)} />
-        ) : tile.checkpointNumber !== undefined ? (
-          <Checkpoint num={tile.checkpointNumber} />
-        ) : null}
+      <div className="relative z-30 flex w-full h-full items-center justify-center pointer-events-none">
+        {tile.pushPanel && (
+          <figure
+            aria-label={`Push panel ${tile.pushPanel.direction.toLowerCase()}, registers ${tile.pushPanel.activeRegisters.join(', ')}`}
+            className="absolute z-10 flex flex-col items-center font-black leading-none text-orange-400"
+          >
+            <span className="text-xl">{ARROWS[tile.pushPanel.direction]}</span>
+            <span className="text-[9px]">{tile.pushPanel.activeRegisters.join('')}</span>
+          </figure>
+        )}
+        <div className="relative z-30 flex w-full h-full items-center justify-center">
+          {tile.robot ? (
+            <Robot avatarId={tile.robot.avatarId || 1} rotation={getRotationDegrees(tile.robot.direction)} />
+          ) : tile.checkpointNumber !== undefined ? (
+            <Checkpoint num={tile.checkpointNumber} />
+          ) : null}
+        </div>
       </div>
     </div>
   );

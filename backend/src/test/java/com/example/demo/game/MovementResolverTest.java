@@ -229,7 +229,7 @@ class MovementResolverTest {
     void wallOnTheBeltTileBlocksIt() {
         Robot a = robot("A", 1, 0, Direction.NORTH);
         Tile beltWithWall = new Tile(1, 0, false, new Walls(false, true, false, false), false, false,
-                null, new Conveyor(Direction.EAST), null, null);
+                null, new Conveyor(Direction.EAST), null, null, null);
         run(board(5, 3, beltWithWall), programs(a));
         assertEquals(pos(1, 0), a.getPosition());
     }
@@ -238,7 +238,7 @@ class MovementResolverTest {
     void wallBlocksPushPanel() {
         Robot a = robot("A", 1, 1, Direction.NORTH);
         Tile panelWithWall = new Tile(1, 1, false, new Walls(false, true, false, false), false, false,
-                null, null, null, new PushPanel(Direction.EAST, List.of(1, 2, 3, 4, 5)));
+                null, null, null, new PushPanel(Direction.EAST, List.of(1, 2, 3, 4, 5)), null);
         run(board(5, 3, panelWithWall), programs(a));
         assertEquals(pos(1, 1), a.getPosition());
     }
