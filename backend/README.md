@@ -96,3 +96,9 @@ Frontend renderer tests use small synthetic fixtures under `src/tests/fixtures`;
 `burnout` reuses Start A and places template `2b` at global `(3,0)`, unrotated, in the supplied image's orientation. In **1-based game-board coordinates**, checkpoints 1–3 are at `(9,6)`, `(1,1)`, and `(10,10)`.
 
 2B contains four pits, a clockwise gear, eight wall edges, four regular conveyors and sixteen express conveyors, including the twelve-tile clockwise central loop. Laser emitters/beams and energy spaces are omitted because their gameplay mechanics are not implemented. The reference image's different start strip is replaced by the shared Start A template.
+
+## Standalone-board compatibility
+
+Rooms created without `startBoardId` use the course catalog, including training. For compatibility with the standalone-board client, an explicit registered `startBoardId` (such as `classic_start`) creates a room using the legacy start board and `game1`–`game3`. Both modes share membership, capacity, reservation and start-lock checks. Room responses also include `startBoardConfig` with reservation owners.
+
+Catalog start selection still requires `{ "mapId": "extra-crispy", "position": { "x": 1, "y": 1 } }`. The legacy `{ "x": 1, "y": 1 }` request is accepted only for standalone-board rooms, preventing old requests from bypassing map-change checks. Switching a standalone room to a catalog course clears its reservations and uses that course for gameplay.

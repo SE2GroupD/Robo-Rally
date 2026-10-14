@@ -59,10 +59,7 @@ public class GameServiceImpl implements GameService {
     }
 
     private GameSession createSession(GameRoom room) {
-        GameBoard board = room.mapId() != null
-                ? GameBoard.training(mapLayoutService.getLayout(room.mapId()))
-                : room.training() ? GameBoard.training(mapLayoutService.getDefaultLayout())
-                : GameBoard.classicWithSeedTiles();
+        GameBoard board = roomService.boardFor(room);
         List<Position> spawns = board.getSpawnPositions();
         if (room.players().size() > spawns.size()) {
             throw new IllegalStateException("Too many players for this board (max " + spawns.size() + ").");

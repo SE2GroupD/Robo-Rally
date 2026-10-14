@@ -5,4 +5,7 @@ public record RoomPlayer(String playerId, String playerName, Integer avatarId, P
     public RoomPlayer(String playerId, String playerName, Integer avatarId) {
         this(playerId, playerName, avatarId, null);
     }
+    public RoomPlayer withStartPosition(Position position) {
+        return new RoomPlayer(playerId, playerName, avatarId, position);
+    }
 }

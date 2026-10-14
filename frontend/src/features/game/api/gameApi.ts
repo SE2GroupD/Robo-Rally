@@ -1,6 +1,7 @@
 import { validateMapLayout } from '../data/boardGeometry';
 import type { MapLayoutData } from '../types/MapLayout';
 
+import type { TileData } from '../types/Board';
 import { type BoardStateDto } from '../types/GameStateDto';
 import { type PlayerHandDto } from '../types/PlayerHandDto';
 import { type ProgramRegisterDto } from '../types/ProgramRegisterDto';
@@ -31,6 +32,7 @@ export interface CreatedRoom {
   hostPlayerId: string;
   status: 'WAITING' | 'STARTED';
   mapId?: string;
+  startBoardConfig?: TileData[];
   players: { playerId: string; playerName: string; avatarId: number | null; startPosition?: { x: number; y: number } | null }[];
 }
 
@@ -85,6 +87,7 @@ export interface JoinedRoom {
   hostPlayerId: string;
   status: 'WAITING' | 'STARTED';
   mapId?: string;
+  startBoardConfig?: TileData[];
   players: { playerId: string; playerName: string; avatarId: number | null; startPosition?: { x: number; y: number } | null }[];
 }
 
@@ -312,5 +315,21 @@ export async function updateRoomSetup(
 
   if (!response.ok) throw new RoomRequestError('Could not update setup.', response.status);
 
+  return readRoom(response, room);
+}
+
+/** Compatibility with rooms created using the standalone start-board API. */
+export async function selectStartTile(room: JoinedRoom, x: number, y: number): Promise<JoinedRoom> {
+  if (room.mapId) return updateRoomSetup(room, 'start-tile', { mapId: room.mapId, position: { x, y } });
+
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL?.replace(/\/$/, '')}/games/${encodeURIComponent(room.gameId)}/start-tile`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ x, y }),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (!response.ok) throw new RoomRequestError('Could not select this start tile.', response.status);
   return readRoom(response, room);
 }

@@ -33,9 +33,9 @@ public class RoomController {
             @RequestBody CreateRoomRequest request,
             @AuthenticationPrincipal Jwt jwt) {
 
-        GameRoom room = roomService.createRoom(request.playerName(), jwt.getSubject(), Boolean.TRUE.equals(request.training()));
+        GameRoom room = roomService.createRoom(request.playerName(), jwt.getSubject(), Boolean.TRUE.equals(request.training()), request.startBoardId());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(RoomResponse.forPlayer(room, room.hostPlayerId()));
+                .body(responseFor(room, room.hostPlayerId()));
     }
 
     @PostMapping("/join")
@@ -45,7 +45,7 @@ public class RoomController {
 
         String playerId = jwt.getSubject();
         GameRoom room = roomService.joinRoom(request.roomCode(), request.playerName(), playerId);
-        return ResponseEntity.ok(RoomResponse.forPlayer(room, playerId));
+        return ResponseEntity.ok(responseFor(room, playerId));
     }
 
     @GetMapping("/{gameId}")
@@ -94,7 +94,7 @@ public class RoomController {
         String playerId = jwt.getSubject();
         GameRoom room = roomService.selectRobot(gameId, playerId, request.avatarId());
 
-        return RoomResponse.forPlayer(room, playerId);
+        return responseFor(room, playerId);
     }
 
     @PostMapping("/{gameId}/start-tile")
@@ -103,8 +103,10 @@ public class RoomController {
             @RequestBody SelectStartRequest request,
             @AuthenticationPrincipal Jwt jwt) {
 
-        return RoomResponse.forPlayer(
-                roomService.selectStart(gameId, jwt.getSubject(), request.position(), request.mapId()), jwt.getSubject());
+        var room = request.mapId() == null
+                ? roomService.selectStartTile(gameId, jwt.getSubject(), request.position())
+                : roomService.selectStart(gameId, jwt.getSubject(), request.position(), request.mapId());
+        return responseFor(room, jwt.getSubject());
     }
 
     @PostMapping("/{gameId}/map")
@@ -113,7 +115,10 @@ public class RoomController {
             @RequestBody SelectMapRequest request,
             @AuthenticationPrincipal Jwt jwt) {
 
-        return RoomResponse.forPlayer(
+        return responseFor(
                 roomService.selectMap(gameId, jwt.getSubject(), request.mapId()), jwt.getSubject());
+    }
+    private RoomResponse responseFor(GameRoom room, String playerId) {
+        return RoomResponse.forPlayer(room, playerId, roomService.startTiles(room));
     }
 }

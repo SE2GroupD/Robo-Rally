@@ -7,25 +7,36 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.annotation.JsonDeserialize;
 
-/** Null clears the reservation and opts into automatic assignment. */
-public record SelectStartRequest(
-        @JsonDeserialize(using = StartPositionDeserializer.class) Position position,
-        String mapId) {
+/** Catalog selections include a map ID; legacy standalone boards send coordinates directly. */
+@JsonDeserialize(using = SelectStartRequest.Deserializer.class)
+public record SelectStartRequest(Position position, String mapId) {
 
-    /** Validate the wire coordinates before Jackson can truncate them to integers. */
-    public static final class StartPositionDeserializer extends ValueDeserializer<Position> {
+    public static final class Deserializer extends ValueDeserializer<SelectStartRequest> {
 
         @Override
-        public Position deserialize(JsonParser parser, DeserializationContext context) {
+        public SelectStartRequest deserialize(JsonParser parser, DeserializationContext context) {
             JsonNode node = context.readTree(parser);
-            JsonNode x = node.get("x");
-            JsonNode y = node.get("y");
-
-            if (!isCoordinate(x) || !isCoordinate(y)) {
-                return context.reportInputMismatch(Position.class, "Start coordinates must be integer x and y values.");
+            if (!node.isObject()) {
+                return context.reportInputMismatch(SelectStartRequest.class, "Start selection must be an object.");
             }
 
-            return new Position(x.intValue(), y.intValue());
+            var mapId = node.get("mapId");
+            if (mapId != null && !mapId.isNull() && !mapId.isTextual()) {
+                return context.reportInputMismatch(SelectStartRequest.class, "Map ID must be a string.");
+            }
+
+            var coordinates = node.has("position") ? node.get("position") : node.has("x") || node.has("y") ? node : null;
+            Position position = null;
+            if (coordinates != null && !coordinates.isNull()) {
+                var x = coordinates.get("x");
+                var y = coordinates.get("y");
+                if (!isCoordinate(x) || !isCoordinate(y)) {
+                    return context.reportInputMismatch(SelectStartRequest.class, "Start coordinates must be integer x and y values.");
+                }
+                position = new Position(x.intValue(), y.intValue());
+            }
+
+            return new SelectStartRequest(position, mapId == null || mapId.isNull() ? null : mapId.asString());
         }
 
         private static boolean isCoordinate(JsonNode value) {

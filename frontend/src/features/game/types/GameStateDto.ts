@@ -38,12 +38,20 @@ export interface TileDto {
   x: number;
   y: number;
   hasPit?: boolean;
+  pit?: boolean;
+  isPit?: boolean;
   walls?: { north: boolean; east: boolean; south: boolean; west: boolean } | null;
   hasAntenna?: boolean;
+  antenna?: boolean;
+  isAntenna?: boolean;
   isSpawnPoint?: boolean;
+  spawnPoint?: boolean;
+  occupyingPlayerId?: string | null;
   gear?: 'CLOCKWISE' | 'COUNTERCLOCKWISE' | 'COUNTER_CLOCKWISE' | null;
-  conveyor?: { direction: Direction; isExpress?: boolean } | null;
+  conveyor?: { direction: Direction; isExpress?: boolean; express?: boolean } | null;
   checkpointNumber?: number | null;
+  checkpoint?: number | null;
+  isCheckpoint?: number | null;
   pushPanel?: { direction: Direction; activeRegisters: number[] } | null;
 }
 

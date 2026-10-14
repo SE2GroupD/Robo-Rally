@@ -181,4 +181,33 @@ class RoomControllerTests {
                                 .andExpect(status().isBadRequest());
                 }
         }
+
+        @Test
+        void standaloneStartSelectionRemainsCompatibleAndReportsOccupancy() throws Exception {
+                var room = service.createRoom("Host", hostId, "classic_start");
+                currentMockSubject = hostId;
+
+                mvc.perform(post("/api/games/" + room.gameId() + "/start-tile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"x\":1,\"y\":2}"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.players[0].startPosition.y").value(2))
+                        .andExpect(jsonPath("$.startBoardConfig[?(@.y == 2)].occupyingPlayerId").value(hostId));
+
+                mvc.perform(post("/api/games/" + room.gameId() + "/start-tile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"x\":1.5,\"y\":2}"))
+                        .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void catalogRoomsRejectLegacySelectionsWithoutAMapId() throws Exception {
+                var room = service.createRoom("Host", hostId);
+                currentMockSubject = hostId;
+
+                mvc.perform(post("/api/games/" + room.gameId() + "/start-tile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"x\":1,\"y\":1}"))
+                        .andExpect(status().isConflict());
+        }
 }

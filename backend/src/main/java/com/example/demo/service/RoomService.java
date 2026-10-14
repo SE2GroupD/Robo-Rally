@@ -2,6 +2,8 @@ package com.example.demo.service;
 
 import com.example.demo.model.GameRoom;
 import com.example.demo.model.Position;
+import com.example.demo.model.BoardDefinition;
+import com.example.demo.model.Tile;
 import com.example.demo.game.GameBoard;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.model.RoomStatus;
@@ -26,20 +28,60 @@ public class RoomService {
     private static final String CODE_CHARACTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
     private final MapLayoutService mapLayoutService;
+    private final BoardRegistry boardRegistry;
 
     public RoomService() {
         this(new MapLayoutService());
     }
 
-    @Autowired
     public RoomService(MapLayoutService mapLayoutService) {
+        this(mapLayoutService, loadedBoardRegistry());
+    }
+
+    public RoomService(BoardRegistry boardRegistry) {
+        this(new MapLayoutService(), boardRegistry);
+    }
+
+    @Autowired
+    public RoomService(MapLayoutService mapLayoutService, BoardRegistry boardRegistry) {
         this.mapLayoutService = mapLayoutService;
+        this.boardRegistry = boardRegistry;
+    }
+
+    private static BoardRegistry loadedBoardRegistry() {
+        var registry = new BoardRegistry();
+        registry.loadBoards();
+        return registry;
+    }
+
+    public GameBoard boardFor(GameRoom room) {
+        if (room.mapId() != null) {
+            return GameBoard.training(mapLayoutService.getLayout(room.mapId()));
+        }
+        if (room.startBoardId() != null) {
+            var boards = new ArrayList<BoardDefinition>();
+            boards.add(boardRegistry.getBoard(room.startBoardId()));
+            for (String id : List.of("game1", "game2", "game3")) {
+                var board = boardRegistry.getBoardById(id);
+                if (board != null) boards.add(board);
+            }
+            return GameBoard.assemble(boards);
+        }
+        return room.training() ? GameBoard.training(mapLayoutService.getDefaultLayout()) : GameBoard.classicWithSeedTiles();
     }
 
     private List<Position> spawnPositions(GameRoom room) {
-        return room.mapId() == null
-                ? GameBoard.classicWithSeedTiles().getSpawnPositions()
-                : GameBoard.training(mapLayoutService.getLayout(room.mapId())).getSpawnPositions();
+        return boardFor(room).getSpawnPositions();
+    }
+
+    public List<Tile> startTiles(GameRoom room) {
+        var board = boardFor(room);
+        var tiles = new HashMap<Position, Tile>();
+        board.getSpecialTiles().forEach(tile -> tiles.put(new Position(tile.x(), tile.y()), tile));
+
+        return board.getSpawnPositions().stream().map(position -> tiles.get(position).withOccupant(
+                room.players().stream().filter(player -> position.equals(player.startPosition()))
+                        .map(RoomPlayer::playerId).findFirst().orElse(null))).toList();
     }
 
     // Now accepts secure playerId from the controller/JWT
@@ -48,8 +90,25 @@ public class RoomService {
     }
 
     public synchronized GameRoom createRoom(String playerName, String playerId, boolean training) {
+        return createRoom(playerName, playerId, training, null);
+    }
+
+    public synchronized GameRoom createRoom(String playerName, String playerId, String startBoardId) {
+        return createRoom(playerName, playerId, false, startBoardId);
+    }
+
+    public synchronized GameRoom createRoom(String playerName, String playerId, boolean training, String startBoardId) {
         if (playerName == null || playerName.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Player name is required.");
+        }
+
+        if (startBoardId != null && !startBoardId.isBlank()) {
+            var board = boardRegistry.getBoardById(startBoardId);
+            if (board == null || board.specialTiles().stream().noneMatch(Tile::isSpawnPoint)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown start board.");
+            }
+        } else {
+            startBoardId = null;
         }
 
         String code;
@@ -59,7 +118,7 @@ public class RoomService {
 
         // Use the actual JWT subject instead of generating a random UUID
         RoomPlayer host = new RoomPlayer(playerId, playerName.strip(), null);
-        GameRoom room = new GameRoom(UUID.randomUUID(), code, host.playerId(), List.of(host), RoomStatus.WAITING, training, mapLayoutService.getDefaultLayout().id());
+        GameRoom room = new GameRoom(UUID.randomUUID(), code, host.playerId(), List.of(host), RoomStatus.WAITING, training, startBoardId == null ? mapLayoutService.getDefaultLayout().id() : null, startBoardId);
         roomsByCode.put(code, room);
         return room;
     }
@@ -100,7 +159,7 @@ public class RoomService {
 
         var players = new ArrayList<>(room.players());
         players.add(new RoomPlayer(playerId, playerName.strip(), null));
-        GameRoom updated = new GameRoom(room.gameId(), code, room.hostPlayerId(), players, room.status(), room.training(), room.mapId());
+        GameRoom updated = new GameRoom(room.gameId(), code, room.hostPlayerId(), players, room.status(), room.training(), room.mapId(), room.startBoardId());
         roomsByCode.put(code, updated);
         return updated;
     }
@@ -135,7 +194,7 @@ public class RoomService {
                 .toList();
 
         GameRoom started = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players,
-                RoomStatus.STARTED, room.training(), room.mapId());
+                RoomStatus.STARTED, room.training(), room.mapId(), room.startBoardId());
         roomsByCode.put(room.roomCode(), started);
         return started;
     }
@@ -148,7 +207,7 @@ public class RoomService {
         } else {
             var remaining = room.players().stream().filter(player -> !player.playerId().equals(playerId)).toList();
             roomsByCode.put(room.roomCode(),
-                    new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), remaining, room.status(), room.training(), room.mapId()));
+                    new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), remaining, room.status(), room.training(), room.mapId(), room.startBoardId()));
         }
     }
 
@@ -173,7 +232,7 @@ public class RoomService {
                         ? new RoomPlayer(player.playerId(), player.playerName(), avatarId, player.startPosition())
                         : player)
                 .toList();
-        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players, room.status(), room.training(), room.mapId());
+        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players, room.status(), room.training(), room.mapId(), room.startBoardId());
         roomsByCode.put(room.roomCode(), updated);
         return updated;
     }
@@ -187,6 +246,20 @@ public class RoomService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "The map changed. Refresh your start selection.");
         }
 
+        return reserveStart(room, playerId, position);
+    }
+
+    /** Compatibility for the standalone start-board client; catalog rooms require a map ID. */
+    public synchronized GameRoom selectStartTile(UUID gameId, String playerId, Position position) {
+        var room = getRoom(gameId, playerId);
+        requireWaiting(room);
+        if (room.mapId() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Send the displayed map ID with the start selection.");
+        }
+        return reserveStart(room, playerId, position);
+    }
+
+    private GameRoom reserveStart(GameRoom room, String playerId, Position position) {
         if (position != null && !spawnPositions(room).contains(position)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose a start tile on this map.");
         }
@@ -200,7 +273,7 @@ public class RoomService {
                 ? new RoomPlayer(player.playerId(), player.playerName(), player.avatarId(), position) : player).toList();
 
         GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players,
-                room.status(), room.training(), room.mapId());
+                room.status(), room.training(), room.mapId(), room.startBoardId());
         roomsByCode.put(room.roomCode(), updated);
         return updated;
     }

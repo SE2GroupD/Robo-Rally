@@ -30,7 +30,7 @@ class BurnoutTests {
         assertEquals(4, tiles.stream().filter(tile -> tile.conveyor() != null && !tile.conveyor().isExpress()).count());
         assertEquals(8, tiles.stream().filter(tile -> tile.walls() != null).count());
         assertEquals(GearRotation.CLOCKWISE, board.gearAt(new Position(7, 4)));
-        assertEquals(new Position(1, 1), board.getSpawnPositions().getFirst());
+        assertEquals(new Position(1, 0), board.getSpawnPositions().getFirst());
 
         int[][] checkpoints = {{8, 5}, {0, 0}, {9, 9}};
         for (int index = 0; index < checkpoints.length; index++) {

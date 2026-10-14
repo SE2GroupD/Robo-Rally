@@ -1,7 +1,9 @@
+import { LegacyStartSelection } from './map-selection/LegacyStartSelection';
 import { MapSelection } from './map-selection/MapSelection';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import {
   updateRoomSetup,
+  selectStartTile,
   fetchRoom,
   leaveRoom,
   startRoom,
@@ -164,6 +166,26 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
     }
   }
 
+  async function handleLegacyStart(x: number, y: number) {
+    if (actionPending.current) return;
+
+    actionPending.current = true;
+    revision.current += 1;
+    setBusy(true);
+    setSetupError('');
+
+    try {
+      const updated = await selectStartTile(room, x, y);
+      setRoom(updated);
+      onRoomChange?.(updated);
+    } catch {
+      setSetupError('Could not select this start tile. Refresh and choose an available tile.');
+    } finally {
+      actionPending.current = false;
+      setBusy(false);
+    }
+  }
+
   async function handleSelectRobot(avatarId: number) {
     if (actionPending.current) return;
 
@@ -294,13 +316,17 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
             <output className="mb-0 mt-2 text-sm">{copyMessage}</output>
           </section>
 
-          <MapSelection
-            room={room}
-            disabled={busy}
-            error={setupError}
-            onMap={(mapId) => handleSetup('map', { mapId })}
-            onStart={(position) => handleSetup('start-tile', { mapId: room.mapId!, position })}
-          />
+          {room.mapId || !room.startBoardConfig ? (
+            <MapSelection
+              room={room}
+              disabled={busy}
+              error={setupError}
+              onMap={(mapId) => handleSetup('map', { mapId })}
+              onStart={(position) => handleSetup('start-tile', { mapId: room.mapId!, position })}
+            />
+          ) : (
+            <LegacyStartSelection room={room} disabled={busy} onSelect={handleLegacyStart} error={setupError} />
+          )}
 
           <RobotSelection
             selectedAvatarId={selectedAvatarId}
