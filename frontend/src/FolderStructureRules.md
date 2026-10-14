@@ -12,7 +12,7 @@ Classify code by responsibility and domain, never by component size. These rules
 | `features/<feature>/hooks/`      | Feature state and behavior                                             | `useRobotMovement`, `useProgramming` |
 | `features/<feature>/api/`        | Feature network calls                                                  | `gameApi`                            |
 | `features/<feature>/types/`      | Domain types and API DTOs shared within a feature                      | `TileData`, `RobotState`, `CardType` |
-| `features/<feature>/data/`       | Feature data and layouts                                               | `mapLayouts`                         |
+| `features/<feature>/data/`       | Feature data and layouts                                               | `static feature data`                |
 | `foundation/components/`         | Generic UI primitives with no Robo Rally concepts                      | `Button`, `TextInput`                |
 | `shared/components/`             | Composed, feature-independent UI used by at least two features         | `MenuScreen`, `Background`           |
 | `utils/`                         | Generic, domain-independent functions                                  | `cn`                                 |

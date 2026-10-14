@@ -2,7 +2,7 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { useMapCatalog } from '../../features/game/hooks/useMapCatalog';
 import { fetchMaps } from '../../features/game/api/gameApi';
-import { defaultMapLayout } from '../../features/game/data/mapLayouts';
+import { defaultMapLayout } from '../fixtures/mapLayouts';
 
 vi.mock('../../features/game/api/gameApi', () => ({ fetchMaps: vi.fn() }));
 

@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../App';
 import { MapLayout } from '../../features/game/components/map/MapLayout';
-import { defaultMapLayout } from '../../features/game/data/mapLayouts';
+import { defaultMapLayout } from '../fixtures/mapLayouts';
 import type { MapLayoutData } from '../../features/game/types/MapLayout';
 import { BrowserRouter } from 'react-router-dom';
 import { neon } from '../../features/auth/lib/neon';

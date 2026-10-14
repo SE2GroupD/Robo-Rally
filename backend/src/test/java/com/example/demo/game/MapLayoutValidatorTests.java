@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class MapLayoutValidatorTests {
 
     private PlacedBoard start(int rotation) {
-        return new PlacedBoard("start", BoardKind.START, 0, 0, rotation, com.example.demo.model.layout.StartBoardTemplate.tiles());
+        return new PlacedBoard("start", BoardKind.START, 0, 0, rotation, List.of());
     }
 
     private PlacedBoard game(String id, int x, int y) {
@@ -44,7 +44,7 @@ class MapLayoutValidatorTests {
     @Test
     void acceptsConnectedOffsetBoardsAndNegativePositions() {
         assertEquals("", errors(
-                new PlacedBoard("start", BoardKind.START, -5, -3, 90, com.example.demo.model.layout.StartBoardTemplate.tiles()),
+                new PlacedBoard("start", BoardKind.START, -5, -3, 90, List.of()),
                 new PlacedBoard("first", BoardKind.GAME, 0, 0, 270, List.of()),
                 game("second", 10, 5),
                 game("third", -10, 5)));

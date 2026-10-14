@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
 import { MapCarusel } from '../../features/game/components/room/map-selection/MapCarusel';
 import { MapSelection } from '../../features/game/components/room/map-selection/MapSelection';
-import { defaultMapLayout } from '../../features/game/data/mapLayouts';
+import { defaultMapLayout } from '../fixtures/mapLayouts';
 import type { JoinedRoom } from '../../features/game/api/gameApi';
 
 vi.mock('../../features/game/hooks/useMapCatalog', () => ({

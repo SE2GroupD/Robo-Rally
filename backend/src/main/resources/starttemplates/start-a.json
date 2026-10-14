@@ -1,0 +1,81 @@
+{
+  "id": "start-a",
+  "name": "Start A",
+  "kind": "start",
+  "width": 3,
+  "height": 10,
+  "tiles": [
+    {
+      "x": 1,
+      "y": 1,
+      "isSpawnPoint": true
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "isSpawnPoint": true
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "isSpawnPoint": true
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "isSpawnPoint": true
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "isSpawnPoint": true
+    },
+    {
+      "x": 1,
+      "y": 8,
+      "isSpawnPoint": true
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "walls": {
+        "north": true
+      }
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "walls": {
+        "east": true
+      }
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "walls": {
+        "east": true
+      }
+    },
+    {
+      "x": 1,
+      "y": 7,
+      "walls": {
+        "south": true
+      }
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "conveyor": {
+        "direction": "EAST"
+      }
+    },
+    {
+      "x": 2,
+      "y": 9,
+      "conveyor": {
+        "direction": "EAST"
+      }
+    }
+  ]
+}

@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import { MapLayout } from '../../features/game/components/map/MapLayout';
 import { TileGrid } from '../../features/game/components/map/boards/TileGrid';
 import { boardDimensions, mapBounds, rotateTiles, validateMapLayout } from '../../features/game/data/boardGeometry';
-import { defaultMapLayout, offsetMapLayout } from '../../features/game/data/mapLayouts';
+import { defaultMapLayout, offsetMapLayout } from '../fixtures/mapLayouts';
 import type { BoardRotation, MapLayoutData, PlacedBoard } from '../../features/game/types/MapLayout';
 import type { TileData } from '../../features/game/types/Board';
 
@@ -118,7 +118,7 @@ it('renders 30 start tiles and 100 game tiles with a continuous tile pitch', () 
   const startBoard = screen.getByRole('region', { name: 'Start board start' });
   const gameBoard = screen.getByRole('region', { name: 'Game board game-1' });
   expect(within(startBoard).getAllByAltText('Steel Tile')).toHaveLength(30);
-  expect(within(gameBoard).getAllByAltText('Steel Tile')).toHaveLength(92);
+  expect(within(gameBoard).getAllByAltText('Steel Tile')).toHaveLength(99);
   expect(gameBoard).toHaveStyle({ left: '156px', top: '0px' });
   expect(startBoard.firstElementChild).toHaveStyle({ gridTemplateColumns: 'repeat(3, 50px)', gap: '2px' });
   expect(screen.getByRole('region', { name: 'Map layout' })).toHaveStyle({ width: '674px', height: '518px' });
@@ -126,7 +126,7 @@ it('renders 30 start tiles and 100 game tiles with a continuous tile pitch', () 
 
 it('leaves missing board areas empty and offsets the entire map into view', () => {
   render(<MapLayout layout={offsetMapLayout} />);
-  expect(screen.getAllByAltText('Steel Tile')).toHaveLength(222);
+  expect(screen.getAllByAltText('Steel Tile')).toHaveLength(229);
   expect(screen.getByRole('region', { name: 'Start board start' })).toHaveStyle({ left: '0px', top: '0px' });
   expect(screen.getByRole('region', { name: 'Game board game-1' })).toHaveStyle({ left: '260px', top: '156px' });
   expect(screen.getByRole('region', { name: 'Map layout' })).toHaveStyle({ width: '1298px', height: '934px' });

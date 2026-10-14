@@ -1,6 +1,7 @@
 package com.example.demo.game;
 
 import com.example.demo.model.*;
+import com.example.demo.service.MapLayoutService;
 import com.example.demo.model.layout.*;
 import org.junit.jupiter.api.Test;
 
@@ -14,23 +15,25 @@ class ExtraCrispyTests {
 
     @Test
     void startTemplateHasExactlyTheRequestedObjectsInSpawnOrder() {
-        var tiles = StartBoardTemplate.tiles();
+        var tiles = new MapLayoutService().getDefaultLayout().boards().getFirst().tiles();
         var spawns = tiles.stream().filter(Tile::isSpawnPoint).map(t -> new Position(t.x(), t.y())).toList();
 
         assertEquals(List.of(new Position(1, 1), new Position(0, 3), new Position(1, 4),
                 new Position(1, 5), new Position(0, 6), new Position(1, 8)), spawns);
-        assertEquals(10, tiles.size());
+        assertEquals(12, tiles.size());
+        assertEquals(new Conveyor(Direction.EAST, false), at(tiles, 2, 0).conveyor());
+        assertEquals(new Conveyor(Direction.EAST, false), at(tiles, 2, 9).conveyor());
         assertEquals(new Walls(true, false, false, false), at(tiles, 1, 2).walls());
         assertEquals(new Walls(false, true, false, false), at(tiles, 2, 4).walls());
         assertEquals(new Walls(false, true, false, false), at(tiles, 2, 5).walls());
         assertEquals(new Walls(false, false, true, false), at(tiles, 1, 7).walls());
         assertTrue(tiles.stream().noneMatch(t -> t.hasPit() || t.hasAntenna() || t.gear() != null
-                || t.conveyor() != null || t.checkpointNumber() != null));
+                || t.pushPanel() != null || t.checkpointNumber() != null));
     }
 
     @Test
     void checkpointsSurviveGlobalCompilation() {
-        var layout = ExtraCrispy.layout();
+        var layout = new MapLayoutService().getDefaultLayout();
         var local = layout.boards().get(1).tiles();
         var board = GameBoard.training(layout);
         int[][] checkpoints = {{7, 2}, {2, 7}, {7, 7}, {2, 2}};
@@ -51,7 +54,7 @@ class ExtraCrispyTests {
 
     @Test
     void referenceTerrainHasEightPitsAndBothBeltSpeeds() {
-        var tiles = ExtraCrispy.layout().boards().get(1).tiles();
+        var tiles = new MapLayoutService().getDefaultLayout().boards().get(1).tiles();
         Set<Position> pits = tiles.stream().filter(Tile::hasPit).map(t -> new Position(t.x(), t.y())).collect(Collectors.toSet());
 
         assertEquals(Set.of(new Position(3, 2), new Position(6, 2), new Position(3, 3), new Position(6, 3),
@@ -63,20 +66,20 @@ class ExtraCrispyTests {
     }
 
     @Test
-    void rejectsModifiedStartTemplateButAcceptsRotation() {
-        var layout = ExtraCrispy.layout();
+    void acceptsOtherStartTemplatesAndRotation() {
+        var layout = new MapLayoutService().getDefaultLayout();
         var game = layout.boards().get(1);
-        var invalid = new PlacedBoard("start", BoardKind.START, 0, 0, 0, List.of(Tile.spawnPoint(1, 1)));
+        var alternative = new PlacedBoard("start", BoardKind.START, 0, 0, 0, List.of(Tile.spawnPoint(1, 1)));
 
-        assertTrue(MapLayoutValidator.validate(new MapLayout(List.of(invalid, game))).contains("Start board must match the permanent template."));
+        assertEquals(List.of(), MapLayoutValidator.validate(new MapLayout(List.of(alternative, game))));
         assertEquals(List.of(), MapLayoutValidator.validate(new MapLayout(List.of(
-                new PlacedBoard("start", BoardKind.START, 0, 0, 90, StartBoardTemplate.tiles()),
+                new PlacedBoard("start", BoardKind.START, 0, 0, 90, new MapLayoutService().getDefaultLayout().boards().getFirst().tiles()),
                 new PlacedBoard("game", BoardKind.GAME, 0, 3, 0, game.tiles())))));
     }
 
     @Test
     void requiresAllFourCheckpointsInOrder() {
-        var board = GameBoard.training(ExtraCrispy.layout());
+        var board = GameBoard.training(new MapLayoutService().getDefaultLayout());
         var session = new GameSession(board);
         session.addPlayer("pilot", board.getSpawnPositions().getFirst(), Direction.EAST);
         var robot = session.getRobots().get("pilot");

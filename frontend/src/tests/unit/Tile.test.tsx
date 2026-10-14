@@ -14,3 +14,31 @@ it('shows an express conveyor in its direction', () => {
   expect(belt).toHaveAttribute('src', expect.stringContaining('conveyor2.png'));
   expect(belt).toHaveStyle({ transform: 'rotate(0deg)' });
 });
+
+it.each([
+  [{ north: true, east: true }, 0],
+  [{ east: true, south: true }, 90],
+  [{ south: true, west: true }, 180],
+  [{ west: true, north: true }, 270],
+] as const)('renders adjacent walls %j with the corner artwork rotated %i degrees', (walls, rotation) => {
+  render(<Tile tile={{ x: 0, y: 0, walls, checkpointNumber: 1 }} />);
+
+  const corner = screen.getByRole('img', { name: /^Walls / });
+  expect(corner).toHaveAttribute('src', expect.stringContaining('two_wall.png'));
+  expect(corner).toHaveStyle({ transform: `rotate(${rotation}deg)` });
+  expect(corner.style.clipPath).toContain('polygon');
+  expect(screen.queryByRole('img', { name: /^Wall / })).not.toBeInTheDocument();
+});
+
+it.each([
+  { north: true },
+  { north: true, south: true },
+  { east: true, west: true },
+  { north: true, east: true, south: true },
+  { north: true, east: true, south: true, west: true },
+])('keeps individual wall strips for %j', (walls) => {
+  render(<Tile tile={{ x: 0, y: 0, walls }} />);
+
+  expect(screen.queryByRole('img', { name: /^Walls / })).not.toBeInTheDocument();
+  expect(screen.getAllByRole('img', { name: /^Wall / })).toHaveLength(Object.keys(walls).length);
+});

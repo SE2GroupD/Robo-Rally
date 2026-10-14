@@ -3,8 +3,6 @@ package com.example.demo.game;
 import com.example.demo.model.Direction;
 import com.example.demo.model.GearRotation;
 import com.example.demo.model.Position;
-import com.example.demo.model.layout.RiskyCrossing;
-import com.example.demo.model.layout.StartBoardTemplate;
 import com.example.demo.service.GameServiceImpl;
 import com.example.demo.service.MapLayoutService;
 import com.example.demo.service.RoomService;
@@ -19,11 +17,11 @@ class RiskyCrossingTests {
 
     @Test
     void referenceObjectsAndCheckpointsCompileToGlobalCoordinates() {
-        var layout = RiskyCrossing.layout();
+        var layout = new MapLayoutService().getLayout("risky-crossing");
         var tiles = layout.boards().get(1).tiles();
         var board = GameBoard.training(layout);
 
-        assertEquals(StartBoardTemplate.tiles(), layout.boards().getFirst().tiles());
+        assertEquals(new MapLayoutService().getDefaultLayout().boards().getFirst().tiles(), layout.boards().getFirst().tiles());
         assertEquals(13, board.getWidth());
         assertEquals(10, board.getHeight());
         assertEquals(47, tiles.size());
@@ -38,7 +36,7 @@ class RiskyCrossingTests {
 
     @Test
     void regularBeltFormsThePicturedClosedLoopAndExpressPathsExitAtCorners() {
-        var board = GameBoard.training(RiskyCrossing.layout());
+        var board = GameBoard.training(new MapLayoutService().getLayout("risky-crossing"));
         var start = new Position(6, 1);
         var position = start;
         var visited = new HashSet<Position>();
@@ -77,7 +75,7 @@ class RiskyCrossingTests {
         rooms.startRoom(room.gameId(), "pilot");
 
         var state = new GameServiceImpl(rooms, catalog).getBoardState(room.gameId(), "pilot");
-        assertEquals(RiskyCrossing.layout(), state.layout());
+        assertEquals(new MapLayoutService().getLayout("risky-crossing"), state.layout());
         assertEquals(1, state.robots().getFirst().x());
         assertEquals(1, state.robots().getFirst().y());
         assertEquals("extra-crispy", catalog.getDefaultLayout().id());
