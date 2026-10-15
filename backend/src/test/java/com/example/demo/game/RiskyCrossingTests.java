@@ -6,6 +6,7 @@ import com.example.demo.model.Position;
 import com.example.demo.service.GameServiceImpl;
 import com.example.demo.service.MapLayoutService;
 import com.example.demo.service.RoomService;
+import com.example.demo.service.RoomServiceImpl;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
@@ -69,7 +70,7 @@ class RiskyCrossingTests {
     @Test
     void catalogSelectionStartsTheActualCourseAndRequiresCheckpointsInOrder() {
         var catalog = new MapLayoutService();
-        var rooms = new RoomService(catalog);
+        var rooms = new RoomServiceImpl(catalog);
         var room = rooms.createRoom("Pilot", "pilot");
         rooms.selectMap(room.gameId(), "pilot", "risky-crossing");
         rooms.startRoom(room.gameId(), "pilot");

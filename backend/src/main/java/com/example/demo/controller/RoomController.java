@@ -1,6 +1,9 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.CreatePublicRoomRequest;
 import com.example.demo.dto.CreateRoomRequest;
+import com.example.demo.dto.JoinPublicRoomRequest;
+import com.example.demo.dto.PublicRoomResponse;
 import com.example.demo.dto.JoinRoomRequest;
 import com.example.demo.dto.RoomResponse;
 import com.example.demo.dto.SelectRobotRequest;
@@ -8,6 +11,7 @@ import com.example.demo.dto.SelectStartRequest;
 import com.example.demo.dto.SelectMapRequest;
 import com.example.demo.model.GameRoom;
 import com.example.demo.service.GameService;
+import com.example.demo.service.PublicRoomService;
 import com.example.demo.service.RoomService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,15 +20,19 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/games")
 public class RoomController {
     private final RoomService roomService;
+    private final PublicRoomService publicRoomService;
     private final GameService gameService;
 
-    public RoomController(RoomService roomService, GameService gameService) {
+    public RoomController(RoomService roomService, PublicRoomService publicRoomService, GameService gameService) {
         this.roomService = roomService;
+        this.publicRoomService = publicRoomService;
+
         this.gameService = gameService;
     }
 
@@ -36,6 +44,30 @@ public class RoomController {
         GameRoom room = roomService.createRoom(request.playerName(), jwt.getSubject(), Boolean.TRUE.equals(request.training()), request.startBoardId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(responseFor(room, room.hostPlayerId()));
+    }
+
+    @GetMapping("/public")
+    public List<PublicRoomResponse> listPublicRooms() {
+        return publicRoomService.listPublicRooms().stream().map(PublicRoomResponse::from).toList();
+    }
+
+    @PostMapping("/public")
+    public ResponseEntity<RoomResponse> createPublicRoom(
+            @RequestBody CreatePublicRoomRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        GameRoom room = publicRoomService.createPublicRoom(request.playerName(), jwt.getSubject(), request.roomName());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(responseFor(room, room.hostPlayerId()));
+    }
+
+    @PostMapping("/public/{gameId}/join")
+    public ResponseEntity<RoomResponse> joinPublicRoom(
+            @PathVariable UUID gameId,
+            @RequestBody JoinPublicRoomRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        String playerId = jwt.getSubject();
+        GameRoom room = publicRoomService.joinPublicRoom(gameId, request.playerName(), playerId);
+        return ResponseEntity.ok(responseFor(room, playerId));
     }
 
     @PostMapping("/join")
@@ -54,7 +86,7 @@ public class RoomController {
             @AuthenticationPrincipal Jwt jwt) {
 
         String securePlayerId = jwt.getSubject();
-        return RoomResponse.forPlayer(roomService.getRoom(gameId, securePlayerId), securePlayerId);
+        return responseFor(roomService.getRoom(gameId, securePlayerId), securePlayerId);
     }
 
     /** The game session is created lazily from the room's players on first game request. */
@@ -64,7 +96,7 @@ public class RoomController {
             @AuthenticationPrincipal Jwt jwt) {
 
         String securePlayerId = jwt.getSubject();
-        return RoomResponse.forPlayer(roomService.startRoom(gameId, securePlayerId), securePlayerId);
+        return responseFor(roomService.startRoom(gameId, securePlayerId), securePlayerId);
     }
 
     @PostMapping("/{gameId}/leave")

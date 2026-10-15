@@ -187,7 +187,7 @@ describe('room lifecycle', () => {
 
     render(<RoomSession initialRoom={host} onLeft={vi.fn()} />);
 
-    expect(await screen.findByText('This room has closed or you are no longer a participant.')).toBeInTheDocument();
+    expect(await screen.findByText('This room has closed, or you are no longer a participant.')).toBeInTheDocument();
 
     expect(screen.queryByRole('button', { name: 'Start Battle' })).not.toBeInTheDocument();
   });

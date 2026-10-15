@@ -14,7 +14,7 @@ class StartSelectionTests {
 
     @Test
     void reservationsAreExclusiveReleasedAndUsedInGameplay() throws Exception {
-        var rooms = new RoomService();
+        var rooms = new RoomServiceImpl();
         var room = rooms.createRoom("Host", "host");
         rooms.joinRoom(room.roomCode(), "Guest", "guest");
         var position = new Position(1, 8);
@@ -48,7 +48,7 @@ class StartSelectionTests {
 
     @Test
     void validatesMembershipPositionsMapAndCapacity() {
-        var rooms = new RoomService();
+        var rooms = new RoomServiceImpl();
         var room = rooms.createRoom("Host", "host");
         rooms.joinRoom(room.roomCode(), "Guest", "guest");
 
@@ -79,7 +79,7 @@ class StartSelectionTests {
                 return "test-map".equals(id) ? alternate : super.getLayout(id);
             }
         };
-        var rooms = new RoomService(catalog);
+        var rooms = new RoomServiceImpl(catalog);
         var room = rooms.createRoom("Host", "host");
         rooms.selectStart(room.gameId(), "host", new Position(1, 8), room.mapId());
 

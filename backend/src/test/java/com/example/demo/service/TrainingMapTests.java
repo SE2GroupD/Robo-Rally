@@ -13,7 +13,7 @@ class TrainingMapTests {
 
     @Test
     void trainingAndNewMultiplayerRoomsUseDefaultLayout() {
-        var rooms = new RoomService();
+        var rooms = new RoomServiceImpl();
         var layouts = new MapLayoutService();
         var games = new GameServiceImpl(rooms, layouts);
         var training = rooms.createRoom("Pilot", "pilot", true);

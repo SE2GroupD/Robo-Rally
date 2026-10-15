@@ -6,16 +6,28 @@ interface MainMenuPageProps {
   username: string;
   onLogout: () => void;
   onStartGame: () => void;
+  onStartPlatform: () => void;
   onHostBattle: () => void;
   onJoinBattle: () => void;
 }
 
-export function MainMenuPage({ onLogout, onStartGame, onHostBattle, onJoinBattle, username }: MainMenuPageProps) {
+export function MainMenuPage({
+  onLogout,
+  onStartGame,
+  onStartPlatform,
+  onHostBattle,
+  onJoinBattle,
+  username,
+}: MainMenuPageProps) {
   return (
     <MenuScreen img={roboRallyImage} subtitle={`Pilot ${username}`} title="Main Menu">
       <div className="flex flex-col gap-3">
         <Button className="w-full" onClick={onStartGame} size="large">
           Start Training Run
+        </Button>
+
+        <Button className="w-full" onClick={onStartPlatform} size="large" variant="secondary">
+          Public Rooms
         </Button>
 
         <Button className="w-full" onClick={onHostBattle} size="large" variant="secondary">
@@ -28,6 +40,7 @@ export function MainMenuPage({ onLogout, onStartGame, onHostBattle, onJoinBattle
       </div>
 
       <p className="m-0 text-center text-sm font-bold text-text-muted">Battle modes are coming next.</p>
+      <p className="m-0 text-center text-sm text-text-muted">Public rooms are available from the Start Platform.</p>
 
       <Button className="w-full" onClick={onLogout} variant="secondary">
         Log Out
