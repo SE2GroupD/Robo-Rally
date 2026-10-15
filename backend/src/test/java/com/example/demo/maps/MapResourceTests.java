@@ -47,7 +47,7 @@ class MapResourceTests {
         try (var isolated = new URLClassLoader(new java.net.URL[]{jar.toUri().toURL()}, null)) {
             var service = new MapLayoutService(new MapResourceLoader(isolated).load("map-catalog.json"));
             assertEquals(new MapLayoutService().getLayouts(), service.getLayouts());
-            assertEquals(List.of("extra-crispy", "risky-crossing", "burnout"), service.getLayouts().stream().map(layout -> layout.id()).toList());
+            assertEquals(List.of("extra-crispy", "risky-crossing", "burnout", "chop-shop-challenge"), service.getLayouts().stream().map(layout -> layout.id()).toList());
         }
     }
 

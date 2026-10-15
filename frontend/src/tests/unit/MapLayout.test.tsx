@@ -149,7 +149,8 @@ it('renders rotated directions while keeping checkpoint labels upright', () => {
   const { container } = render(<MapLayout layout={layout} />);
   expect(screen.getByRole('figure', { name: 'Push panel east, registers 2, 4' })).toHaveTextContent('→');
   expect(screen.getByText('7')).toBeInTheDocument();
-  expect(container.querySelector('[style*="rotate"]')).toBeNull();
+  expect(container.querySelector('figure img')).toHaveStyle({ transform: 'rotate(270deg)' });
+  expect(container.querySelector('figure figcaption')?.getAttribute('style')).toBeNull();
 });
 
 it('shows an accessible error instead of rendering an invalid map', () => {

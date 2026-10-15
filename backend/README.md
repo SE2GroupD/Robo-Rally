@@ -102,3 +102,11 @@ Frontend renderer tests use small synthetic fixtures under `src/tests/fixtures`;
 Rooms created without `startBoardId` use the course catalog, including training. For compatibility with the standalone-board client, an explicit registered `startBoardId` (such as `classic_start`) creates a room using the legacy start board and `game1`–`game3`. Both modes share membership, capacity, reservation and start-lock checks. Room responses also include `startBoardConfig` with reservation owners.
 
 Catalog start selection still requires `{ "mapId": "extra-crispy", "position": { "x": 1, "y": 1 } }`. The legacy `{ "x": 1, "y": 1 }` request is accepted only for standalone-board rooms, preventing old requests from bypassing map-change checks. Switching a standalone room to a catalog course clears its reservations and uses that course for gameplay.
+
+Chop Shop Challenge (`chop-shop-challenge`) combines Start A, 2A and 3A in the
+pictured orientation at `(0, 0)`, `(3, 0)` and `(13, 0)`. Its gameplay grid is
+23 × 10 with six checkpoints. Start A follows the reference artwork rather than
+its conflicting “Start B” caption. Board templates include push-panel directions,
+active registers and backing walls. Lasers, energy spaces and reboot markers are
+omitted because their gameplay mechanics are not implemented. Pits retain the
+existing pit representation and behavior; this course adds no new rules.
