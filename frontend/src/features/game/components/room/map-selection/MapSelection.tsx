@@ -1,6 +1,6 @@
 import type { JoinedRoom } from '../../../api/gameApi';
 import { useMapCatalog } from '../../../hooks/useMapCatalog';
-import { mapBounds, rotateTiles, TILE_GAP, TILE_PITCH, TILE_SIZE } from '../../../data/boardGeometry';
+import { StartTileMarkers, StartTileSelection } from './StartTileSelection';
 import { MapCarusel } from './MapCarusel';
 import { Button } from '../../../../../foundation/components/button/Button';
 
@@ -30,20 +30,6 @@ export function MapSelection({ room, disabled, error, onMap, onStart }: MapSelec
     );
   }
 
-  const bounds = mapBounds(layout.boards);
-  const spawns = layout.boards.flatMap((board) =>
-    rotateTiles(board.tiles, board.kind, board.rotation)
-      .filter((tile) => tile.isSpawnPoint)
-      .map((tile) => ({ x: board.x + tile.x, y: board.y + tile.y })),
-  );
-  const current = room.players.find((player) => player.playerId === room.playerId);
-  const occupiedBy = (position: { x: number; y: number }) =>
-    room.players.find((player) => player.startPosition?.x === position.x && player.startPosition?.y === position.y);
-  const label = (index: number) => {
-    const player = occupiedBy(spawns[index]);
-    return `Start ${index + 1} · ${player ? (player.playerId === room.playerId ? 'You' : player.playerName) : 'Available'}`;
-  };
-
   return (
     <section aria-label="Map and start selection" className="space-y-4 rounded border border-metal-light p-4">
       <div>
@@ -61,66 +47,11 @@ export function MapSelection({ room, disabled, error, onMap, onStart }: MapSelec
         disabled={locked || room.playerId !== room.hostPlayerId}
         onSelect={onMap}
       >
-        {spawns.map((position, index) => {
-          const owner = occupiedBy(position);
-          const mine = owner?.playerId === room.playerId;
-
-          return (
-            <button
-              key={index}
-              type="button"
-              aria-label={label(index)}
-              aria-pressed={mine}
-              disabled={locked || (!!owner && !mine)}
-              onClick={() => onStart(position)}
-              className={`absolute flex items-center justify-center border-2 text-xs font-bold focus-visible:z-40 focus-visible:outline-2 focus-visible:outline-white ${mine ? 'border-hazard bg-hazard/30 text-black' : owner ? 'border-metal bg-slate-800/70 text-white' : 'border-metal-light bg-transparent text-black'}`}
-              style={{
-                fontSize: 'clamp(6px, 1.5vw, 12px)',
-                left: `${(((position.x - bounds.x) * TILE_PITCH) / (bounds.width * TILE_PITCH - TILE_GAP)) * 100}%`,
-                top: `${(((position.y - bounds.y) * TILE_PITCH) / (bounds.height * TILE_PITCH - TILE_GAP)) * 100}%`,
-                width: `${(TILE_SIZE / (bounds.width * TILE_PITCH - TILE_GAP)) * 100}%`,
-                height: `${(TILE_SIZE / (bounds.height * TILE_PITCH - TILE_GAP)) * 100}%`,
-              }}
-            >
-              {index + 1}
-            </button>
-          );
-        })}
+        <StartTileMarkers layout={layout} room={room} disabled={locked} onSelect={onStart} />
       </MapCarusel>
 
-      <h3 className="m-0 font-bold">Choose your start tile</h3>
-      <div className="space-y-3">
-        <div className="grid auto-cols-[minmax(9rem,1fr)] grid-flow-col gap-2 overflow-x-auto pb-1">
-          {spawns.map((position, index) => {
-            const owner = occupiedBy(position);
-            const mine = owner?.playerId === room.playerId;
+      <StartTileSelection layout={layout} room={room} disabled={locked} onSelect={onStart} />
 
-            return (
-              <Button
-                key={index}
-                variant="secondary"
-                size="small"
-                aria-pressed={mine}
-                disabled={locked || (!!owner && !mine)}
-                onClick={() => onStart(position)}
-                className="min-h-14 text-center break-words"
-              >
-                {label(index)}
-              </Button>
-            );
-          })}
-        </div>
-        <Button
-          variant="secondary"
-          disabled={locked}
-          aria-pressed={!current?.startPosition}
-          onClick={() => onStart(null)}
-          className="w-full"
-        >
-          {!current?.startPosition ? '✓ ' : ''}Assign me a free tile automatically
-        </Button>
-        <p className="m-0 text-sm text-text-muted">Unselected players receive a free tile when the battle starts.</p>
-      </div>
       {error && (
         <p role="alert" className="m-0 text-hazard">
           {error}
