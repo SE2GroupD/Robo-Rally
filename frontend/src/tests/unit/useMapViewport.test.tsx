@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
-import type { PointerEvent } from 'react';
+import type { PointerEvent, WheelEvent } from 'react';
 import { useMapViewport } from '../../features/game/hooks/useMapViewport';
 
 function setupViewport() {
@@ -45,6 +45,41 @@ it('zooms in tenths to exact limits and preserves scroll position proportionally
   for (let index = 0; index < 20; index++) act(() => result.current.onZoomOut());
   expect(result.current.scale).toBe(0.5);
   expect(result.current.canZoomOut).toBe(false);
+});
+
+it('zooms with Ctrl/Cmd + wheel or a trackpad pinch and preserves plain scrolling', () => {
+  let pending: FrameRequestCallback = () => {};
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+    pending = callback;
+    return 1;
+  });
+  vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+  const { result, element } = setupViewport();
+  const wheel = (values: Partial<WheelEvent<HTMLElement>> = {}) =>
+    ({
+      currentTarget: element,
+      deltaY: -10,
+      ctrlKey: true,
+      metaKey: false,
+      preventDefault: vi.fn(),
+      ...values,
+    }) as WheelEvent<HTMLElement>;
+
+  const pinch = wheel();
+  act(() => result.current.onWheel(pinch));
+  act(() => pending(0));
+  expect(pinch.preventDefault).toHaveBeenCalledOnce();
+  expect(result.current.scale).toBe(1.1);
+
+  const plainScroll = wheel({ ctrlKey: false, metaKey: false });
+  act(() => result.current.onWheel(plainScroll));
+  expect(plainScroll.preventDefault).not.toHaveBeenCalled();
+  expect(result.current.scale).toBe(1.1);
+
+  const cmdWheel = wheel({ deltaY: 10, ctrlKey: false, metaKey: true });
+  act(() => result.current.onWheel(cmdWheel));
+  act(() => pending(0));
+  expect(result.current.scale).toBe(1);
 });
 
 it('ignores secondary buttons and non-primary pointers', () => {

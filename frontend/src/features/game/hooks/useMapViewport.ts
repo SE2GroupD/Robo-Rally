@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type DragEvent, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type DragEvent, type PointerEvent, type WheelEvent } from 'react';
 
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 2;
@@ -46,6 +46,16 @@ export function useMapViewport() {
     });
   };
 
+  const onWheel = (event: WheelEvent<HTMLElement>) => {
+    // Ctrl/Cmd + wheel is deliberate mouse zoom; browsers also expose trackpad
+    // pinch gestures as ctrl-wheel events. Plain wheel input remains available
+    // for scrolling around the board.
+    if ((!event.ctrlKey && !event.metaKey) || event.deltaY === 0) return;
+
+    event.preventDefault();
+    zoom(event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP);
+  };
+
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
     if (event.button !== 0 || !event.isPrimary || drag.current) return;
     const element = event.currentTarget;
@@ -85,6 +95,7 @@ export function useMapViewport() {
     canZoomOut: scale > MIN_SCALE,
     onZoomIn: () => zoom(ZOOM_STEP),
     onZoomOut: () => zoom(-ZOOM_STEP),
+    onWheel,
     onPointerDown,
     onPointerMove,
     onPointerUp: endDrag,

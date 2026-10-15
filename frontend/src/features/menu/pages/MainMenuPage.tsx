@@ -39,9 +39,6 @@ export function MainMenuPage({
         </Button>
       </div>
 
-      <p className="m-0 text-center text-sm font-bold text-text-muted">Battle modes are coming next.</p>
-      <p className="m-0 text-center text-sm text-text-muted">Public rooms are available from the Start Platform.</p>
-
       <Button className="w-full" onClick={onLogout} variant="secondary">
         Log Out
       </Button>
