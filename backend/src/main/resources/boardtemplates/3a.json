@@ -1,0 +1,314 @@
+{
+  "id": "3a",
+  "name": "3A",
+  "kind": "game",
+  "width": 10,
+  "height": 10,
+  "tiles": [
+    {
+      "x": 4,
+      "y": 0,
+      "walls": {
+        "north": true
+      }
+    },
+    {
+      "x": 7,
+      "y": 0,
+      "gear": "COUNTERCLOCKWISE"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "hasPit": true
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "walls": {
+        "south": true
+      }
+    },
+    {
+      "x": 8,
+      "y": 1,
+      "conveyor": {
+        "direction": "NORTH"
+      }
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "gear": "COUNTERCLOCKWISE"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "conveyor": {
+        "direction": "SOUTH",
+        "isExpress": true
+      }
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "conveyor": {
+        "direction": "WEST",
+        "isExpress": true
+      }
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "conveyor": {
+        "direction": "WEST",
+        "isExpress": true
+      }
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "conveyor": {
+        "direction": "WEST",
+        "isExpress": true
+      }
+    },
+    {
+      "x": 7,
+      "y": 2,
+      "conveyor": {
+        "direction": "WEST",
+        "isExpress": true
+      }
+    },
+    {
+      "x": 8,
+      "y": 2,
+      "conveyor": {
+        "direction": "NORTH"
+      }
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "conveyor": {
+        "direction": "SOUTH",
+        "isExpress": true
+      }
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "conveyor": {
+        "direction": "EAST"
+      }
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "conveyor": {
+        "direction": "EAST"
+      }
+    },
+    {
+      "x": 7,
+      "y": 3,
+      "conveyor": {
+        "direction": "EAST"
+      }
+    },
+    {
+      "x": 8,
+      "y": 3,
+      "conveyor": {
+        "direction": "NORTH"
+      }
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "walls": {
+        "north": true
+      }
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "pushPanel": {
+        "direction": "WEST",
+        "activeRegisters": [
+          2,
+          4
+        ]
+      },
+      "walls": {
+        "east": true
+      }
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "conveyor": {
+        "direction": "SOUTH",
+        "isExpress": true
+      }
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "conveyor": {
+        "direction": "NORTH"
+      }
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "pushPanel": {
+        "direction": "EAST",
+        "activeRegisters": [
+          2,
+          4
+        ]
+      },
+      "walls": {
+        "west": true
+      }
+    },
+    {
+      "x": 8,
+      "y": 4,
+      "gear": "CLOCKWISE"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "walls": {
+        "south": true
+      }
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "conveyor": {
+        "direction": "SOUTH",
+        "isExpress": true
+      }
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "conveyor": {
+        "direction": "NORTH"
+      }
+    },
+    {
+      "x": 3,
+      "y": 6,
+      "conveyor": {
+        "direction": "SOUTH",
+        "isExpress": true
+      }
+    },
+    {
+      "x": 5,
+      "y": 6,
+      "conveyor": {
+        "direction": "NORTH"
+      }
+    },
+    {
+      "x": 7,
+      "y": 6,
+      "walls": {
+        "west": true
+      }
+    },
+    {
+      "x": 9,
+      "y": 6,
+      "walls": {
+        "east": true
+      }
+    },
+    {
+      "x": 0,
+      "y": 7,
+      "gear": "CLOCKWISE"
+    },
+    {
+      "x": 2,
+      "y": 7,
+      "conveyor": {
+        "direction": "WEST",
+        "isExpress": true
+      }
+    },
+    {
+      "x": 3,
+      "y": 7,
+      "conveyor": {
+        "direction": "WEST",
+        "isExpress": true
+      }
+    },
+    {
+      "x": 4,
+      "y": 7,
+      "walls": {
+        "north": true
+      }
+    },
+    {
+      "x": 5,
+      "y": 7,
+      "conveyor": {
+        "direction": "NORTH"
+      }
+    },
+    {
+      "x": 3,
+      "y": 8,
+      "conveyor": {
+        "direction": "EAST"
+      }
+    },
+    {
+      "x": 4,
+      "y": 8,
+      "conveyor": {
+        "direction": "EAST"
+      }
+    },
+    {
+      "x": 5,
+      "y": 8,
+      "conveyor": {
+        "direction": "NORTH"
+      }
+    },
+    {
+      "x": 6,
+      "y": 8,
+      "hasPit": true
+    },
+    {
+      "x": 7,
+      "y": 8,
+      "walls": {
+        "south": true
+      }
+    },
+    {
+      "x": 8,
+      "y": 8,
+      "gear": "COUNTERCLOCKWISE"
+    },
+    {
+      "x": 4,
+      "y": 9,
+      "walls": {
+        "south": true
+      }
+    }
+  ]
+}

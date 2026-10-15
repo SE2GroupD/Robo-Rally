@@ -1,0 +1,40 @@
+{
+  "id": "burnout",
+  "name": "Burnout",
+  "boards": [
+    {
+      "id": "start",
+      "templateId": "start-b",
+      "x": 0,
+      "y": 0,
+      "rotation": 0
+    },
+    {
+      "id": "game-1",
+      "templateId": "2b",
+      "x": 3,
+      "y": 0,
+      "rotation": 0
+    }
+  ],
+  "checkpoints": [
+    {
+      "boardId": "game-1",
+      "x": 8,
+      "y": 5,
+      "number": 1
+    },
+    {
+      "boardId": "game-1",
+      "x": 0,
+      "y": 0,
+      "number": 2
+    },
+    {
+      "boardId": "game-1",
+      "x": 9,
+      "y": 9,
+      "number": 3
+    }
+  ]
+}

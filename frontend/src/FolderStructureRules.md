@@ -12,7 +12,7 @@ Classify code by responsibility and domain, never by component size. These rules
 | `features/<feature>/hooks/`      | Feature state and behavior                                             | `useRobotMovement`, `useProgramming` |
 | `features/<feature>/api/`        | Feature network calls                                                  | `gameApi`                            |
 | `features/<feature>/types/`      | Domain types and API DTOs shared within a feature                      | `TileData`, `RobotState`, `CardType` |
-| `features/<feature>/data/`       | Feature data and layouts                                               | `mapLayouts`                         |
+| `features/<feature>/data/`       | Feature data and layouts                                               | `static feature data`                |
 | `foundation/components/`         | Generic UI primitives with no Robo Rally concepts                      | `Button`, `TextInput`                |
 | `shared/components/`             | Composed, feature-independent UI used by at least two features         | `MenuScreen`, `Background`           |
 | `utils/`                         | Generic, domain-independent functions                                  | `cn`                                 |
@@ -46,7 +46,7 @@ Production code must never import tests. Features must never import another feat
 4. Is it composed UI already used by at least two features, with no feature-specific behavior or types? Put it in shared.
 5. Otherwise, keep it with its owning feature. Reuse within a feature does not qualify it for shared.
 
-`Map.tsx` stays at the top of `features/game/components/map/` and arranges boards and connects viewport behavior to rendering. `MapZoomControls.tsx` renders the zoom buttons, while `game/hooks/useMapViewport.ts` owns scale, scroll positioning, pointer capture, and drag handlers. The `boards/` subfolder contains `GameBoard`, `StartBoard`, and `Tile`, which build and render the board grid. The `objects/` subfolder contains `Robot` and `Checkpoint`, which render objects placed on tiles. Board layouts remain in `game/data/` and domain types in `game/types/`. None of these game components belongs in foundation. All programming UI, including `RegisterSlot` and `ProgramRegisters`, belongs in `features/game/components/programming/`.
+`Map.tsx` stays at the top of `features/game/components/map/` and connects viewport behavior to live backend grid rendering. `MapLayout.tsx` separately composes and validates placed board blocks from layout data. `MapZoomControls.tsx` renders the zoom buttons, while `game/hooks/useMapViewport.ts` owns scale, scroll positioning, pointer capture, and drag handlers. The `boards/` subfolder contains the fixed-size `GameBoard` (10 × 10) and `StartBoard` (3 × 10), plus the shared `TileGrid` and `Tile` renderers. The live map uses `TileGrid` directly to preserve backend dimensions. The `objects/` subfolder contains `Robot` and `Checkpoint`, which render objects placed on tiles. Board layouts remain in `game/data/` and domain types in `game/types/`. None of these game components belongs in foundation. All programming UI, including `RegisterSlot` and `ProgramRegisters`, belongs in `features/game/components/programming/`.
 
 Only application orchestration coordinates features, using props and callbacks. `App.tsx` renders page components. It keeps the robot movement hook mounted while switching pages, preserving the current training position. Game layout belongs in `GamePage`; authentication forms belong in the auth feature.
 

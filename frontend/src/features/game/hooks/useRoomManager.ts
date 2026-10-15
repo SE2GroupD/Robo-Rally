@@ -75,7 +75,7 @@ export function useRoomManager({ username, pathname, navigate }: UseRoomManagerO
     let created: CreatedRoom | null = null;
 
     try {
-      created = await createRoom(username);
+      created = await createRoom(username, true);
       setSoloRoom(await startRoom(created));
     } catch {
       if (created) void leaveRoom(created).catch(() => {});
