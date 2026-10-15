@@ -69,7 +69,7 @@ export function StartTileSelection({ layout, room, disabled, onSelect }: StartTi
 
   return (
     <>
-      <h3 className="m-0 font-bold">Choose your start tile</h3>
+      <h3 className="mb-3 mt-0 text-lg font-bold">Choose your start tile</h3>
       <div className="space-y-3">
         <div className="grid auto-cols-[minmax(9rem,1fr)] grid-flow-col gap-2 overflow-x-auto pb-1">
           {getStartTiles(layout, room).map(({ position, mine, occupied, label }) => (
