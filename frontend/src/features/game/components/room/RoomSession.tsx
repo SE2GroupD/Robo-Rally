@@ -1,13 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchRoom, leaveRoom, startRoom, selectRobot, RoomRequestError, type JoinedRoom } from '../../api/gameApi';
+import {
+  fetchRoom,
+  leaveRoom,
+  startRoom,
+  selectStartTile,
+  selectRobot,
+  RoomRequestError,
+  type JoinedRoom,
+} from '../../api/gameApi';
 import { Button } from '../../../../foundation/components/button/Button';
 import { Map } from '../map/Map';
 import { useGameState } from '../../hooks/useGameState';
 import { useGameReplay } from '../../hooks/useGameReplay';
 import { toTileData } from '../../data/serverTiles';
 import { ProgrammingPhase } from '../programming/ProgrammingPhase';
+import { StartBoard } from '../map/boards/StartBoard';
+import type { TileData, AvatarId } from '../../types/Board';
 import { RobotSelection } from './RobotSelection';
-import type { AvatarId } from '../../types/Board';
 import type { BoardStateDto } from '../../types/GameStateDto';
 
 import avatar1 from '../../../../assets/avatars/avatar1.svg';
@@ -148,14 +157,34 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
     }
   }
 
-  async function handleSelectRobot(avatarId: number) {
+  async function handleTileClick(x: number, y: number) {
     if (actionPending.current) return;
-
     actionPending.current = true;
     revision.current += 1;
     setBusy(true);
     setError('');
+    try {
+      const updated = await selectStartTile(room, x, y);
+      setRoom(updated);
+      onRoomChange?.(updated);
+    } catch (cause) {
+      if (cause instanceof RoomRequestError && [403, 404].includes(cause.status)) {
+        setClosed(true);
+      } else {
+        setError(cause instanceof Error ? cause.message : 'Could not select this tile.');
+      }
+    } finally {
+      actionPending.current = false;
+      setBusy(false);
+    }
+  }
 
+  async function handleSelectRobot(avatarId: number) {
+    if (actionPending.current) return;
+    actionPending.current = true;
+    revision.current += 1;
+    setBusy(true);
+    setError('');
     try {
       const updated = await selectRobot(room, avatarId);
       setRoom(updated);
@@ -171,6 +200,11 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
       setBusy(false);
     }
   }
+
+  const startTilesConfig: TileData[] = (room.startBoardConfig || []).map((tile: TileData) => {
+    const occupant = room.players.find((p) => p.startPosition?.x === tile.x && p.startPosition?.y === tile.y);
+    return { ...tile, occupyingPlayerId: occupant?.playerId };
+  });
 
   async function copyCode() {
     try {
@@ -251,6 +285,10 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
 
             <output className="mb-0 mt-2 text-sm">{copyMessage}</output>
           </section>
+          <section className="rounded border border-metal-light p-4 flex flex-col items-center">
+            <h2 className="mb-3 mt-0 text-lg font-bold">Select Start Position</h2>
+            <StartBoard layoutData={startTilesConfig} currentPlayerId={room.playerId} onTileClick={handleTileClick} />
+          </section>
 
           <RobotSelection
             selectedAvatarId={selectedAvatarId}
@@ -261,7 +299,6 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
 
           <section className="rounded border border-metal-light p-4">
             <h2 className="mb-3 mt-0 text-lg font-bold">Players</h2>
-
             <ul className="m-0 flex list-none flex-col gap-2 p-0">
               {room.players.map((player) => (
                 <li key={player.playerId} className="flex items-center justify-between gap-3">

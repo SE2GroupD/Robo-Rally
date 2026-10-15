@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.model.GameRoom;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -15,15 +16,19 @@ import static org.junit.jupiter.api.Assertions.*;
 class RoomServiceTests {
     private final String hostId = "host-123";
     private final String guestId = "guest-456";
+    private BoardRegistry boardRegistry;
+    private RoomService service;
 
-    private PublicRoomService publicRooms(RoomService roomService) {
-        return new PublicRoomServiceImpl(roomService);
+    @BeforeEach
+    void setUp() {
+        boardRegistry = new BoardRegistry();
+        boardRegistry.loadBoards();
+        service = new RoomServiceImpl(boardRegistry);
     }
 
     @Test
     void hostStartsAloneAndRepeatedStartIsSafe() {
-        RoomService service = new RoomServiceImpl();
-        GameRoom room = service.createRoom("Host", hostId);
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
         assertEquals(com.example.demo.model.RoomStatus.STARTED,
                 service.startRoom(room.gameId(), room.hostPlayerId()).status());
         assertEquals(com.example.demo.model.RoomStatus.STARTED,
@@ -35,8 +40,7 @@ class RoomServiceTests {
 
     @Test
     void guestLeavesWithoutClosingRoomAndHostClosesIt() {
-        RoomService service = new RoomServiceImpl();
-        GameRoom room = service.createRoom("Host", hostId);
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
         var joined = service.joinRoom(room.roomCode(), "Guest", guestId);
 
         assertEquals(2, service.getRoom(room.gameId(), room.hostPlayerId()).players().size());
@@ -58,8 +62,7 @@ class RoomServiceTests {
 
     @Test
     void unknownPlayersCannotReadStartOrLeave() {
-        RoomService service = new RoomServiceImpl();
-        GameRoom room = service.createRoom("Host", hostId);
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
         String outsider = "outsider-id";
 
         assertEquals(403, assertThrows(ResponseStatusException.class,
@@ -74,8 +77,7 @@ class RoomServiceTests {
 
     @Test
     void joinsExistingRoomWithNormalizedCodeAndPreservesHost() {
-        RoomService service = new RoomServiceImpl();
-        GameRoom original = service.createRoom("Host", hostId);
+        GameRoom original = service.createRoom("Host", hostId, "classic_start");
         GameRoom joined = service.joinRoom(" " + original.roomCode().toLowerCase(java.util.Locale.ROOT) + " ",
                 " Guest ", guestId);
 
@@ -86,14 +88,11 @@ class RoomServiceTests {
         assertNotEquals(joined.hostPlayerId(), joined.players().getLast().playerId());
         assertEquals(1, original.players().size());
 
-        // Use a different guest ID to ensure a 3rd player is added rather than
-        // returning idempotently
         assertEquals(3, service.joinRoom(original.roomCode(), "Guest 2", "guest-789").players().size());
     }
 
     @Test
     void rejectsInvalidJoinInputAndUnknownRooms() {
-        RoomService service = new RoomServiceImpl();
         for (String code : new String[] { null, "", "  ", "ABC", "!!!!!!" }) {
             var error = assertThrows(ResponseStatusException.class, () -> service.joinRoom(code, "Guest", guestId));
             assertEquals(400, error.getStatusCode().value());
@@ -108,9 +107,8 @@ class RoomServiceTests {
 
     @Test
     void concurrentJoinsAreRetainedAndOtherRoomsAreUnaffected() throws Exception {
-        RoomService service = new RoomServiceImpl();
-        GameRoom room = service.createRoom("Host", hostId);
-        GameRoom other = service.createRoom("Other host", "other-host-id");
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
+        GameRoom other = service.createRoom("Other host", "other-host-id", "classic_start");
 
         List<Callable<GameRoom>> tasks = IntStream.range(0, 30)
                 .mapToObj(i -> (Callable<GameRoom>) () -> service.joinRoom(room.roomCode(), "Guest", "guest-" + i))
@@ -129,11 +127,98 @@ class RoomServiceTests {
     }
 
     @Test
+    void createsRoomWithItsHostAndTrimsName() {
+        GameRoom room = service.createRoom("  Guest_1234  ", hostId, "classic_start");
+        assertNotNull(room.gameId());
+        assertTrue(room.roomCode().matches("[A-HJ-NP-Z2-9]{6}"));
+        assertEquals(1, room.players().size());
+        assertEquals(room.hostPlayerId(), room.players().getFirst().playerId());
+        assertEquals("Guest_1234", room.players().getFirst().playerName());
+        assertThrows(UnsupportedOperationException.class, () -> room.players().clear());
+    }
+
+    @Test
+    void rejectsMissingBlankAndMalformedInput() {
+        for (String name : new String[] { null, "", " \t\n " }) {
+            var error = assertThrows(ResponseStatusException.class, () -> service.createRoom(name, hostId, "classic_start"));
+            assertEquals(400, error.getStatusCode().value());
+        }
+    }
+
+    @Test
+    void concurrentCreationsHaveDistinctCodesRoomsAndPlayers() throws Exception {
+        List<Callable<GameRoom>> tasks = IntStream.range(0, 200)
+                .mapToObj(i -> (Callable<GameRoom>) () -> service.createRoom("Guest", "host-" + i, "classic_start"))
+                .toList();
+
+        try (var executor = Executors.newFixedThreadPool(8)) {
+            var codes = new HashSet<String>();
+            var gameIds = new HashSet<java.util.UUID>();
+            var playerIds = new HashSet<String>();
+
+            for (var result : executor.invokeAll(tasks)) {
+                GameRoom room = result.get();
+                assertTrue(codes.add(room.roomCode()));
+                assertTrue(gameIds.add(room.gameId()));
+                assertTrue(playerIds.add(room.hostPlayerId()));
+            }
+        }
+    }
+
+        @Test
+    void selectStartTileAssignsValidSpawnPointSuccessfully() {
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
+        com.example.demo.model.Position validSpawn = new com.example.demo.model.Position(1, 1);
+
+        GameRoom updated = service.selectStartTile(room.gameId(), hostId, validSpawn);
+
+        assertEquals(validSpawn, updated.players().getFirst().startPosition());
+    }
+
+    @Test
+    void selectStartTileRejectsTileAlreadyTakenByAnotherPlayer() {
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
+        service.joinRoom(room.roomCode(), "Guest", guestId);
+
+        com.example.demo.model.Position sharedSpawn = new com.example.demo.model.Position(1, 1);
+        service.selectStartTile(room.gameId(), hostId, sharedSpawn);
+
+        // Le guest tente de choisir la même case
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.selectStartTile(room.gameId(), guestId, sharedSpawn));
+
+        assertEquals(409, exception.getStatusCode().value(), "Expected 409 CONFLICT for already taken tile");
+    }
+
+    @Test
+    void selectStartTileRejectsNonSpawnCoordinates() {
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
+
+        // Position (0, 0) est une case normale (pas un spawner)
+        com.example.demo.model.Position invalidSpawn = new com.example.demo.model.Position(0, 0);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.selectStartTile(room.gameId(), hostId, invalidSpawn));
+
+        assertEquals(400, exception.getStatusCode().value(), "Expected 400 BAD_REQUEST for invalid spawn position");
+    }
+
+    @Test
+    void allowsPlayerToChangeTheirOwnSelection() {
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
+        com.example.demo.model.Position firstChoice = new com.example.demo.model.Position(1, 1);
+        com.example.demo.model.Position secondChoice = new com.example.demo.model.Position(1, 2);
+
+        service.selectStartTile(room.gameId(), hostId, firstChoice);
+        GameRoom updated = service.selectStartTile(room.gameId(), hostId, secondChoice);
+
+        assertEquals(secondChoice, updated.players().getFirst().startPosition());
+    }
+    @Test
     void listsOnlyWaitingPublicRoomsWithAvailableSpace() {
-        RoomService service = new RoomServiceImpl();
-        PublicRoomService publicRooms = publicRooms(service);
+        PublicRoomService publicRooms = new PublicRoomServiceImpl(service);
         GameRoom publicRoom = publicRooms.createPublicRoom("Host", hostId, "  Friday race  ");
-        GameRoom privateRoom = service.createRoom("Private host", "private-host");
+        GameRoom privateRoom = service.createRoom("Private host", "private-host", "classic_start");
 
         assertEquals(1, publicRooms.listPublicRooms().size());
         assertEquals(publicRoom.gameId(), publicRooms.listPublicRooms().getFirst().room().gameId());
@@ -150,10 +235,9 @@ class RoomServiceTests {
 
     @Test
     void joiningPublicRoomsKeepsPrivateRoomsOnTheExistingJoinFlow() {
-        RoomService service = new RoomServiceImpl();
-        PublicRoomService publicRooms = publicRooms(service);
+        PublicRoomService publicRooms = new PublicRoomServiceImpl(service);
         GameRoom publicRoom = publicRooms.createPublicRoom("Host", hostId, "Public race");
-        GameRoom privateRoom = service.createRoom("Private host", "private-host");
+        GameRoom privateRoom = service.createRoom("Private host", "private-host", "classic_start");
 
         assertEquals(2, publicRooms.joinPublicRoom(publicRoom.gameId(), "Guest", guestId).players().size());
         assertEquals(404, assertThrows(ResponseStatusException.class,
@@ -163,8 +247,7 @@ class RoomServiceTests {
 
     @Test
     void publicRoomRemainsListedWhenAGuestLeavesAndClosesWhenTheHostLeaves() {
-        RoomService service = new RoomServiceImpl();
-        PublicRoomService publicRooms = publicRooms(service);
+        PublicRoomService publicRooms = new PublicRoomServiceImpl(service);
         GameRoom publicRoom = publicRooms.createPublicRoom("Host", hostId, "Public race");
         publicRooms.joinPublicRoom(publicRoom.gameId(), "Guest", guestId);
 
@@ -176,46 +259,5 @@ class RoomServiceTests {
         assertTrue(publicRooms.listPublicRooms().isEmpty());
         assertEquals(404, assertThrows(ResponseStatusException.class,
                 () -> service.getRoom(publicRoom.gameId(), hostId)).getStatusCode().value());
-    }
-
-    @Test
-    void createsRoomWithItsHostAndTrimsName() {
-        GameRoom room = new RoomServiceImpl().createRoom("  Guest_1234  ", hostId);
-        assertNotNull(room.gameId());
-        assertTrue(room.roomCode().matches("[A-HJ-NP-Z2-9]{6}"));
-        assertEquals(1, room.players().size());
-        assertEquals(room.hostPlayerId(), room.players().getFirst().playerId());
-        assertEquals("Guest_1234", room.players().getFirst().playerName());
-        assertThrows(UnsupportedOperationException.class, () -> room.players().clear());
-    }
-
-    @Test
-    void rejectsMissingOrBlankNames() {
-        RoomService service = new RoomServiceImpl();
-        for (String name : new String[] { null, "", " \t\n " }) {
-            var error = assertThrows(ResponseStatusException.class, () -> service.createRoom(name, hostId));
-            assertEquals(400, error.getStatusCode().value());
-        }
-    }
-
-    @Test
-    void concurrentCreationsHaveDistinctCodesRoomsAndPlayers() throws Exception {
-        RoomService service = new RoomServiceImpl();
-        List<Callable<GameRoom>> tasks = IntStream.range(0, 200)
-                .mapToObj(i -> (Callable<GameRoom>) () -> service.createRoom("Guest", "host-" + i))
-                .toList();
-
-        try (var executor = Executors.newFixedThreadPool(8)) {
-            var codes = new HashSet<String>();
-            var gameIds = new HashSet<java.util.UUID>();
-            var playerIds = new HashSet<String>();
-
-            for (var result : executor.invokeAll(tasks)) {
-                GameRoom room = result.get();
-                assertTrue(codes.add(room.roomCode()));
-                assertTrue(gameIds.add(room.gameId()));
-                assertTrue(playerIds.add(room.hostPlayerId()));
-            }
-        }
     }
 }

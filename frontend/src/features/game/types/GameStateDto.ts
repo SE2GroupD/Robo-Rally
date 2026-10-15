@@ -37,12 +37,20 @@ export interface TileDto {
   x: number;
   y: number;
   hasPit?: boolean;
-  walls?: { north: boolean; east: boolean; south: boolean; west: boolean } | null;
+  pit?: boolean;
+  isPit?: boolean;
   hasAntenna?: boolean;
+  antenna?: boolean;
+  isAntenna?: boolean;
   isSpawnPoint?: boolean;
-  gear?: 'CLOCKWISE' | 'COUNTER_CLOCKWISE' | null;
-  conveyor?: { direction: Direction; isExpress?: boolean } | null;
+  spawnPoint?: boolean;
   checkpointNumber?: number | null;
+  checkpoint?: number | null;
+  isCheckpoint?: number | null;
+  gear?: 'CLOCKWISE' | 'COUNTER_CLOCKWISE' | null;
+  conveyor?: { direction: Direction; isExpress?: boolean; express?: boolean } | null;
+  walls?: { north?: boolean; east?: boolean; south?: boolean; west?: boolean } | null;
+  occupyingPlayerId?: string | null;
   pushPanel?: { direction: Direction; activeRegisters: number[] } | null;
 }
 
