@@ -15,7 +15,7 @@ class TrainingMapTests {
     void trainingAndNewMultiplayerRoomsUseDefaultLayout() {
         var rooms = new RoomServiceImpl();
         var layouts = new MapLayoutService();
-        var games = new GameServiceImpl(rooms, layouts);
+        var games = new GameServiceImpl(rooms);
         var training = rooms.createRoom("Pilot", "pilot", true);
 
         assertThrows(ResponseStatusException.class, () -> rooms.joinRoom(training.roomCode(), "Guest", "guest"));

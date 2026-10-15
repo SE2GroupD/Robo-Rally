@@ -37,7 +37,7 @@ class StartSelectionTests {
         assertEquals(position, started.players().getLast().startPosition());
         assertEquals(started, rooms.startRoom(room.gameId(), "host"));
 
-        var state = new GameServiceImpl(rooms, new MapLayoutService()).getBoardState(room.gameId(), "guest");
+        var state = new GameServiceImpl(rooms).getBoardState(room.gameId(), "guest");
         var guest = state.robots().stream().filter(robot -> robot.playerId().equals("guest")).findFirst().orElseThrow();
         assertEquals(position.x(), guest.x());
         assertEquals(position.y(), guest.y());
@@ -88,7 +88,7 @@ class StartSelectionTests {
         assertStatus(409, () -> rooms.selectStart(room.gameId(), "host", new Position(1, 1), room.mapId()));
 
         rooms.startRoom(room.gameId(), "host");
-        assertEquals(alternate, new GameServiceImpl(rooms, catalog).getBoardState(room.gameId(), "host").layout());
+        assertEquals(alternate, new GameServiceImpl(rooms).getBoardState(room.gameId(), "host").layout());
     }
 
     private boolean reserve(RoomService rooms, java.util.UUID id, String player, Position position, String mapId) {

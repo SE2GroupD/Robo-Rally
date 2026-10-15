@@ -1,5 +1,9 @@
 package com.example.demo.maps;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.example.demo.model.Conveyor;
+import com.example.demo.model.Tile;
+import com.example.demo.model.Walls;
 import com.example.demo.model.layout.definition.BoardTemplate;
 import com.example.demo.model.layout.definition.CatalogDefinition;
 import com.example.demo.model.layout.definition.CourseDefinition;
@@ -22,7 +26,15 @@ public final class MapResourceLoader {
             .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
             .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)
             .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .addMixIn(Tile.class, StrictResourceProperties.class)
+            .addMixIn(Walls.class, StrictResourceProperties.class)
+            .addMixIn(Conveyor.class, StrictResourceProperties.class)
             .build();
+
+    /** Resource typos must fail without changing the shared models' legacy JSON compatibility. */
+    @JsonIgnoreProperties(ignoreUnknown = false)
+    private abstract static class StrictResourceProperties {
+    }
 
     public MapResourceLoader() {
         this(MapResourceLoader.class.getClassLoader());

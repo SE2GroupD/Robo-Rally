@@ -75,7 +75,7 @@ class RiskyCrossingTests {
         rooms.selectMap(room.gameId(), "pilot", "risky-crossing");
         rooms.startRoom(room.gameId(), "pilot");
 
-        var state = new GameServiceImpl(rooms, catalog).getBoardState(room.gameId(), "pilot");
+        var state = new GameServiceImpl(rooms).getBoardState(room.gameId(), "pilot");
         assertEquals(new MapLayoutService().getLayout("risky-crossing"), state.layout());
         assertEquals(1, state.robots().getFirst().x());
         assertEquals(1, state.robots().getFirst().y());

@@ -78,6 +78,51 @@ class MapResourceTests {
     }
 
     @Test
+    void rejectsUnknownTileAndNestedPropertiesWithTheirSourceFile() throws Exception {
+        Files.writeString(directory.resolve("catalog.json"), """
+                {"defaultMapId":"test","startTemplates":[],"boardTemplates":["board.json"],"courses":[]}
+                """);
+
+        var invalidProperties = Map.of(
+                "conveyer", "\"conveyer\":{\"direction\":\"EAST\"}",
+                "nroth", "\"walls\":{\"nroth\":true}",
+                "expresss", "\"conveyor\":{\"direction\":\"EAST\",\"expresss\":true}");
+
+        try (var isolated = new URLClassLoader(new java.net.URL[]{directory.toUri().toURL()}, null)) {
+            for (var property : invalidProperties.entrySet()) {
+                Files.writeString(directory.resolve("board.json"), """
+                        {"id":"test","name":"Test","kind":"game","width":10,"height":10,
+                         "tiles":[{"x":0,"y":0,%s}]}
+                        """.formatted(property.getValue()));
+
+                var error = assertThrows(IllegalArgumentException.class,
+                        () -> new MapResourceLoader(isolated).load("catalog.json"));
+
+                assertTrue(error.getMessage().contains("board.json"), error.getMessage());
+                assertTrue(error.getMessage().contains(property.getKey()), error.getMessage());
+            }
+        }
+    }
+
+    @Test
+    void sharedTileModelsStillAcceptUnknownLegacyProperties() {
+        var mapper = tools.jackson.databind.json.JsonMapper.builder()
+                .disable(tools.jackson.databind.DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                .enable(tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
+
+        var tile = mapper.readValue("""
+                {"x":1,"y":2,"legacyTileProperty":true,
+                 "walls":{"north":true,"legacyWallProperty":true},
+                 "conveyor":{"direction":"EAST","legacyConveyorProperty":true}}
+                """, Tile.class);
+
+        assertEquals(1, tile.x());
+        assertTrue(tile.walls().north());
+        assertEquals(Direction.EAST, tile.conveyor().direction());
+    }
+
+    @Test
     void rejectsDuplicateIdsUnknownReferencesAndInvalidCoordinates() {
         var loaded = loader.load("map-catalog.json");
         var source = "racingcourses/extra-crispy.json";

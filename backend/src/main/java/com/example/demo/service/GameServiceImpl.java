@@ -37,13 +37,11 @@ public class GameServiceImpl implements GameService {
     private static final int HAND_SIZE = 9;
 
     private final RoomService roomService;
-    private final MapLayoutService mapLayoutService;
     private final MovementResolver movementResolver = new MovementResolver();
     private final Map<UUID, GameSession> sessions = new ConcurrentHashMap<>();
 
-    public GameServiceImpl(RoomService roomService, MapLayoutService mapLayoutService) {
+    public GameServiceImpl(RoomService roomService) {
         this.roomService = roomService;
-        this.mapLayoutService = mapLayoutService;
     }
 
     /**

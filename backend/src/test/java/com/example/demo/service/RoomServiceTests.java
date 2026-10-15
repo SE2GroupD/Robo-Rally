@@ -222,7 +222,7 @@ class RoomServiceTests {
         service.selectStartTile(room.gameId(), hostId, spawn);
         service.startRoom(room.gameId(), hostId);
 
-        var state = new GameServiceImpl(service, new MapLayoutService()).getBoardState(room.gameId(), hostId);
+        var state = new GameServiceImpl(service).getBoardState(room.gameId(), hostId);
         assertEquals(33, state.width());
         assertEquals(10, state.height());
         assertEquals(spawn.x(), state.robots().getFirst().x());
