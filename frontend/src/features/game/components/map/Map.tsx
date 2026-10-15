@@ -20,16 +20,24 @@ interface MapProps {
   height: number;
   tiles: TileData[];
   robots: MapRobot[];
+  currentPlayerId?: string;
 }
 
 const CELL_PX = 52; // 50px tile + 2px gap
 
 // Merges the live robots into the server's tile list. (Two robots on one tile
 // is possible while the backend only clamps at edges; the last one drawn wins.)
-function withRobots(tiles: TileData[], robots: MapRobot[]): TileData[] {
+function withRobots(tiles: TileData[], robots: MapRobot[], currentPlayerId?: string): TileData[] {
   const layout = tiles.map(({ robot: _robot, ...tile }) => tile);
   for (const r of robots) {
-    const robotField = { robot: { avatarId: r.avatarId, hue: r.hue, direction: r.direction } };
+    const robotField = {
+      robot: {
+        avatarId: r.avatarId,
+        hue: r.hue,
+        direction: r.direction,
+        isCurrentPlayer: r.playerId === currentPlayerId,
+      },
+    };
     const index = layout.findIndex((tile) => tile.x === r.x && tile.y === r.y);
     if (index === -1) layout.push({ x: r.x, y: r.y, ...robotField });
     else layout[index] = { ...layout[index], ...robotField };
@@ -37,7 +45,7 @@ function withRobots(tiles: TileData[], robots: MapRobot[]): TileData[] {
   return layout;
 }
 
-export function Map({ width, height, tiles, robots }: MapProps) {
+export function Map({ width, height, tiles, robots, currentPlayerId }: MapProps) {
   const {
     viewportRef,
     scale,
@@ -83,7 +91,7 @@ export function Map({ width, height, tiles, robots }: MapProps) {
             className="absolute min-w-max origin-top-left"
             style={{ left: '50vw', top: '50dvh', transform: `scale(${scale})` }}
           >
-            <GameBoard layoutData={withRobots(tiles, robots)} width={width} height={height} />
+            <GameBoard layoutData={withRobots(tiles, robots, currentPlayerId)} width={width} height={height} />
           </div>
         </div>
       </section>

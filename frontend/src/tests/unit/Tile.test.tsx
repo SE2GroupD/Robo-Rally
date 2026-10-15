@@ -12,3 +12,17 @@ it('shows an express conveyor in its direction', () => {
   render(<Tile tile={{ x: 0, y: 0, conveyor: { direction: 'EAST', isExpress: true } }} />);
   expect(screen.getByText('→')).toHaveClass('text-blue-500');
 });
+
+it('marks the current player robot on the board', () => {
+  render(
+    <Tile
+      tile={{
+        x: 0,
+        y: 0,
+        robot: { avatarId: 1, hue: 0, direction: 'EAST', isCurrentPlayer: true },
+      }}
+    />,
+  );
+
+  expect(screen.getByLabelText('Your robot')).toHaveTextContent('YOU');
+});

@@ -112,12 +112,13 @@ describe('room lifecycle', () => {
     expect(screen.queryByRole('button', { name: 'Start Battle' })).not.toBeInTheDocument();
   });
 
-  it('shows who the round is waiting for', async () => {
+  it('shows the current player when it is their turn', async () => {
     vi.mocked(fetchRoom).mockResolvedValue({ ...host, status: 'STARTED' });
 
     render(<RoomSession initialRoom={{ ...host, status: 'STARTED' }} onLeft={vi.fn()} />);
 
-    expect(await screen.findByText('Round 1 · Waiting for Host')).toBeInTheDocument();
+    expect(await screen.findByText('Your turn')).toBeInTheDocument();
+    expect(screen.getByText('Choose 5 cards')).toBeInTheDocument();
   });
 
   it('only exits after leaving succeeds and allows retry after failure', async () => {

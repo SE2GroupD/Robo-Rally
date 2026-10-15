@@ -94,7 +94,17 @@ export function Tile({ tile, currentPlayerId, onTileClick }: TileProps) {
         )}
         <div className="relative z-30 flex w-full h-full items-center justify-center">
           {tile.robot ? (
-            <Robot avatarId={tile.robot.avatarId || 1} rotation={getRotationDegrees(tile.robot.direction)} />
+            <div className="relative flex items-center justify-center">
+              <Robot avatarId={tile.robot.avatarId || 1} rotation={getRotationDegrees(tile.robot.direction)} />
+              {tile.robot.isCurrentPlayer && (
+                <span
+                  aria-label="Your robot"
+                  className="absolute -bottom-1 left-1/2 rounded border border-cyan-100 bg-cyan-500 px-1 text-[8px] font-black leading-3 text-slate-950 shadow-md -translate-x-1/2"
+                >
+                  YOU
+                </span>
+              )}
+            </div>
           ) : tile.checkpointNumber !== undefined ? (
             <Checkpoint num={tile.checkpointNumber} />
           ) : null}
