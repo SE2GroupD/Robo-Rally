@@ -23,7 +23,7 @@ class RoomServiceTests {
     void setUp() {
         boardRegistry = new BoardRegistry();
         boardRegistry.loadBoards();
-        service = new RoomService(boardRegistry);
+        service = new RoomServiceImpl(boardRegistry);
     }
 
     @Test
@@ -213,5 +213,51 @@ class RoomServiceTests {
         GameRoom updated = service.selectStartTile(room.gameId(), hostId, secondChoice);
 
         assertEquals(secondChoice, updated.players().getFirst().startPosition());
+    }
+    @Test
+    void listsOnlyWaitingPublicRoomsWithAvailableSpace() {
+        PublicRoomService publicRooms = new PublicRoomServiceImpl(service);
+        GameRoom publicRoom = publicRooms.createPublicRoom("Host", hostId, "  Friday race  ");
+        GameRoom privateRoom = service.createRoom("Private host", "private-host", "classic_start");
+
+        assertEquals(1, publicRooms.listPublicRooms().size());
+        assertEquals(publicRoom.gameId(), publicRooms.listPublicRooms().getFirst().room().gameId());
+        assertEquals("Friday race", publicRooms.listPublicRooms().getFirst().roomName());
+        assertFalse(publicRooms.listPublicRooms().stream().anyMatch(room -> room.room().gameId().equals(privateRoom.gameId())));
+
+        for (int index = 1; index < 6; index++) {
+            publicRooms.joinPublicRoom(publicRoom.gameId(), "Guest " + index, "guest-" + index);
+        }
+        assertTrue(publicRooms.listPublicRooms().isEmpty());
+        assertEquals(409, assertThrows(ResponseStatusException.class,
+                () -> publicRooms.joinPublicRoom(publicRoom.gameId(), "Late guest", "late-guest")).getStatusCode().value());
+    }
+
+    @Test
+    void joiningPublicRoomsKeepsPrivateRoomsOnTheExistingJoinFlow() {
+        PublicRoomService publicRooms = new PublicRoomServiceImpl(service);
+        GameRoom publicRoom = publicRooms.createPublicRoom("Host", hostId, "Public race");
+        GameRoom privateRoom = service.createRoom("Private host", "private-host", "classic_start");
+
+        assertEquals(2, publicRooms.joinPublicRoom(publicRoom.gameId(), "Guest", guestId).players().size());
+        assertEquals(404, assertThrows(ResponseStatusException.class,
+                () -> publicRooms.joinPublicRoom(privateRoom.gameId(), "Guest", guestId)).getStatusCode().value());
+        assertEquals(2, service.joinRoom(privateRoom.roomCode(), "Guest", guestId).players().size());
+    }
+
+    @Test
+    void publicRoomRemainsListedWhenAGuestLeavesAndClosesWhenTheHostLeaves() {
+        PublicRoomService publicRooms = new PublicRoomServiceImpl(service);
+        GameRoom publicRoom = publicRooms.createPublicRoom("Host", hostId, "Public race");
+        publicRooms.joinPublicRoom(publicRoom.gameId(), "Guest", guestId);
+
+        service.leaveRoom(publicRoom.gameId(), guestId);
+        assertEquals(1, publicRooms.listPublicRooms().size());
+        assertEquals(1, publicRooms.listPublicRooms().getFirst().room().players().size());
+
+        service.leaveRoom(publicRoom.gameId(), hostId);
+        assertTrue(publicRooms.listPublicRooms().isEmpty());
+        assertEquals(404, assertThrows(ResponseStatusException.class,
+                () -> service.getRoom(publicRoom.gameId(), hostId)).getStatusCode().value());
     }
 }

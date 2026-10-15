@@ -2,7 +2,10 @@ package com.example.demo.controller;
 
 import com.example.demo.service.BoardRegistry;
 import com.example.demo.service.GameService;
+import com.example.demo.service.PublicRoomService;
+import com.example.demo.service.PublicRoomServiceImpl;
 import com.example.demo.service.RoomService;
+import com.example.demo.service.RoomServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
@@ -26,6 +29,7 @@ class RoomControllerTests {
     private MockMvc mvc;
     private RoomService service;
     private BoardRegistry boardRegistry;
+    private PublicRoomService publicRoomService;
     private GameService gameService;
     private final String hostId = "host-123";
     private final String guestId = "guest-456";
@@ -36,7 +40,8 @@ class RoomControllerTests {
     void setUp() {
         boardRegistry = new BoardRegistry();
         boardRegistry.loadBoards();
-        service = new RoomService(boardRegistry);
+        service = new RoomServiceImpl(boardRegistry);
+        publicRoomService = new PublicRoomServiceImpl(service);
         gameService = mock(GameService.class);
 
         HandlerMethodArgumentResolver principalResolver = new HandlerMethodArgumentResolver() {
@@ -52,7 +57,7 @@ class RoomControllerTests {
             }
         };
 
-        mvc = MockMvcBuilders.standaloneSetup(new RoomController(service, boardRegistry, gameService))
+        mvc = MockMvcBuilders.standaloneSetup(new RoomController(service, boardRegistry, publicRoomService, gameService))
                 .setCustomArgumentResolvers(principalResolver)
                 .build();
     }
@@ -152,5 +157,31 @@ class RoomControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.players[0].startPosition.x").value(1))
                 .andExpect(jsonPath("$.players[0].startPosition.y").value(1));
+    }
+    @Test
+    void listsAndJoinsPublicRooms() throws Exception {
+        currentMockSubject = hostId;
+        String publicRoomJson = mvc.perform(post("/api/games/public")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"playerName\":\"Host\",\"roomName\":\"Morning Shift\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String gameId = com.jayway.jsonpath.JsonPath.read(publicRoomJson, "$.gameId");
+
+        mvc.perform(get("/api/games/public"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].gameId").value(gameId))
+                .andExpect(jsonPath("$[0].roomName").value("Morning Shift"))
+                .andExpect(jsonPath("$[0].hostPlayerName").value("Host"))
+                .andExpect(jsonPath("$[0].playerCount").value(1))
+                .andExpect(jsonPath("$[0].maxPlayers").value(6));
+
+        currentMockSubject = guestId;
+        mvc.perform(post("/api/games/public/" + gameId + "/join")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"playerName\":\"Guest\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.playerId").value(guestId))
+                .andExpect(jsonPath("$.players.length()").value(2));
     }
 }
