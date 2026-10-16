@@ -103,9 +103,6 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
 
   const isHost = room.playerId === room.hostPlayerId;
   const started = room.status === 'STARTED';
-  const rosterPlayers = room.players
-    .filter((player) => player.avatarId !== null)
-    .sort((first, second) => Number(second.playerId === room.playerId) - Number(first.playerId === room.playerId));
 
   const currentPlayer = room.players.find((player) => player.playerId === room.playerId);
   const selectedAvatarId = currentPlayer?.avatarId ?? null;
@@ -131,6 +128,14 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
       hue: index * 60,
     };
   });
+
+  const rosterPlayers = mapRobots
+    .map((robot) => {
+      const player = room.players.find((roomPlayer) => roomPlayer.playerId === robot.playerId);
+      return player ? { ...player, avatarId: robot.avatarId } : null;
+    })
+    .filter((player): player is JoinedRoom['players'][number] & { avatarId: AvatarId } => player !== null)
+    .sort((first, second) => Number(second.playerId === room.playerId) - Number(first.playerId === room.playerId));
 
   const { gameId, playerId } = initialRoom;
 

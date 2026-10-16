@@ -166,6 +166,18 @@ describe('room lifecycle', () => {
     expect(screen.getByText('Choose 5 cards')).toBeInTheDocument();
   });
 
+  it('shows pilots from live robot assignments even when room avatars are unavailable', async () => {
+    vi.mocked(fetchRoom).mockResolvedValue({ ...host, status: 'STARTED' });
+    vi.mocked(fetchBoardState).mockResolvedValue({
+      ...boardState,
+      robots: [{ playerId: 'host-1', x: 1, y: 1, direction: 'NORTH' }],
+    });
+
+    render(<RoomSession initialRoom={{ ...host, status: 'STARTED' }} onLeft={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByLabelText('Pilot robot legend')).toHaveTextContent('You'));
+  });
+
   it('only exits after leaving succeeds and allows retry after failure', async () => {
     const onLeft = vi.fn();
 
