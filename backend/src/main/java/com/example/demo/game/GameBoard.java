@@ -8,6 +8,7 @@ import com.example.demo.model.Position;
 import com.example.demo.model.PushPanel;
 import com.example.demo.model.Tile;
 import com.example.demo.model.Walls;
+import com.example.demo.model.layout.MapLayout;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,12 +18,22 @@ import java.util.Map;
 /** The grid a game is played on. */
 public class GameBoard {
 
+    private final MapLayout layout;
+
+    public MapLayout getLayout() { return layout; }
+
     private final int width;
     private final int height;
     private final Map<Position, Tile> specialTiles;
     private final List<Position> spawnPositions;
 
     public GameBoard(int width, int height, List<Tile> seedTiles, List<Position> spawnPositions) {
+        this(width, height, seedTiles, spawnPositions, null);
+    }
+
+    private GameBoard(int width, int height, List<Tile> seedTiles, List<Position> spawnPositions, MapLayout layout) {
+        this.layout = layout;
+
         if (width <= 0 || height <= 0) {
             throw new IllegalArgumentException("Board dimensions must be positive.");
         }
@@ -153,6 +164,43 @@ public class GameBoard {
     public Integer checkpointAt(Position position) {
         Tile tile = specialTiles.get(position);
         return tile == null ? null : tile.checkpointNumber();
+    }
+
+    /** Compiles the unrotated rectangular training definition into gameplay coordinates. */
+    public static GameBoard training(MapLayout layout) {
+        MapLayoutValidator.requireValid(layout);
+        List<Tile> tiles = new ArrayList<>();
+        List<Position> spawns = new ArrayList<>();
+        int width = 0;
+        int height = 0;
+        int area = 0;
+
+        for (var block : layout.boards()) {
+            if (block.rotation() != 0 || block.x() < 0 || block.y() < 0) {
+                throw new IllegalArgumentException("Training currently requires an unrotated positive-coordinate layout.");
+            }
+
+            width = Math.max(width, block.x() + block.kind().width());
+            height = Math.max(height, block.y() + 10);
+            area += block.kind().width() * 10;
+
+            for (Tile tile : block.tiles()) {
+                int x = block.x() + tile.x();
+                int y = block.y() + tile.y();
+                tiles.add(new Tile(x, y, tile.hasPit(), tile.walls(), tile.hasAntenna(), tile.isSpawnPoint(),
+                        tile.gear(), tile.conveyor(), tile.checkpointNumber(), tile.pushPanel()));
+
+                if (tile.isSpawnPoint()) {
+                    spawns.add(new Position(x, y));
+                }
+            }
+        }
+
+        if (area != width * height || spawns.isEmpty()) {
+            throw new IllegalArgumentException("Training requires a filled rectangle and a spawn point.");
+        }
+
+        return new GameBoard(width, height, tiles, spawns, layout);
     }
 
     public static GameBoard classicWithSeedTiles() {

@@ -1,6 +1,9 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../App';
+import { MapLayout } from '../../features/game/components/map/MapLayout';
+import { defaultMapLayout } from '../fixtures/mapLayouts';
+import type { MapLayoutData } from '../../features/game/types/MapLayout';
 import { BrowserRouter } from 'react-router-dom';
 import { neon } from '../../features/auth/lib/neon';
 
@@ -35,8 +38,11 @@ async function expectPath(path: string) {
 }
 
 vi.mock('../../features/game/components/map/Map', () => ({
-  Map: ({ robots }: { robots: { x: number; y: number }[] }) => (
-    <output aria-label="Robot position">{robots.map((r) => `${r.x},${r.y}`).join(' ')}</output>
+  Map: ({ robots, layout }: { robots: { x: number; y: number }[]; layout?: MapLayoutData }) => (
+    <>
+      {layout && <MapLayout layout={layout} />}
+      <output aria-label="Robot position">{robots.map((r) => `${r.x},${r.y}`).join(' ')}</output>
+    </>
   ),
 }));
 
@@ -69,6 +75,8 @@ beforeEach(() => {
       json: async () => body,
     });
 
+    if (endpoint.endsWith('/maps')) return createResponse([defaultMapLayout]);
+
     if (endpoint.includes('/hand')) {
       return createResponse({
         cards: ['MOVE_1', 'POWER_UP', 'POWER_UP', 'POWER_UP', 'POWER_UP'],
@@ -83,8 +91,9 @@ beforeEach(() => {
     if (endpoint.endsWith('/state')) {
       return createResponse({
         gameId: 'real-room',
-        width: 12,
-        height: 12,
+        width: 13,
+        height: 10,
+        layout: defaultMapLayout,
         robots: [{ playerId: 'host-id', x: robotX, y: 1, direction: 'EAST' }],
         tiles: [],
         round: 1,
@@ -182,8 +191,14 @@ describe('application navigation', () => {
     await expectPath('/main-menu');
     await user.click(screen.getByRole('button', { name: 'Start Training Run' }));
     await expectPath('/game');
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/games'),
+      expect.objectContaining({ body: JSON.stringify({ playerName: 'pilot', training: true }) }),
+    );
     await waitFor(() => expect(screen.getByLabelText('Robot position')).toHaveTextContent('0,1'));
     await screen.findByRole('button', { name: 'Ready' });
+    expect(screen.getByRole('region', { name: 'Start board start' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Game board game-1' })).toBeInTheDocument();
 
     await waitFor(() => expect(screen.getAllByRole('img', { name: /Move 1|Power Up/ })).toHaveLength(5));
     const hand = within(screen.getByRole('heading', { name: 'Your Hand' }).parentElement!);

@@ -14,14 +14,13 @@ import com.example.demo.game.GameSession;
 import com.example.demo.game.MovementResolver;
 import com.example.demo.game.ProgrammingDeck;
 import com.example.demo.game.Robot;
-import com.example.demo.model.BoardDefinition;
 import com.example.demo.model.CardType;
 import com.example.demo.model.Direction;
 import com.example.demo.model.GameRoom;
 import com.example.demo.model.Position;
-import com.example.demo.model.RoomPlayer;
 import com.example.demo.model.ResolutionPhase;
 import com.example.demo.model.RoomStatus;
+
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -38,13 +37,11 @@ public class GameServiceImpl implements GameService {
     private static final int HAND_SIZE = 9;
 
     private final RoomService roomService;
-    private final BoardRegistry boardRegistry;
     private final MovementResolver movementResolver = new MovementResolver();
     private final Map<UUID, GameSession> sessions = new ConcurrentHashMap<>();
 
-    public GameServiceImpl(RoomService roomService, BoardRegistry boardRegistry) {
+    public GameServiceImpl(RoomService roomService) {
         this.roomService = roomService;
-        this.boardRegistry = boardRegistry;
     }
 
     /**
@@ -60,23 +57,16 @@ public class GameServiceImpl implements GameService {
     }
 
     private GameSession createSession(GameRoom room) {
-        BoardDefinition startBoard = boardRegistry.getBoard(room.startBoardId());
-        List<BoardDefinition> boards = new ArrayList<>();
-        boards.add(startBoard);
-        for (String id : List.of("game1", "game2", "game3")) {
-            BoardDefinition b = boardRegistry.getBoardById(id);
-            if (b != null) {
-                boards.add(b);
-            }
+        GameBoard board = roomService.boardFor(room);
+        List<Position> spawns = board.getSpawnPositions();
+        if (room.players().size() > spawns.size()) {
+            throw new IllegalStateException("Too many players for this board (max " + spawns.size() + ").");
         }
-        GameBoard board = GameBoard.assemble(boards);
         GameSession session = new GameSession(board);
-        for (RoomPlayer player : room.players()) {
-            Position startPos = player.startPosition();
-            if (startPos == null) {
-                throw new IllegalStateException("Player " + player.playerName() + " has no start position.");
-            }
-            session.addPlayer(player.playerId(), startPos, Direction.EAST);
+        for (int i = 0; i < room.players().size(); i++) {
+            var player = room.players().get(i);
+            Position spawn = player.startPosition() == null ? spawns.get(i) : player.startPosition();
+            session.addPlayer(player.playerId(), spawn, Direction.EAST);
         }
         return session;
     }
@@ -180,7 +170,8 @@ public class GameServiceImpl implements GameService {
                     session.getRound(),
                     lockedIn,
                     checkpointProgress(session),
-                    session.getLastResolution());
+                    session.getLastResolution(),
+                    board.getLayout());
         }
     }
 

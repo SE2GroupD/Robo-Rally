@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { LegacyStartSelection } from './map-selection/LegacyStartSelection';
+import { MapSelection } from './map-selection/MapSelection';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import {
+  updateRoomSetup,
+  selectStartTile,
   fetchRoom,
   leaveRoom,
   startRoom,
-  selectStartTile,
   selectRobot,
   RoomRequestError,
   type JoinedRoom,
@@ -14,9 +17,8 @@ import { useGameState } from '../../hooks/useGameState';
 import { useGameReplay } from '../../hooks/useGameReplay';
 import { toTileData } from '../../data/serverTiles';
 import { ProgrammingPhase } from '../programming/ProgrammingPhase';
-import { StartBoard } from '../map/boards/StartBoard';
-import type { TileData, AvatarId } from '../../types/Board';
 import { RobotSelection } from './RobotSelection';
+import type { AvatarId } from '../../types/Board';
 import type { BoardStateDto } from '../../types/GameStateDto';
 
 import avatar1 from '../../../../assets/avatars/avatar1.svg';
@@ -54,6 +56,7 @@ function describeStatus(state: BoardStateDto, players: JoinedRoom['players'], is
 export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionProps) {
   const [room, setRoom] = useState(initialRoom);
   const [error, setError] = useState('');
+  const [setupError, setSetupError] = useState('');
   const [closed, setClosed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [copyMessage, setCopyMessage] = useState('');
@@ -88,8 +91,20 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
     };
   });
 
+  const { gameId, playerId } = initialRoom;
+
+  const refreshRoom = useEffectEvent(async (signal: AbortSignal, version: number) => {
+    const updated = await fetchRoom(initialRoom, signal);
+
+    if (!signal.aborted && version === revision.current) {
+      setRoom(updated);
+      onRoomChange?.(updated);
+      setError('');
+    }
+  });
+
   useEffect(() => {
-    if (closed) return;
+    if (closed || !gameId || !playerId) return;
 
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
@@ -99,13 +114,7 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
 
       try {
         if (!actionPending.current) {
-          const updated = await fetchRoom(initialRoom, controller.signal);
-
-          if (!controller.signal.aborted && version === revision.current) {
-            setRoom(updated);
-            onRoomChange?.(updated);
-            setError('');
-          }
+          await refreshRoom(controller.signal, version);
         }
       } catch (cause) {
         if (!controller.signal.aborted && version === revision.current) {
@@ -126,7 +135,7 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
       controller.abort();
       clearTimeout(timer);
     };
-  }, [initialRoom, closed, onRoomChange]);
+  }, [gameId, playerId, closed]);
 
   async function handleAction(action: 'start' | 'leave') {
     if (actionPending.current) return;
@@ -157,22 +166,20 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
     }
   }
 
-  async function handleTileClick(x: number, y: number) {
+  async function handleLegacyStart(x: number, y: number) {
     if (actionPending.current) return;
+
     actionPending.current = true;
     revision.current += 1;
     setBusy(true);
-    setError('');
+    setSetupError('');
+
     try {
       const updated = await selectStartTile(room, x, y);
       setRoom(updated);
       onRoomChange?.(updated);
-    } catch (cause) {
-      if (cause instanceof RoomRequestError && [403, 404].includes(cause.status)) {
-        setClosed(true);
-      } else {
-        setError(cause instanceof Error ? cause.message : 'Could not select this tile.');
-      }
+    } catch {
+      setSetupError('Could not select this start tile. Refresh and choose an available tile.');
     } finally {
       actionPending.current = false;
       setBusy(false);
@@ -181,10 +188,12 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
 
   async function handleSelectRobot(avatarId: number) {
     if (actionPending.current) return;
+
     actionPending.current = true;
     revision.current += 1;
     setBusy(true);
     setError('');
+
     try {
       const updated = await selectRobot(room, avatarId);
       setRoom(updated);
@@ -201,10 +210,32 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
     }
   }
 
-  const startTilesConfig: TileData[] = (room.startBoardConfig || []).map((tile: TileData) => {
-    const occupant = room.players.find((p) => p.startPosition?.x === tile.x && p.startPosition?.y === tile.y);
-    return { ...tile, occupyingPlayerId: occupant?.playerId };
-  });
+  async function handleSetup(
+    action: 'map' | 'start-tile',
+    value: { mapId: string } | { mapId: string; position: { x: number; y: number } | null },
+  ) {
+    if (actionPending.current) return;
+
+    actionPending.current = true;
+    revision.current += 1;
+    setBusy(true);
+    setSetupError('');
+
+    try {
+      const updated = await updateRoomSetup(room, action, value);
+      setRoom(updated);
+      onRoomChange?.(updated);
+    } catch (cause) {
+      setSetupError(
+        cause instanceof RoomRequestError && cause.status === 409
+          ? 'The tile is taken or the setup changed. Choose an available tile after the room refreshes.'
+          : 'Could not update your selection. Please try again.',
+      );
+    } finally {
+      actionPending.current = false;
+      setBusy(false);
+    }
+  }
 
   async function copyCode() {
     try {
@@ -257,9 +288,16 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
         <div className="relative flex-1 min-h-0 overflow-hidden bg-slate-950">
           {state ? (
             <>
-              <Map width={state.width} height={state.height} tiles={state.tiles.map(toTileData)} robots={mapRobots} />
+              <Map
+                layout={state.layout}
+                width={state.width}
+                height={state.height}
+                tiles={state.tiles.map(toTileData)}
+                robots={mapRobots}
+              />
 
               <div className="pointer-events-none absolute inset-x-0 top-2 z-20 text-center text-sm text-white">
+                {state.layout?.name && <div className="font-semibold">{state.layout.name}</div>}
                 {describeStatus(state, room.players, isReplaying)}
               </div>
 
@@ -285,10 +323,18 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
 
             <output className="mb-0 mt-2 text-sm">{copyMessage}</output>
           </section>
-          <section className="rounded border border-metal-light p-4 flex flex-col items-center">
-            <h2 className="mb-3 mt-0 text-lg font-bold">Select Start Position</h2>
-            <StartBoard layoutData={startTilesConfig} currentPlayerId={room.playerId} onTileClick={handleTileClick} />
-          </section>
+
+          {room.mapId || !room.startBoardConfig ? (
+            <MapSelection
+              room={room}
+              disabled={busy}
+              error={setupError}
+              onMap={(mapId) => handleSetup('map', { mapId })}
+              onStart={(position) => handleSetup('start-tile', { mapId: room.mapId!, position })}
+            />
+          ) : (
+            <LegacyStartSelection room={room} disabled={busy} onSelect={handleLegacyStart} error={setupError} />
+          )}
 
           <RobotSelection
             selectedAvatarId={selectedAvatarId}
@@ -299,6 +345,7 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
 
           <section className="rounded border border-metal-light p-4">
             <h2 className="mb-3 mt-0 text-lg font-bold">Players</h2>
+
             <ul className="m-0 flex list-none flex-col gap-2 p-0">
               {room.players.map((player) => (
                 <li key={player.playerId} className="flex items-center justify-between gap-3">

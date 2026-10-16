@@ -1,12 +1,13 @@
 package com.example.demo.service;
 
-import com.example.demo.game.GameBoard;
-import com.example.demo.model.Position;
-import com.example.demo.model.Tile;
 import com.example.demo.model.GameRoom;
+import com.example.demo.model.Position;
+import com.example.demo.model.BoardDefinition;
+import com.example.demo.model.Tile;
+import com.example.demo.game.GameBoard;
+import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.model.RoomStatus;
 import com.example.demo.model.RoomPlayer;
-import com.example.demo.model.BoardDefinition;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,8 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 public class RoomServiceImpl implements RoomService {
@@ -27,27 +26,99 @@ public class RoomServiceImpl implements RoomService {
     private final Map<String, GameRoom> roomsByCode = new HashMap<>();
     private final SecureRandom random = new SecureRandom();
     private static final String CODE_CHARACTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+    private final MapLayoutService mapLayoutService;
     private final BoardRegistry boardRegistry;
 
+    public RoomServiceImpl() {
+        this(new MapLayoutService());
+    }
+
+    public RoomServiceImpl(MapLayoutService mapLayoutService) {
+        this(mapLayoutService, loadedBoardRegistry());
+    }
+
     public RoomServiceImpl(BoardRegistry boardRegistry) {
+        this(new MapLayoutService(), boardRegistry);
+    }
+
+    @Autowired
+    public RoomServiceImpl(MapLayoutService mapLayoutService, BoardRegistry boardRegistry) {
+        this.mapLayoutService = mapLayoutService;
         this.boardRegistry = boardRegistry;
     }
 
-    // Now accepts secure playerId from the controller/JWT
-    public synchronized GameRoom createRoom(String playerName, String playerId, String requestedBoardId) {
-        if (playerName == null || playerName.isBlank()) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Player name is required.");
+    private static BoardRegistry loadedBoardRegistry() {
+        var registry = new BoardRegistry();
+        registry.loadBoards();
+        return registry;
+    }
+
+    public GameBoard boardFor(GameRoom room) {
+        if (room.mapId() != null) {
+            return GameBoard.training(mapLayoutService.getLayout(room.mapId()));
         }
+        if (room.startBoardId() != null) {
+            var boards = new ArrayList<BoardDefinition>();
+            boards.add(boardRegistry.getBoard(room.startBoardId()));
+            for (String id : List.of("game1", "game2", "game3")) {
+                var board = boardRegistry.getBoardById(id);
+                if (board != null) boards.add(board);
+            }
+            return GameBoard.assemble(boards);
+        }
+        return room.training() ? GameBoard.training(mapLayoutService.getDefaultLayout()) : GameBoard.classicWithSeedTiles();
+    }
+
+    private List<Position> spawnPositions(GameRoom room) {
+        return boardFor(room).getSpawnPositions();
+    }
+
+    public List<Tile> startTiles(GameRoom room) {
+        var board = boardFor(room);
+        var tiles = new HashMap<Position, Tile>();
+        board.getSpecialTiles().forEach(tile -> tiles.put(new Position(tile.x(), tile.y()), tile));
+
+        return board.getSpawnPositions().stream().map(position -> tiles.get(position).withOccupant(
+                room.players().stream().filter(player -> position.equals(player.startPosition()))
+                        .map(RoomPlayer::playerId).findFirst().orElse(null))).toList();
+    }
+
+    // Now accepts secure playerId from the controller/JWT
+    public synchronized GameRoom createRoom(String playerName, String playerId) {
+        return createRoom(playerName, playerId, false);
+    }
+
+    public synchronized GameRoom createRoom(String playerName, String playerId, boolean training) {
+        return createRoom(playerName, playerId, training, null);
+    }
+
+    public synchronized GameRoom createRoom(String playerName, String playerId, String startBoardId) {
+        return createRoom(playerName, playerId, false, startBoardId);
+    }
+
+    public synchronized GameRoom createRoom(String playerName, String playerId, boolean training, String startBoardId) {
+        if (playerName == null || playerName.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Player name is required.");
+        }
+
+        if (startBoardId != null && !startBoardId.isBlank()) {
+            var board = boardRegistry.getBoardById(startBoardId);
+            if (board == null || board.specialTiles().stream().noneMatch(Tile::isSpawnPoint)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown start board.");
+            }
+        } else {
+            startBoardId = null;
+        }
+
         String code;
         do {
             code = generateCode();
         } while (roomsByCode.containsKey(code));
-        String boardId = (requestedBoardId != null && !requestedBoardId.isBlank()) ? requestedBoardId : "classic_start";
-        
-        // On passe deux 'null' : un pour la startPosition, un pour l'avatarId
-        RoomPlayer host = new RoomPlayer(playerId, playerName.strip(), null, null);
-        GameRoom room = new GameRoom(UUID.randomUUID(), code, host.playerId(), List.of(host), RoomStatus.WAITING, boardId);
-        
+
+        // Use the actual JWT subject instead of generating a random UUID
+        RoomPlayer host = new RoomPlayer(playerId, playerName.strip(), null);
+        GameRoom room = new GameRoom(UUID.randomUUID(), code, host.playerId(), List.of(host), RoomStatus.WAITING, training, startBoardId == null ? mapLayoutService.getDefaultLayout().id() : null, startBoardId);
         roomsByCode.put(code, room);
         return room;
     }
@@ -69,6 +140,10 @@ public class RoomServiceImpl implements RoomService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found.");
         }
 
+        if (room.training()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Training rooms are solo only.");
+        }
+
         if (room.status() != RoomStatus.WAITING) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This room has already started.");
         }
@@ -78,11 +153,13 @@ public class RoomServiceImpl implements RoomService {
             return room;
         }
 
+        if (room.players().size() >= spawnPositions(room).size()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This room has no free start tiles.");
+        }
+
         var players = new ArrayList<>(room.players());
-        // On ajoute le deuxième 'null' ici aussi
-        players.add(new RoomPlayer(playerId, playerName.strip(), null, null));
-        GameRoom updated = new GameRoom(room.gameId(), code, room.hostPlayerId(), players, room.status(), room.startBoardId());
-        
+        players.add(new RoomPlayer(playerId, playerName.strip(), null));
+        GameRoom updated = new GameRoom(room.gameId(), code, room.hostPlayerId(), players, room.status(), room.training(), room.mapId(), room.startBoardId());
         roomsByCode.put(code, updated);
         return updated;
     }
@@ -105,32 +182,19 @@ public class RoomServiceImpl implements RoomService {
         if (!room.hostPlayerId().equals(playerId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can start.");
         }
-
-        BoardDefinition board = boardRegistry.getBoard(room.startBoardId());
-        List<Position> availableSpawns = board.specialTiles().stream()
-                .filter(Tile::isSpawnPoint)
-                .map(t -> new Position(t.x(), t.y()))
-                .collect(Collectors.toList());
-
-        room.players().stream()
-                .map(RoomPlayer::startPosition)
-                .filter(Objects::nonNull)
-                .forEach(availableSpawns::remove);
-
-        List<RoomPlayer> updatedPlayers = new ArrayList<>();
-        for (RoomPlayer player : room.players()) {
-            if (player.startPosition() == null) {
-                if (availableSpawns.isEmpty()) {
-                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Not enough spawn points available.");
-                }
-                Position assignedPos = availableSpawns.removeFirst();
-                updatedPlayers.add(player.withStartPosition(assignedPos));
-            } else {
-                updatedPlayers.add(player);
-            }
+        if (room.status() == RoomStatus.STARTED) {
+            return room;
         }
 
-        GameRoom started = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), updatedPlayers, RoomStatus.STARTED, room.startBoardId());
+        var available = new ArrayList<>(spawnPositions(room));
+        room.players().stream().map(RoomPlayer::startPosition).forEach(available::remove);
+
+        var players = room.players().stream().map(player -> player.startPosition() != null ? player
+                : new RoomPlayer(player.playerId(), player.playerName(), player.avatarId(), available.removeFirst()))
+                .toList();
+
+        GameRoom started = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players,
+                RoomStatus.STARTED, room.training(), room.mapId(), room.startBoardId());
         roomsByCode.put(room.roomCode(), started);
         return started;
     }
@@ -142,7 +206,8 @@ public class RoomServiceImpl implements RoomService {
             roomsByCode.remove(room.roomCode());
         } else {
             var remaining = room.players().stream().filter(player -> !player.playerId().equals(playerId)).toList();
-            roomsByCode.put(room.roomCode(), new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), remaining, room.status(), room.startBoardId()));
+            roomsByCode.put(room.roomCode(),
+                    new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), remaining, room.status(), room.training(), room.mapId(), room.startBoardId()));
         }
     }
 
@@ -164,13 +229,84 @@ public class RoomServiceImpl implements RoomService {
         }
         var players = room.players().stream()
                 .map(player -> player.playerId().equals(playerId)
-                        ? new RoomPlayer(player.playerId(), player.playerName(), player.startPosition(), avatarId)
+                        ? new RoomPlayer(player.playerId(), player.playerName(), avatarId, player.startPosition())
                         : player)
                 .toList();
-        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players, room.status(), room.startBoardId());
+        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players, room.status(), room.training(), room.mapId(), room.startBoardId());
         roomsByCode.put(room.roomCode(), updated);
         return updated;
+    }
 
+    /** Reservation and conflict checking share the same room lock, including game start. */
+    public synchronized GameRoom selectStart(UUID gameId, String playerId, Position position, String mapId) {
+        GameRoom room = getRoom(gameId, playerId);
+        requireWaiting(room);
+
+        if (mapId == null || !mapId.equals(room.mapId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "The map changed. Refresh your start selection.");
+        }
+
+        return reserveStart(room, playerId, position);
+    }
+
+    /** Compatibility for the standalone start-board client; catalog rooms require a map ID. */
+    public synchronized GameRoom selectStartTile(UUID gameId, String playerId, Position position) {
+        var room = getRoom(gameId, playerId);
+        requireWaiting(room);
+        if (room.mapId() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Send the displayed map ID with the start selection.");
+        }
+        return reserveStart(room, playerId, position);
+    }
+
+    private GameRoom reserveStart(GameRoom room, String playerId, Position position) {
+        if (position != null && !spawnPositions(room).contains(position)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose a start tile on this map.");
+        }
+
+        if (position != null && room.players().stream().anyMatch(player ->
+                !player.playerId().equals(playerId) && position.equals(player.startPosition()))) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This start tile is already selected.");
+        }
+
+        var players = room.players().stream().map(player -> player.playerId().equals(playerId)
+                ? new RoomPlayer(player.playerId(), player.playerName(), player.avatarId(), position) : player).toList();
+
+        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players,
+                room.status(), room.training(), room.mapId(), room.startBoardId());
+        roomsByCode.put(room.roomCode(), updated);
+        return updated;
+    }
+
+    public synchronized GameRoom selectMap(UUID gameId, String playerId, String mapId) {
+        GameRoom room = getRoom(gameId, playerId);
+        requireWaiting(room);
+
+        if (!room.hostPlayerId().equals(playerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can choose the map.");
+        }
+
+        var layout = mapLayoutService.getLayout(mapId);
+        if (layout.id().equals(room.mapId())) {
+            return room;
+        }
+
+        if (GameBoard.training(layout).getSpawnPositions().size() < room.players().size()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This map has too few start tiles.");
+        }
+
+        var players = room.players().stream().map(player ->
+                new RoomPlayer(player.playerId(), player.playerName(), player.avatarId())).toList();
+        GameRoom updated = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players,
+                room.status(), room.training(), layout.id());
+        roomsByCode.put(room.roomCode(), updated);
+        return updated;
+    }
+
+    private void requireWaiting(GameRoom room) {
+        if (room.status() != RoomStatus.WAITING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Setup cannot change after the game has started.");
+        }
     }
 
     public synchronized GameRoom getRoomByGameId(UUID gameId) {
@@ -186,36 +322,5 @@ public class RoomServiceImpl implements RoomService {
             code.append(CODE_CHARACTERS.charAt(random.nextInt(CODE_CHARACTERS.length())));
         }
         return code.toString();
-    }
-
-    public synchronized GameRoom selectStartTile(UUID gameId, String playerId, Position position) {
-        GameRoom room = getRoom(gameId, playerId);
-        
-        if (room.status() != RoomStatus.WAITING) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot select tile after game has started.");
-        }
-
-        BoardDefinition board = boardRegistry.getBoard(room.startBoardId());
-        boolean isValidSpawn = board.specialTiles().stream()
-                .anyMatch(t -> t.isSpawnPoint() && t.x() == position.x() && t.y() == position.y());
-        
-        if (!isValidSpawn) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid spawn position.");
-        }
-
-        boolean alreadyTaken = room.players().stream()
-                .anyMatch(p -> !p.playerId().equals(playerId) && position.equals(p.startPosition()));
-        
-        if (alreadyTaken) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Tile already selected.");
-        }
-
-        List<RoomPlayer> updatedPlayers = room.players().stream()
-                .map(p -> p.playerId().equals(playerId) ? p.withStartPosition(position) : p)
-                .toList();
-
-        GameRoom updatedRoom = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), updatedPlayers, room.status(), room.startBoardId());
-        roomsByCode.put(room.roomCode(), updatedRoom);
-        return updatedRoom;
     }
 }

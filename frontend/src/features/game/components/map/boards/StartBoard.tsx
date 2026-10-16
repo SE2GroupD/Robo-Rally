@@ -1,34 +1,13 @@
-import { Tile } from './Tile';
 import type { TileData } from '../../../types/Board';
+import type { BoardRotation } from '../../../types/MapLayout';
+import { boardDimensions, rotateTiles } from '../../../data/boardGeometry';
+import { TileGrid } from './TileGrid';
 
 interface StartBoardProps {
   layoutData?: TileData[];
-  currentPlayerId?: string;
-  onTileClick?: (x: number, y: number) => void;
+  rotation?: BoardRotation;
 }
 
-export function StartBoard({ layoutData = [], currentPlayerId, onTileClick }: StartBoardProps) {
-  const width = 3;
-  const height = 10;
-  const tiles: TileData[] = [];
-
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const specialTile = layoutData.find((t) => t.x === x && t.y === y);
-
-      if (specialTile) {
-        tiles.push(specialTile);
-      } else {
-        tiles.push({ x, y });
-      }
-    }
-  }
-
-  return (
-    <div className="grid grid-cols-[repeat(3,50px)] gap-0.5 w-max bg-neutral-800 rounded-md">
-      {tiles.map((tile) => (
-        <Tile key={`start-${tile.x}-${tile.y}`} tile={tile} currentPlayerId={currentPlayerId} onTileClick={onTileClick} />
-      ))}
-    </div>
-  );
+export function StartBoard({ layoutData = [], rotation = 0 }: StartBoardProps) {
+  return <TileGrid layoutData={rotateTiles(layoutData, 'start', rotation)} {...boardDimensions('start', rotation)} />;
 }

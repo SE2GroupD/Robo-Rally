@@ -1,8 +1,11 @@
+import { validateMapLayout } from '../data/boardGeometry';
+import type { MapLayoutData } from '../types/MapLayout';
+
+import type { TileData } from '../types/Board';
 import { type BoardStateDto } from '../types/GameStateDto';
 import { type PlayerHandDto } from '../types/PlayerHandDto';
 import { type ProgramRegisterDto } from '../types/ProgramRegisterDto';
 import { createAuthClient } from '@neondatabase/neon-js/auth';
-import type { TileData } from '../types/Board';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const authClient = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL);
@@ -28,10 +31,12 @@ export interface CreatedRoom {
   playerId: string;
   hostPlayerId: string;
   status: 'WAITING' | 'STARTED';
-  players: { playerId: string; playerName: string; startPosition?: { x: number; y: number }; avatarId: number | null }[];
+  mapId?: string;
+  startBoardConfig?: TileData[];
+  players: { playerId: string; playerName: string; avatarId: number | null; startPosition?: { x: number; y: number } | null }[];
 }
 
-export async function createRoom(playerName: string): Promise<CreatedRoom> {
+export async function createRoom(playerName: string, training = false): Promise<CreatedRoom> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
 
   const token = await getValidToken();
@@ -42,7 +47,7 @@ export async function createRoom(playerName: string): Promise<CreatedRoom> {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ playerName }),
+    body: JSON.stringify({ playerName, ...(training ? { training: true } : {}) }),
     signal: AbortSignal.timeout(15000),
   });
 
@@ -80,9 +85,10 @@ export interface JoinedRoom {
   roomCode: string;
   playerId: string;
   hostPlayerId: string;
-  startBoardConfig?: TileData[];
   status: 'WAITING' | 'STARTED';
-  players: { playerId: string; playerName: string; startPosition?: { x: number; y: number }; avatarId: number | null }[];
+  mapId?: string;
+  startBoardConfig?: TileData[];
+  players: { playerId: string; playerName: string; avatarId: number | null; startPosition?: { x: number; y: number } | null }[];
 }
 
 export async function joinRoom(roomCode: string, playerName: string): Promise<JoinedRoom> {
@@ -350,26 +356,6 @@ export async function leaveRoom(room: JoinedRoom, options?: { keepalive?: boolea
   await roomRequest(room, 'leave', undefined, options?.keepalive);
 }
 
-export async function selectStartTile(room: JoinedRoom, x: number, y: number): Promise<JoinedRoom> {
-  if (!API_BASE_URL) throw new Error('Room service is unavailable.');
-
-  const token = await getValidToken();
-  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/games/${encodeURIComponent(room.gameId)}/start-tile`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ x, y }),
-  });
-
-  if (response.status === 409) throw new Error('Cette case est déjà prise par un autre joueur.');
-  if (response.status === 400) throw new Error('Position de départ invalide.');
-  if (!response.ok) throw new RoomRequestError('Impossible de sélectionner cette case.', response.status);
-
-  return readRoom(response, room);
-}
-
 export async function selectRobot(room: JoinedRoom, avatarId: number): Promise<JoinedRoom> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable.');
 
@@ -386,9 +372,17 @@ export async function selectRobot(room: JoinedRoom, avatarId: number): Promise<J
     signal: AbortSignal.timeout(10000),
   });
 
-  if (response.status === 409) throw new RoomRequestError('This robot is already selected.', response.status);
-  if (response.status === 400) throw new RoomRequestError('Invalid robot selection.', response.status);
-  if (!response.ok) throw new RoomRequestError('Could not select robot.', response.status);
+  if (response.status === 409) {
+    throw new RoomRequestError('This robot is already selected.', response.status);
+  }
+
+  if (response.status === 400) {
+    throw new RoomRequestError('Invalid robot selection.', response.status);
+  }
+
+  if (!response.ok) {
+    throw new RoomRequestError('Could not select robot.', response.status);
+  }
 
   return readRoom(response, room);
 }
@@ -396,10 +390,61 @@ export async function selectRobot(room: JoinedRoom, avatarId: number): Promise<J
 export async function fetchBoardState(gameId: string, signal?: AbortSignal): Promise<BoardStateDto> {
   const token = await getValidToken();
 
-  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/game/${encodeURIComponent(gameId)}/state`, {
+  const response = await fetch(`${API_BASE_URL}/game/${encodeURIComponent(gameId)}/state`, {
     headers: { Authorization: `Bearer ${token}` },
     signal,
   });
   if (!response.ok) throw new RoomRequestError('Board state request failed.', response.status);
   return response.json();
+}
+
+export async function fetchMaps(signal?: AbortSignal): Promise<MapLayoutData[]> {
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL?.replace(/\/$/, '')}/maps`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
+  });
+
+  if (!response.ok) throw new Error('Could not load maps.');
+
+  const maps: MapLayoutData[] = await response.json();
+  if (!Array.isArray(maps) || maps.some((map) => !map.id || !map.name || validateMapLayout(map).length)) {
+    throw new Error('Invalid map catalog.');
+  }
+
+  return maps;
+}
+
+export async function updateRoomSetup(
+  room: JoinedRoom,
+  action: 'map' | 'start-tile',
+  value: { mapId: string } | { position: { x: number; y: number } | null; mapId: string },
+): Promise<JoinedRoom> {
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL?.replace(/\/$/, '')}/games/${room.gameId}/${action}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(value),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (!response.ok) throw new RoomRequestError('Could not update setup.', response.status);
+
+  return readRoom(response, room);
+}
+
+/** Compatibility with rooms created using the standalone start-board API. */
+export async function selectStartTile(room: JoinedRoom, x: number, y: number): Promise<JoinedRoom> {
+  if (room.mapId) return updateRoomSetup(room, 'start-tile', { mapId: room.mapId, position: { x, y } });
+
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL?.replace(/\/$/, '')}/games/${encodeURIComponent(room.gameId)}/start-tile`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ x, y }),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (!response.ok) throw new RoomRequestError('Could not select this start tile.', response.status);
+  return readRoom(response, room);
 }
