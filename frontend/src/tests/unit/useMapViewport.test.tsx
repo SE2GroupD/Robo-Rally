@@ -47,7 +47,7 @@ it('zooms in tenths to exact limits and preserves scroll position proportionally
   expect(result.current.canZoomOut).toBe(false);
 });
 
-it('zooms with Ctrl/Cmd + wheel or a trackpad pinch and preserves plain scrolling', () => {
+it('smoothly batches Ctrl/Cmd + wheel or trackpad pinch input and preserves plain scrolling', () => {
   let pending: FrameRequestCallback = () => {};
   vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
     pending = callback;
@@ -59,6 +59,7 @@ it('zooms with Ctrl/Cmd + wheel or a trackpad pinch and preserves plain scrollin
     ({
       currentTarget: element,
       deltaY: -10,
+      deltaMode: 0,
       ctrlKey: true,
       metaKey: false,
       preventDefault: vi.fn(),
@@ -67,19 +68,51 @@ it('zooms with Ctrl/Cmd + wheel or a trackpad pinch and preserves plain scrollin
 
   const pinch = wheel();
   act(() => result.current.onWheel(pinch));
+  act(() => result.current.onWheel(wheel()));
   act(() => pending(0));
   expect(pinch.preventDefault).toHaveBeenCalledOnce();
-  expect(result.current.scale).toBe(1.1);
+  expect(result.current.scale).toBe(1.016);
 
   const plainScroll = wheel({ ctrlKey: false, metaKey: false });
   act(() => result.current.onWheel(plainScroll));
   expect(plainScroll.preventDefault).not.toHaveBeenCalled();
-  expect(result.current.scale).toBe(1.1);
+  expect(result.current.scale).toBe(1.016);
 
-  const cmdWheel = wheel({ deltaY: 10, ctrlKey: false, metaKey: true });
+  const cmdWheel = wheel({ deltaY: 20, ctrlKey: false, metaKey: true });
   act(() => result.current.onWheel(cmdWheel));
   act(() => pending(0));
   expect(result.current.scale).toBe(1);
+});
+
+it('keeps the point under the cursor fixed while zooming', () => {
+  const callbacks: FrameRequestCallback[] = [];
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+    callbacks.push(callback);
+    return callbacks.length;
+  });
+  const { result, element } = setupViewport();
+  Object.defineProperty(element, 'clientWidth', { value: 400 });
+  Object.defineProperty(element, 'clientHeight', { value: 300 });
+  element.scrollLeft = 200;
+  element.scrollTop = 100;
+
+  act(() =>
+    result.current.onWheel({
+      currentTarget: element,
+      clientX: 50,
+      clientY: 75,
+      deltaY: -10,
+      deltaMode: 0,
+      ctrlKey: true,
+      metaKey: false,
+      preventDefault: vi.fn(),
+    } as unknown as WheelEvent<HTMLElement>),
+  );
+  act(() => callbacks.shift()?.(0));
+  act(() => callbacks.shift()?.(0));
+
+  expect(element.scrollLeft).toBeCloseTo(202);
+  expect(element.scrollTop).toBeCloseTo(101.4);
 });
 
 it('ignores secondary buttons and non-primary pointers', () => {

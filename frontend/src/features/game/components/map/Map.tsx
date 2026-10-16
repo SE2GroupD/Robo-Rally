@@ -50,7 +50,6 @@ export function Map({ width, height, tiles, robots, layout }: MapProps) {
     onZoomOut,
     canZoomIn,
     canZoomOut,
-    onWheel,
     onPointerDown,
     onPointerMove,
     onPointerUp,
@@ -70,7 +69,6 @@ export function Map({ width, height, tiles, robots, layout }: MapProps) {
           'absolute inset-0 touch-none overflow-auto bg-slate-950 focus-visible:outline-2 focus-visible:outline-cyan-300',
           isDragging ? 'cursor-grabbing' : 'cursor-grab',
         )}
-        onWheel={onWheel}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
