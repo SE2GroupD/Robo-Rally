@@ -59,3 +59,17 @@ it.each([
   expect(screen.queryByRole('img', { name: /^Walls / })).not.toBeInTheDocument();
   expect(screen.getAllByRole('img', { name: /^Wall / })).toHaveLength(Object.keys(walls).length);
 });
+
+it('marks the current player robot on the board', () => {
+  render(
+    <Tile
+      tile={{
+        x: 0,
+        y: 0,
+        robot: { avatarId: 1, hue: 0, direction: 'EAST', isCurrentPlayer: true },
+      }}
+    />,
+  );
+
+  expect(screen.getByLabelText('Your robot')).toHaveTextContent('YOU');
+});

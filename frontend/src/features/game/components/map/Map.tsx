@@ -16,6 +16,7 @@ export interface MapRobot {
   direction: Direction;
   avatarId: AvatarId;
   hue: number;
+  isCurrentPlayer?: boolean;
 }
 
 interface MapProps {
@@ -24,24 +25,30 @@ interface MapProps {
   height: number;
   tiles: TileData[];
   robots: MapRobot[];
+  currentPlayerId?: string;
 }
 
 const CELL_PX = TILE_PITCH;
 
-// Merges the live robots into the server's tile list. (Two robots on one tile
-// is possible while the backend only clamps at edges; the last one drawn wins.)
-function withRobots(tiles: TileData[], robots: MapRobot[]): TileData[] {
+function withRobots(tiles: TileData[], robots: MapRobot[], currentPlayerId?: string): TileData[] {
   const layout = tiles.map(({ robot: _robot, ...tile }) => tile);
-  for (const r of robots) {
-    const robotField = { robot: { avatarId: r.avatarId, hue: r.hue, direction: r.direction } };
-    const index = layout.findIndex((tile) => tile.x === r.x && tile.y === r.y);
-    if (index === -1) layout.push({ x: r.x, y: r.y, ...robotField });
+  for (const robot of robots) {
+    const robotField = {
+      robot: {
+        avatarId: robot.avatarId,
+        hue: robot.hue,
+        direction: robot.direction,
+        isCurrentPlayer: robot.playerId === currentPlayerId,
+      },
+    };
+    const index = layout.findIndex((tile) => tile.x === robot.x && tile.y === robot.y);
+    if (index === -1) layout.push({ x: robot.x, y: robot.y, ...robotField });
     else layout[index] = { ...layout[index], ...robotField };
   }
   return layout;
 }
 
-export function Map({ width, height, tiles, robots, layout }: MapProps) {
+export function Map({ width, height, tiles, robots, layout, currentPlayerId }: MapProps) {
   const {
     viewportRef,
     scale,
@@ -57,6 +64,11 @@ export function Map({ width, height, tiles, robots, layout }: MapProps) {
     onLostPointerCapture,
     onDragStart,
   } = useMapViewport();
+
+  const robotsWithCurrentPlayer = robots.map((robot) => ({
+    ...robot,
+    isCurrentPlayer: robot.playerId === currentPlayerId,
+  }));
 
   return (
     <>
@@ -88,9 +100,9 @@ export function Map({ width, height, tiles, robots, layout }: MapProps) {
             style={{ left: '50vw', top: '50dvh', transform: `scale(${scale})` }}
           >
             {layout ? (
-              <MapLayout layout={layout} robots={robots} />
+              <MapLayout layout={layout} robots={robotsWithCurrentPlayer} />
             ) : (
-              <TileGrid layoutData={withRobots(tiles, robots)} width={width} height={height} />
+              <TileGrid layoutData={withRobots(tiles, robots, currentPlayerId)} width={width} height={height} />
             )}
           </div>
         </div>

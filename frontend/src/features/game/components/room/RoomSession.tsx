@@ -43,14 +43,52 @@ interface RoomSessionProps {
   onRoomChange?: (room: JoinedRoom) => void;
 }
 
-function describeStatus(state: BoardStateDto, players: JoinedRoom['players'], isReplaying: boolean) {
-  if (isReplaying) return `Round ${state.round - 1} resolving…`;
+interface RoundStatusProps {
+  state: BoardStateDto;
+  players: JoinedRoom['players'];
+  currentPlayerId: string;
+  isReplaying: boolean;
+}
 
-  const waitingFor = players
-    .filter((player) => !state.lockedInPlayerIds.includes(player.playerId))
-    .map((player) => player.playerName);
+function RoundStatus({ state, players, currentPlayerId, isReplaying }: RoundStatusProps) {
+  if (isReplaying) {
+    return (
+      <section
+        aria-live="polite"
+        className="rounded-full border border-slate-700 bg-slate-950/90 px-4 py-1.5 text-sm text-slate-200 shadow-lg"
+      >
+        <span className="font-black text-cyan-300">Round {state.round - 1}</span>
+        <span className="mx-2 text-slate-500">•</span>
+        Resolving moves…
+      </section>
+    );
+  }
 
-  return waitingFor.length > 0 ? `Round ${state.round} · Waiting for ${waitingFor.join(', ')}` : '';
+  const waitingFor = players.filter((player) => !state.lockedInPlayerIds.includes(player.playerId));
+  const isYourTurn = waitingFor.some((player) => player.playerId === currentPlayerId);
+
+  return (
+    <section
+      aria-live="polite"
+      className="flex items-center gap-2 rounded-xl border border-slate-700/80 bg-slate-950/85 px-3 py-1.5 text-sm text-slate-200 shadow-lg backdrop-blur-sm"
+    >
+      <span className="font-black text-cyan-300">Round {state.round}</span>
+      <span className="text-slate-500">•</span>
+      {isYourTurn ? (
+        <>
+          <span className="font-black text-cyan-300">Your turn</span>
+          <span className="text-slate-300">Choose 5 cards</span>
+        </>
+      ) : waitingFor.length > 0 ? (
+        <>
+          <span className="text-slate-300">Waiting for</span>
+          <span className="font-medium text-white">{waitingFor.map((player) => player.playerName).join(', ')}</span>
+        </>
+      ) : (
+        <span className="text-slate-300">All players are ready</span>
+      )}
+    </section>
+  );
 }
 
 export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionProps) {
@@ -90,6 +128,14 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
       hue: index * 60,
     };
   });
+
+  const rosterPlayers = mapRobots
+    .map((robot) => {
+      const player = room.players.find((roomPlayer) => roomPlayer.playerId === robot.playerId);
+      return player ? { ...player, avatarId: robot.avatarId } : null;
+    })
+    .filter((player): player is JoinedRoom['players'][number] & { avatarId: AvatarId } => player !== null)
+    .sort((first, second) => Number(second.playerId === room.playerId) - Number(first.playerId === room.playerId));
 
   const { gameId, playerId } = initialRoom;
 
@@ -294,12 +340,34 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
                 height={state.height}
                 tiles={state.tiles.map(toTileData)}
                 robots={mapRobots}
+                currentPlayerId={room.playerId}
               />
 
-              <div className="pointer-events-none absolute inset-x-0 top-2 z-20 text-center text-sm text-white">
-                {state.layout?.name && <div className="font-semibold">{state.layout.name}</div>}
-                {describeStatus(state, room.players, isReplaying)}
+              <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex flex-col items-center gap-1">
+                {state.layout?.name && <div className="text-center text-sm font-semibold text-white">{state.layout.name}</div>}
+                <RoundStatus state={state} players={room.players} currentPlayerId={room.playerId} isReplaying={isReplaying} />
               </div>
+
+              <aside
+                aria-label="Pilot robot legend"
+                className="pointer-events-none absolute left-1/2 top-14 z-20 flex max-w-[calc(100%-12rem)] -translate-x-1/2 items-center gap-3 rounded-xl bg-slate-900/70 px-3 py-2 text-sm text-white shadow-lg backdrop-blur-sm"
+              >
+                <h2 className="m-0 shrink-0 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Pilots</h2>
+                <ul className="m-0 flex min-w-0 list-none items-center gap-4 border-l border-slate-700/80 pl-3">
+                  {rosterPlayers.map((player) => (
+                    <li key={player.playerId} className="flex min-w-0 items-center gap-2">
+                      <img src={AVATAR_MAP[player.avatarId as AvatarId]} alt="" className="h-8 w-8 shrink-0 object-contain" />
+                      <span
+                        className={
+                          player.playerId === room.playerId ? 'truncate font-bold text-cyan-200' : 'truncate text-slate-200'
+                        }
+                      >
+                        {player.playerId === room.playerId ? 'You' : player.playerName}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </aside>
 
               <div className="pointer-events-none absolute inset-0 z-10">
                 <ProgrammingPhase roomId={room.gameId} round={programmingRound} />

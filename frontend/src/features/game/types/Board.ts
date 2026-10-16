@@ -12,7 +12,12 @@ export type WallConfig = {
 export type TileData = {
   x: number;
   y: number;
-  robot?: { avatarId?: AvatarId; hue: number; direction: Direction };
+  robot?: {
+    avatarId?: AvatarId;
+    hue: number;
+    direction: Direction;
+    isCurrentPlayer?: boolean;
+  };
   checkpointNumber?: number;
   walls?: WallConfig;
   hasPit?: boolean;

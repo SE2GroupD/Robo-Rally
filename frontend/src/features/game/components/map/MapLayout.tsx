@@ -33,7 +33,7 @@ export function MapLayout({ layout, robots = [] }: { layout: MapLayoutData; robo
       {robots.map((robot) => (
         <div
           key={robot.playerId}
-          className="absolute pointer-events-none z-30 flex items-center justify-center"
+          className="absolute z-30 flex items-center justify-center pointer-events-none"
           style={{
             left: (robot.x - bounds.x) * TILE_PITCH,
             top: (robot.y - bounds.y) * TILE_PITCH,
@@ -42,6 +42,14 @@ export function MapLayout({ layout, robots = [] }: { layout: MapLayoutData; robo
           }}
         >
           <Robot avatarId={robot.avatarId} rotation={{ NORTH: 180, EAST: 270, SOUTH: 0, WEST: 90 }[robot.direction]} />
+          {robot.isCurrentPlayer && (
+            <span
+              aria-label="Your robot"
+              className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded border border-cyan-100 bg-cyan-500 px-1 text-[8px] font-black leading-3 text-slate-950 shadow-md"
+            >
+              YOU
+            </span>
+          )}
         </div>
       ))}
     </section>
