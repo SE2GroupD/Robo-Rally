@@ -1,0 +1,20 @@
+{
+  "defaultMapId": "extra-crispy",
+  "startTemplates": [
+    "starttemplates/start-a.json",
+    "starttemplates/start-b.json"
+  ],
+  "boardTemplates": [
+    "boardtemplates/4a.json",
+    "boardtemplates/5a.json",
+    "boardtemplates/2b.json",
+    "boardtemplates/2a.json",
+    "boardtemplates/3a.json"
+  ],
+  "courses": [
+    "racingcourses/extra-crispy.json",
+    "racingcourses/risky-crossing.json",
+    "racingcourses/burnout.json",
+    "racingcourses/chop-shop-challenge.json"
+  ]
+}

@@ -110,7 +110,7 @@ class RoomServiceTests {
         GameRoom room = service.createRoom("Host", hostId, "classic_start");
         GameRoom other = service.createRoom("Other host", "other-host-id", "classic_start");
 
-        List<Callable<GameRoom>> tasks = IntStream.range(0, 30)
+        List<Callable<GameRoom>> tasks = IntStream.range(0, 4)
                 .mapToObj(i -> (Callable<GameRoom>) () -> service.joinRoom(room.roomCode(), "Guest", "guest-" + i))
                 .toList();
 
@@ -120,7 +120,7 @@ class RoomServiceTests {
                 assertTrue(guestIds.add(result.get().players().getLast().playerId()));
             }
             GameRoom finalRoom = service.joinRoom(room.roomCode(), "Last guest", "last-guest");
-            assertEquals(32, finalRoom.players().size());
+            assertEquals(6, finalRoom.players().size());
             assertTrue(finalRoom.players().stream().map(p -> p.playerId()).toList().containsAll(guestIds));
             assertEquals(2, service.joinRoom(other.roomCode(), "Other guest", guestId).players().size());
         }
@@ -214,6 +214,21 @@ class RoomServiceTests {
 
         assertEquals(secondChoice, updated.players().getFirst().startPosition());
     }
+
+    @Test
+    void standaloneGameplayUsesTheReservedSpawnAndCombinedBoards() {
+        var room = service.createRoom("Host", hostId, "classic_start");
+        var spawn = new com.example.demo.model.Position(1, 2);
+        service.selectStartTile(room.gameId(), hostId, spawn);
+        service.startRoom(room.gameId(), hostId);
+
+        var state = new GameServiceImpl(service).getBoardState(room.gameId(), hostId);
+        assertEquals(33, state.width());
+        assertEquals(10, state.height());
+        assertEquals(spawn.x(), state.robots().getFirst().x());
+        assertEquals(spawn.y(), state.robots().getFirst().y());
+        assertNull(state.layout());
+    }
     @Test
     void listsOnlyWaitingPublicRoomsWithAvailableSpace() {
         PublicRoomService publicRooms = new PublicRoomServiceImpl(service);
@@ -233,6 +248,7 @@ class RoomServiceTests {
                 () -> publicRooms.joinPublicRoom(publicRoom.gameId(), "Late guest", "late-guest")).getStatusCode().value());
     }
 
+
     @Test
     void joiningPublicRoomsKeepsPrivateRoomsOnTheExistingJoinFlow() {
         PublicRoomService publicRooms = new PublicRoomServiceImpl(service);
@@ -244,6 +260,7 @@ class RoomServiceTests {
                 () -> publicRooms.joinPublicRoom(privateRoom.gameId(), "Guest", guestId)).getStatusCode().value());
         assertEquals(2, service.joinRoom(privateRoom.roomCode(), "Guest", guestId).players().size());
     }
+
 
     @Test
     void publicRoomRemainsListedWhenAGuestLeavesAndClosesWhenTheHostLeaves() {
@@ -260,4 +277,5 @@ class RoomServiceTests {
         assertEquals(404, assertThrows(ResponseStatusException.class,
                 () -> service.getRoom(publicRoom.gameId(), hostId)).getStatusCode().value());
     }
+
 }

@@ -1,3 +1,4 @@
+import type { MapLayoutData } from './MapLayout';
 import type { CardType } from './CardType';
 import type { Direction } from './Board';
 
@@ -39,22 +40,23 @@ export interface TileDto {
   hasPit?: boolean;
   pit?: boolean;
   isPit?: boolean;
+  walls?: { north: boolean; east: boolean; south: boolean; west: boolean } | null;
   hasAntenna?: boolean;
   antenna?: boolean;
   isAntenna?: boolean;
   isSpawnPoint?: boolean;
   spawnPoint?: boolean;
+  occupyingPlayerId?: string | null;
+  gear?: 'CLOCKWISE' | 'COUNTERCLOCKWISE' | 'COUNTER_CLOCKWISE' | null;
+  conveyor?: { direction: Direction; isExpress?: boolean; express?: boolean } | null;
   checkpointNumber?: number | null;
   checkpoint?: number | null;
   isCheckpoint?: number | null;
-  gear?: 'CLOCKWISE' | 'COUNTER_CLOCKWISE' | null;
-  conveyor?: { direction: Direction; isExpress?: boolean; express?: boolean } | null;
-  walls?: { north?: boolean; east?: boolean; south?: boolean; west?: boolean } | null;
-  occupyingPlayerId?: string | null;
   pushPanel?: { direction: Direction; activeRegisters: number[] } | null;
 }
 
 export interface BoardStateDto {
+  layout?: MapLayoutData;
   gameId: string;
   width: number;
   height: number;

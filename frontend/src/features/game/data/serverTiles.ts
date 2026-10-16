@@ -5,7 +5,7 @@ export function toTileData(tile: TileDto): TileData {
   return {
     x: tile.x,
     y: tile.y,
-    hasPit: tile.hasPit || tile.pit || undefined,
+    hasPit: tile.hasPit || tile.pit || tile.isPit || undefined,
     hasAntenna: tile.hasAntenna || tile.antenna || tile.isAntenna || undefined,
     isSpawnPoint: tile.isSpawnPoint || tile.spawnPoint || undefined,
     checkpointNumber: tile.checkpointNumber ?? tile.checkpoint ?? tile.isCheckpoint ?? undefined,

@@ -21,6 +21,11 @@ public record Tile(
         @JsonProperty("occupyingPlayerId") @JsonAlias({"occupyingPlayerId", "occupant"}) String occupyingPlayerId
 ) {
 
+    public Tile(int x, int y, boolean hasPit, Walls walls, boolean hasAntenna, boolean isSpawnPoint,
+                GearRotation gear, Conveyor conveyor, Integer checkpointNumber, PushPanel pushPanel) {
+        this(x, y, hasPit, walls, hasAntenna, isSpawnPoint, gear, conveyor, checkpointNumber, pushPanel, null);
+    }
+
     public static Tile blank(int x, int y) {
         return new Tile(x, y, false, null, false, false, null, null, null, null, null);
     }

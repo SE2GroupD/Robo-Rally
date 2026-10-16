@@ -7,7 +7,7 @@
             "request": "launch",
             "mainClass": "com.example.demo.DemoApplication",
             "projectName": "demo",
-            "envFile": "${workspaceFolder}/.env" 
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }

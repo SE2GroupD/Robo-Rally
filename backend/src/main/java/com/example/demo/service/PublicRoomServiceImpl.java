@@ -34,7 +34,7 @@ public class PublicRoomServiceImpl implements PublicRoomService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Room name must be 40 characters or fewer.");
         }
 
-        GameRoom room = roomService.createRoom(playerName, playerId, "classic_start");
+        GameRoom room = roomService.createRoom(playerName, playerId);
         roomNamesByGameId.put(room.gameId(), cleanRoomName);
         return room;
     }

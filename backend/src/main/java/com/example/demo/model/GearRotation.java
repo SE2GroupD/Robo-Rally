@@ -7,7 +7,7 @@ public enum GearRotation {
     @JsonProperty("CLOCKWISE")
     CLOCKWISE,
 
-    @JsonProperty("COUNTER_CLOCKWISE")
+    @JsonProperty("COUNTERCLOCKWISE")
     @JsonAlias({"COUNTERCLOCKWISE", "COUNTER_CLOCKWISE"})
     COUNTERCLOCKWISE
 }
