@@ -66,7 +66,7 @@ function CheckpointProgress({
   return (
     <section
       aria-label="Checkpoint progress"
-      className="absolute left-3 top-28 z-20 w-64 max-w-[calc(100%-1.5rem)] rounded border border-metal-light bg-slate-950/90 p-3 text-sm text-white shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
+      className="absolute right-3 top-28 z-20 max-h-[calc(75dvh-8rem)] w-60 max-w-[calc(100%-1.5rem)] overflow-y-auto rounded border border-metal-light bg-slate-950/90 p-3 text-sm text-white shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
     >
       <h2 className="m-0 text-sm font-bold text-metal-light">Checkpoint progress</h2>
       <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0">
