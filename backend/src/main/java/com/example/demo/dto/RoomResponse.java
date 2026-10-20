@@ -2,6 +2,8 @@ package com.example.demo.dto;
 
 import com.example.demo.model.GameRoom;
 import com.example.demo.model.RoomPlayer;
+import com.example.demo.model.Tile;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -11,15 +13,23 @@ public record RoomResponse(
         String playerId,
         String hostPlayerId,
         String status,
-        List<RoomPlayer> players) {
+        List<RoomPlayer> players,
+        String mapId,
+        List<Tile> startBoardConfig) {
 
     public static RoomResponse forPlayer(GameRoom room, String securePlayerId) {
+        return forPlayer(room, securePlayerId, List.of());
+    }
+
+    public static RoomResponse forPlayer(GameRoom room, String securePlayerId, List<Tile> startBoardConfig) {
         return new RoomResponse(
                 room.gameId(),
                 room.roomCode(),
                 securePlayerId,
                 room.hostPlayerId(),
                 room.status().name(),
-                room.players());
+                room.players(),
+                room.mapId(),
+                startBoardConfig);
     }
 }

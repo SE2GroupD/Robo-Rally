@@ -1,11 +1,14 @@
 package com.example.demo.game;
 
+import com.example.demo.model.BoardDefinition;
 import com.example.demo.model.Conveyor;
 import com.example.demo.model.Direction;
 import com.example.demo.model.GearRotation;
 import com.example.demo.model.Position;
+import com.example.demo.model.PushPanel;
 import com.example.demo.model.Tile;
 import com.example.demo.model.Walls;
+import com.example.demo.model.layout.MapLayout;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,12 +18,22 @@ import java.util.Map;
 /** The grid a game is played on. */
 public class GameBoard {
 
+    private final MapLayout layout;
+
+    public MapLayout getLayout() { return layout; }
+
     private final int width;
     private final int height;
     private final Map<Position, Tile> specialTiles;
     private final List<Position> spawnPositions;
 
     public GameBoard(int width, int height, List<Tile> seedTiles, List<Position> spawnPositions) {
+        this(width, height, seedTiles, spawnPositions, null);
+    }
+
+    private GameBoard(int width, int height, List<Tile> seedTiles, List<Position> spawnPositions, MapLayout layout) {
+        this.layout = layout;
+
         if (width <= 0 || height <= 0) {
             throw new IllegalArgumentException("Board dimensions must be positive.");
         }
@@ -31,6 +44,13 @@ public class GameBoard {
             this.specialTiles.put(new Position(tile.x(), tile.y()), tile);
         }
         this.spawnPositions = List.copyOf(spawnPositions);
+    }
+
+    public GameBoard(int width, int height, List<Tile> seedTiles) {
+        this(width, height, seedTiles, seedTiles.stream()
+                .filter(Tile::isSpawnPoint)
+                .map(t -> new Position(t.x(), t.y()))
+                .toList());
     }
 
     public int getWidth() { return width; }
@@ -47,8 +67,8 @@ public class GameBoard {
     }
 
     /**
-     * Placeholder: robots stop at the board edge. Real rules (fall off / pit =
-     * destroyed and respawned) come with the hazard system.
+     * Whether a robot (or anything else) can step one tile from {@code from}
+     * in {@code direction}. The board edge counts as a wall for now.
      */
     public Position clampToBounds(Position position) {
         int clampedX = Math.clamp(position.x(), 0, width - 1);
@@ -56,6 +76,42 @@ public class GameBoard {
         return new Position(clampedX, clampedY);
     }
 
+    public static GameBoard assemble(List<BoardDefinition> boardDefinitions) {
+        int totalWidth = 0;
+        int maxHeight = 0;
+        List<Tile> combinedTiles = new ArrayList<>();
+        List<Position> combinedSpawns = new ArrayList<>();
+
+        for (BoardDefinition def : boardDefinitions) {
+            if (def == null) continue;
+            int xOffset = totalWidth;
+            if (def.specialTiles() != null) {
+                for (Tile tile : def.specialTiles()) {
+                    Tile translatedTile = new Tile(
+                            tile.x() + xOffset,
+                            tile.y(),
+                            tile.hasPit(),
+                            tile.walls(),
+                            tile.hasAntenna(),
+                            tile.isSpawnPoint(),
+                            tile.gear(),
+                            tile.conveyor(),
+                            tile.checkpointNumber(),
+                            tile.pushPanel(),
+                            tile.occupyingPlayerId()
+                    );
+                    combinedTiles.add(translatedTile);
+                    if (translatedTile.isSpawnPoint()) {
+                        combinedSpawns.add(new Position(translatedTile.x(), translatedTile.y()));
+                    }
+                }
+            }
+            totalWidth += def.width();
+            maxHeight = Math.max(maxHeight, def.height());
+        }
+
+        return new GameBoard(totalWidth, maxHeight, combinedTiles, combinedSpawns);
+    }
 
     public boolean canMove(Position from, Direction direction) {
         Position to = from.moveIn(direction, 1);
@@ -65,8 +121,7 @@ public class GameBoard {
             return false;
         }
 
-        // A wall can be stored either on the current tile
-        // or on the neighbouring tile.
+        // A wall can be stored either on the current tile or on the neighbouring tile.
         return !hasWall(from, direction)
                 && !hasWall(to, direction.opposite());
     }
@@ -89,28 +144,119 @@ public class GameBoard {
         };
     }
 
+    /** The belt on this tile, or null. */
+    public Conveyor conveyorAt(Position p) {
+        Tile tile = specialTiles.get(p);
+        return tile == null ? null : tile.conveyor();
+    }
+
+    /** The push panel on this tile, or null. */
+    public PushPanel pushPanelAt(Position p) {
+        Tile tile = specialTiles.get(p);
+        return tile == null ? null : tile.pushPanel();
+    }
+
+    public GearRotation gearAt(Position p) {
+        Tile tile = specialTiles.get(p);
+        return tile == null ? null : tile.gear();
+    }
+
     public Integer checkpointAt(Position position) {
         Tile tile = specialTiles.get(position);
         return tile == null ? null : tile.checkpointNumber();
     }
 
+    /** Compiles the unrotated rectangular training definition into gameplay coordinates. */
+    public static GameBoard training(MapLayout layout) {
+        MapLayoutValidator.requireValid(layout);
+        List<Tile> tiles = new ArrayList<>();
+        List<Position> spawns = new ArrayList<>();
+        int width = 0;
+        int height = 0;
+        int area = 0;
+
+        for (var block : layout.boards()) {
+            if (block.rotation() != 0 || block.x() < 0 || block.y() < 0) {
+                throw new IllegalArgumentException("Training currently requires an unrotated positive-coordinate layout.");
+            }
+
+            width = Math.max(width, block.x() + block.kind().width());
+            height = Math.max(height, block.y() + 10);
+            area += block.kind().width() * 10;
+
+            for (Tile tile : block.tiles()) {
+                int x = block.x() + tile.x();
+                int y = block.y() + tile.y();
+                tiles.add(new Tile(x, y, tile.hasPit(), tile.walls(), tile.hasAntenna(), tile.isSpawnPoint(),
+                        tile.gear(), tile.conveyor(), tile.checkpointNumber(), tile.pushPanel()));
+
+                if (tile.isSpawnPoint()) {
+                    spawns.add(new Position(x, y));
+                }
+            }
+        }
+
+        if (area != width * height || spawns.isEmpty()) {
+            throw new IllegalArgumentException("Training requires a filled rectangle and a spawn point.");
+        }
+
+        return new GameBoard(width, height, tiles, spawns, layout);
+    }
+
     public static GameBoard classicWithSeedTiles() {
         List<Position> spawns = List.of(
-                new Position(0, 1), new Position(0, 2), new Position(0, 3),
-                new Position(0, 4), new Position(0, 5), new Position(0, 6));
+                new Position(1, 1), new Position(1, 2), new Position(1, 3),
+                new Position(1, 6), new Position(1, 7), new Position(1, 8));
 
         List<Tile> tiles = new ArrayList<>(List.of(
                 Tile.pit(5, 5),
                 Tile.pit(6, 5),
                 Tile.gearTile(2, 2, GearRotation.CLOCKWISE),
-                Tile.conveyorTile(4, 4, new Conveyor(Direction.NORTH, true)),
-                Tile.conveyorTile(4, 3, new Conveyor(Direction.NORTH, true)),
                 Tile.withWalls(8, 8, new Walls(true, false, false, true)),
                 Tile.antenna(0, 0),
                 Tile.checkpoint(10, 10, 1)));
+
+        // Express belt north (existing).
+        tiles.add(Tile.conveyorTile(4, 4, new Conveyor(Direction.NORTH, true)));
+        tiles.add(Tile.conveyorTile(4, 3, new Conveyor(Direction.NORTH, true)));
+        // Regular belt east with a corner turning south.
+        tiles.add(Tile.conveyorTile(2, 7, new Conveyor(Direction.EAST)));
+        tiles.add(Tile.conveyorTile(3, 7, new Conveyor(Direction.EAST)));
+        tiles.add(Tile.conveyorTile(4, 7, new Conveyor(Direction.EAST)));
+        tiles.add(Tile.conveyorTile(5, 7, new Conveyor(Direction.SOUTH)));
+        tiles.add(Tile.conveyorTile(5, 8, new Conveyor(Direction.SOUTH)));
+        // Express belt east.
+        for (int x = 1; x <= 4; x++) {
+            tiles.add(Tile.conveyorTile(x, 10, new Conveyor(Direction.EAST, true)));
+        }
+        // Push panels.
+        tiles.add(Tile.pushPanelTile(7, 2, new PushPanel(Direction.SOUTH, List.of(1, 3, 5))));
+        tiles.add(Tile.pushPanelTile(9, 3, new PushPanel(Direction.WEST, List.of(2, 4))));
+
         for (Position spawn : spawns) {
             tiles.add(Tile.spawnPoint(spawn.x(), spawn.y()));
         }
         return new GameBoard(12, 12, tiles, spawns);
+    }
+
+    public List<Position> getAvailableStartTiles() {
+        return specialTiles.values().stream()
+                .filter(Tile::isAvailableSpawn)
+                .map(tile -> new Position(tile.x(), tile.y()))
+                .toList(); 
+    }
+
+    public void updateTileOccupant(Position pos, String playerId) {
+        Tile existingTile = specialTiles.get(pos);
+        if (existingTile != null && existingTile.isSpawnPoint()) {
+            Tile updatedTile = existingTile.withOccupant(playerId);
+            specialTiles.put(pos, updatedTile);
+        }
+    }
+
+    public List<Tile> getSpawnPointList() {
+        return specialTiles.values().stream()
+                .filter(Tile::isSpawnPoint)
+                .toList(); 
     }
 }

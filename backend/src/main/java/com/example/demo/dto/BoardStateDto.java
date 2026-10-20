@@ -1,6 +1,8 @@
 package com.example.demo.dto;
 
 import com.example.demo.model.Tile;
+import com.example.demo.model.layout.MapLayout;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,5 +21,7 @@ public record BoardStateDto(
         int round,
         List<String> lockedInPlayerIds,
         List<CheckpointProgressDto> checkpointProgress,
-        TurnResolutionDto lastResolution) {
+        TurnResolutionDto lastResolution,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        MapLayout layout) {
 }

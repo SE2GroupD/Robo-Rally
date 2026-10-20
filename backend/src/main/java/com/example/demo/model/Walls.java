@@ -1,5 +1,13 @@
 package com.example.demo.model;
 
-public record Walls(boolean north, boolean east, boolean south, boolean west) {
-    
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record Walls(
+        @JsonProperty("north") boolean north,
+        @JsonProperty("east") boolean east,
+        @JsonProperty("south") boolean south,
+        @JsonProperty("west") boolean west
+) {
 }
