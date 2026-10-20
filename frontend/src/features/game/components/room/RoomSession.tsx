@@ -81,7 +81,7 @@ function CheckpointProgress({
                 <span className="shrink-0 text-metal-light">Next {playerProgress?.nextCheckpoint ?? '-'}</span>
               </div>
               <p className="m-0 mt-1 text-xs text-text-muted">
-                {playerProgress?.completedCheckpoints.length ?? 0} of {totalCheckpoints} checkpoints completed
+                {playerProgress?.completedCheckpoints.length ?? 0} out of {totalCheckpoints} checkpoints completed
               </p>
               <p className="m-0 mt-0.5 text-xs text-text-muted">
                 Claimed: {playerProgress ? completedLabel(playerProgress) : 'None'}

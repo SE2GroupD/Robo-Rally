@@ -200,11 +200,11 @@ describe('room lifecycle', () => {
     expect(await screen.findByRole('region', { name: 'Checkpoint progress' })).toBeInTheDocument();
     expect(screen.getByText('Host')).toBeInTheDocument();
     expect(screen.getByText('Next 2')).toBeInTheDocument();
-    expect(screen.getByText('1 of 4 checkpoints completed')).toBeInTheDocument();
+    expect(screen.getByText('1 out of 4 checkpoints completed')).toBeInTheDocument();
     expect(screen.getByText('Claimed: 1')).toBeInTheDocument();
     expect(screen.getByText('Friend')).toBeInTheDocument();
     expect(screen.getByText('Next 1')).toBeInTheDocument();
-    expect(screen.getByText('0 of 4 checkpoints completed')).toBeInTheDocument();
+    expect(screen.getByText('0 out of 4 checkpoints completed')).toBeInTheDocument();
     expect(screen.getByText('Claimed: None')).toBeInTheDocument();
   });
 
