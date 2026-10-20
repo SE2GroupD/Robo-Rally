@@ -2,6 +2,7 @@ package com.example.demo.game;
 
 import com.example.demo.model.Direction;
 import com.example.demo.model.Position;
+import com.example.demo.model.ResolutionPhase;
 import com.example.demo.model.Tile;
 import org.junit.jupiter.api.Test;
 
@@ -116,10 +117,12 @@ class GameSessionCheckpointTest {
                         com.example.demo.model.CardType.MOVE_1,
                         com.example.demo.model.CardType.MOVE_1,
                         com.example.demo.model.CardType.MOVE_1)),
-                (_registerNumber, _cardsPlayed) -> {
-                    session.claimCheckpointsForRobots();
-                    return !session.hasWinner();
-                });
+                (registerNumber, phase, cardsPlayed) -> {
+                    if (phase == ResolutionPhase.GEAR) {
+                        session.claimCheckpointsForRobots();
+                    }
+                },
+                () -> !session.hasWinner());
 
         assertEquals(new Position(1, 0), robot.getPosition());
         assertEquals("player-1", session.getWinnerPlayerId());

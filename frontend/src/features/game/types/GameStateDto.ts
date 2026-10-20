@@ -1,3 +1,4 @@
+import type { MapLayoutData } from './MapLayout';
 import type { CardType } from './CardType';
 import type { Direction } from './Board';
 
@@ -8,13 +9,22 @@ export interface RobotStateDto {
   direction: Direction;
 }
 
+export type ResolutionPhase = 'CARD' | 'EXPRESS_BELT' | 'BELT' | 'PUSH_PANEL';
+
+// `card` is only set in the CARD phase.
 export interface RobotStepDto extends RobotStateDto {
-  card: CardType;
+  card: CardType | null;
+}
+
+// Every robot's state right after one phase of a register.
+export interface PhaseStepDto {
+  phase: ResolutionPhase;
+  robots: RobotStepDto[];
 }
 
 export interface RegisterStepDto {
   registerNumber: number;
-  robots: RobotStepDto[];
+  phases: PhaseStepDto[];
 }
 
 export interface TurnResolutionDto {
@@ -29,24 +39,31 @@ export interface CheckpointProgressDto {
   completedCheckpoints: number[];
 }
 
-export interface WinnerDto {
-  playerId: string;
-}
-
-// ASSUMED shape of the Java Tile record's JSON - verify against a real GET /state response.
+// Mirrors the Java Tile record's JSON (null fields are omitted by the server).
 export interface TileDto {
   x: number;
   y: number;
+  hasPit?: boolean;
   pit?: boolean;
-  antenna?: boolean;
-  spawnPoint?: boolean;
-  checkpoint?: number | null;
-  gear?: 'CLOCKWISE' | 'COUNTER_CLOCKWISE' | null;
-  conveyor?: { direction: Direction; express?: boolean } | null;
+  isPit?: boolean;
   walls?: { north: boolean; east: boolean; south: boolean; west: boolean } | null;
+  hasAntenna?: boolean;
+  antenna?: boolean;
+  isAntenna?: boolean;
+  isSpawnPoint?: boolean;
+  spawnPoint?: boolean;
+  occupyingPlayerId?: string | null;
+  gear?: 'CLOCKWISE' | 'COUNTERCLOCKWISE' | 'COUNTER_CLOCKWISE' | null;
+  conveyor?: { direction: Direction; isExpress?: boolean; express?: boolean } | null;
+  checkpointNumber?: number | null;
+  checkpoint?: number | null;
+  isCheckpoint?: number | null;
+  pushPanel?: { direction: Direction; activeRegisters: number[] } | null;
 }
 
 export interface BoardStateDto {
+  winner: WinnerDto | null;
+  layout?: MapLayoutData;
   gameId: string;
   width: number;
   height: number;
@@ -55,6 +72,9 @@ export interface BoardStateDto {
   round: number;
   lockedInPlayerIds: string[];
   checkpointProgress: CheckpointProgressDto[];
-  winner: WinnerDto | null;
   lastResolution: TurnResolutionDto | null;
+}
+
+export interface WinnerDto {
+  playerId: string;
 }

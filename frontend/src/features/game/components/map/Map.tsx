@@ -3,7 +3,10 @@
 import { useMapViewport } from '../../hooks/useMapViewport';
 import { MapZoomControls } from './MapZoomControls';
 import { cn } from '../../../../utils/cn';
-import { GameBoard } from './boards/GameBoard';
+import { MapLayout } from './MapLayout';
+import type { MapLayoutData } from '../../types/MapLayout';
+import { TileGrid } from './boards/TileGrid';
+import { TILE_PITCH } from '../../data/boardGeometry';
 import type { AvatarId, Direction, TileData } from '../../types/Board';
 
 export interface MapRobot {
@@ -13,31 +16,39 @@ export interface MapRobot {
   direction: Direction;
   avatarId: AvatarId;
   hue: number;
+  isCurrentPlayer?: boolean;
 }
 
 interface MapProps {
+  layout?: MapLayoutData;
   width: number;
   height: number;
   tiles: TileData[];
   robots: MapRobot[];
+  currentPlayerId?: string;
 }
 
-const CELL_PX = 52; // 50px tile + 2px gap
+const CELL_PX = TILE_PITCH;
 
-// Merges the live robots into the server's tile list. (Two robots on one tile
-// is possible while the backend only clamps at edges; the last one drawn wins.)
-function withRobots(tiles: TileData[], robots: MapRobot[]): TileData[] {
+function withRobots(tiles: TileData[], robots: MapRobot[], currentPlayerId?: string): TileData[] {
   const layout = tiles.map(({ robot: _robot, ...tile }) => tile);
-  for (const r of robots) {
-    const robotField = { robot: { avatarId: r.avatarId, hue: r.hue, direction: r.direction } };
-    const index = layout.findIndex((tile) => tile.x === r.x && tile.y === r.y);
-    if (index === -1) layout.push({ x: r.x, y: r.y, ...robotField });
+  for (const robot of robots) {
+    const robotField = {
+      robot: {
+        avatarId: robot.avatarId,
+        hue: robot.hue,
+        direction: robot.direction,
+        isCurrentPlayer: robot.playerId === currentPlayerId,
+      },
+    };
+    const index = layout.findIndex((tile) => tile.x === robot.x && tile.y === robot.y);
+    if (index === -1) layout.push({ x: robot.x, y: robot.y, ...robotField });
     else layout[index] = { ...layout[index], ...robotField };
   }
   return layout;
 }
 
-export function Map({ width, height, tiles, robots }: MapProps) {
+export function Map({ width, height, tiles, robots, layout, currentPlayerId }: MapProps) {
   const {
     viewportRef,
     scale,
@@ -53,6 +64,11 @@ export function Map({ width, height, tiles, robots }: MapProps) {
     onLostPointerCapture,
     onDragStart,
   } = useMapViewport();
+
+  const robotsWithCurrentPlayer = robots.map((robot) => ({
+    ...robot,
+    isCurrentPlayer: robot.playerId === currentPlayerId,
+  }));
 
   return (
     <>
@@ -83,7 +99,11 @@ export function Map({ width, height, tiles, robots }: MapProps) {
             className="absolute min-w-max origin-top-left"
             style={{ left: '50vw', top: '50dvh', transform: `scale(${scale})` }}
           >
-            <GameBoard layoutData={withRobots(tiles, robots)} width={width} height={height} />
+            {layout ? (
+              <MapLayout layout={layout} robots={robotsWithCurrentPlayer} />
+            ) : (
+              <TileGrid layoutData={withRobots(tiles, robots, currentPlayerId)} width={width} height={height} />
+            )}
           </div>
         </div>
       </section>

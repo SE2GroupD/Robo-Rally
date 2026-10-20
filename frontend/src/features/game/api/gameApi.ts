@@ -1,3 +1,7 @@
+import { validateMapLayout } from '../data/boardGeometry';
+import type { MapLayoutData } from '../types/MapLayout';
+
+import type { TileData } from '../types/Board';
 import { type BoardStateDto } from '../types/GameStateDto';
 import { type PlayerHandDto } from '../types/PlayerHandDto';
 import { type ProgramRegisterDto } from '../types/ProgramRegisterDto';
@@ -27,10 +31,12 @@ export interface CreatedRoom {
   playerId: string;
   hostPlayerId: string;
   status: 'WAITING' | 'STARTED';
-  players: { playerId: string; playerName: string }[];
+  mapId?: string;
+  startBoardConfig?: TileData[];
+  players: { playerId: string; playerName: string; avatarId: number | null; startPosition?: { x: number; y: number } | null }[];
 }
 
-export async function createRoom(playerName: string): Promise<CreatedRoom> {
+export async function createRoom(playerName: string, training = false): Promise<CreatedRoom> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
 
   const token = await getValidToken();
@@ -41,7 +47,7 @@ export async function createRoom(playerName: string): Promise<CreatedRoom> {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ playerName }),
+    body: JSON.stringify({ playerName, ...(training ? { training: true } : {}) }),
     signal: AbortSignal.timeout(15000),
   });
 
@@ -62,7 +68,10 @@ export async function createRoom(playerName: string): Promise<CreatedRoom> {
     !Array.isArray(room.players) ||
     !room.players.every(
       (player: CreatedRoom['players'][number]) =>
-        player && typeof player.playerId === 'string' && typeof player.playerName === 'string',
+        player &&
+        typeof player.playerId === 'string' &&
+        typeof player.playerName === 'string' &&
+        (player.avatarId === null || typeof player.avatarId === 'number'),
     ) ||
     !room.players.some((player: CreatedRoom['players'][number]) => player.playerId === room.playerId)
   ) {
@@ -77,7 +86,9 @@ export interface JoinedRoom {
   playerId: string;
   hostPlayerId: string;
   status: 'WAITING' | 'STARTED';
-  players: { playerId: string; playerName: string }[];
+  mapId?: string;
+  startBoardConfig?: TileData[];
+  players: { playerId: string; playerName: string; avatarId: number | null; startPosition?: { x: number; y: number } | null }[];
 }
 
 export async function joinRoom(roomCode: string, playerName: string): Promise<JoinedRoom> {
@@ -120,13 +131,125 @@ export async function joinRoom(roomCode: string, playerName: string): Promise<Jo
     !Array.isArray(room.players) ||
     !room.players.every(
       (player: JoinedRoom['players'][number]) =>
-        player && typeof player.playerId === 'string' && typeof player.playerName === 'string',
+        player &&
+        typeof player.playerId === 'string' &&
+        typeof player.playerName === 'string' &&
+        (player.avatarId === null || typeof player.avatarId === 'number'),
     ) ||
     !room.players.some((player: JoinedRoom['players'][number]) => player.playerId === room.playerId) ||
     !room.players.some((player: JoinedRoom['players'][number]) => player.playerId === room.hostPlayerId)
   ) {
     throw new Error('The room service returned an unexpected response.');
   }
+  return room;
+}
+
+export interface PublicRoom {
+  gameId: string;
+  roomName: string;
+  hostPlayerName: string;
+  playerCount: number;
+  maxPlayers: number;
+}
+
+function validateRoom(room: unknown, playerId?: string): room is JoinedRoom {
+  return Boolean(
+    room &&
+    typeof room === 'object' &&
+    'gameId' in room &&
+    typeof room.gameId === 'string' &&
+    room.gameId &&
+    'roomCode' in room &&
+    typeof room.roomCode === 'string' &&
+    room.roomCode &&
+    'playerId' in room &&
+    typeof room.playerId === 'string' &&
+    room.playerId &&
+    'hostPlayerId' in room &&
+    typeof room.hostPlayerId === 'string' &&
+    room.hostPlayerId &&
+    (!playerId || room.playerId === playerId) &&
+    'status' in room &&
+    room.status === 'WAITING' &&
+    'players' in room &&
+    Array.isArray(room.players) &&
+    room.players.every(
+      (player: JoinedRoom['players'][number]) =>
+        player && typeof player.playerId === 'string' && typeof player.playerName === 'string',
+    ) &&
+    room.players.some((player: JoinedRoom['players'][number]) => player.playerId === room.playerId) &&
+    room.players.some((player: JoinedRoom['players'][number]) => player.playerId === room.hostPlayerId),
+  );
+}
+
+function publicRoomError(status: number): Error {
+  if (status === 400) return new Error('Check the room details and try again.');
+  if (status === 404) return new Error('That public room is no longer available.');
+  if (status === 409) return new Error('This room is full or has already started.');
+  return new Error('The public room request could not be completed. Please try again.');
+}
+
+export async function listPublicRooms(signal?: AbortSignal): Promise<PublicRoom[]> {
+  if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
+
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/games/public`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
+  });
+  if (!response.ok) throw new Error('Could not load public rooms. Please try again.');
+
+  const rooms = await response.json();
+  if (
+    !Array.isArray(rooms) ||
+    !rooms.every(
+      (room) =>
+        room &&
+        typeof room.gameId === 'string' &&
+        typeof room.roomName === 'string' &&
+        typeof room.hostPlayerName === 'string' &&
+        Number.isInteger(room.playerCount) &&
+        Number.isInteger(room.maxPlayers) &&
+        room.playerCount >= 1 &&
+        room.maxPlayers >= room.playerCount,
+    )
+  ) {
+    throw new Error('The room service returned an unexpected response.');
+  }
+  return rooms;
+}
+
+export async function createPublicRoom(roomName: string, playerName: string): Promise<CreatedRoom> {
+  if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
+
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/games/public`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ roomName: roomName.trim(), playerName }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) throw publicRoomError(response.status);
+
+  const room = await response.json();
+  if (!validateRoom(room)) throw new Error('The room service returned an unexpected response.');
+  return room;
+}
+
+export async function joinPublicRoom(gameId: string, playerName: string): Promise<JoinedRoom> {
+  if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
+
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/games/public/${encodeURIComponent(gameId)}/join`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ playerName }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) throw publicRoomError(response.status);
+
+  const room = await response.json();
+  if (!validateRoom(room)) throw new Error('The room service returned an unexpected response.');
   return room;
 }
 
@@ -166,7 +289,12 @@ export class RoomRequestError extends Error {
   }
 }
 
-async function roomRequest(room: JoinedRoom, action?: 'start' | 'leave', signal?: AbortSignal): Promise<Response> {
+async function roomRequest(
+  room: JoinedRoom,
+  action?: 'start' | 'leave',
+  signal?: AbortSignal,
+  keepalive = false,
+): Promise<Response> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable.');
 
   const token = await getValidToken();
@@ -185,7 +313,8 @@ async function roomRequest(room: JoinedRoom, action?: 'start' | 'leave', signal?
     method: action ? 'POST' : 'GET',
     headers,
     body: action ? JSON.stringify({ playerId: room.playerId }) : undefined,
-    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
+    keepalive,
+    signal: keepalive ? undefined : signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
   });
   if (!response.ok) throw new RoomRequestError('Room request failed.', response.status);
   return response;
@@ -203,7 +332,10 @@ async function readRoom(response: Response, expected: JoinedRoom): Promise<Joine
     !Array.isArray(room.players) ||
     !room.players.every(
       (player: JoinedRoom['players'][number]) =>
-        player && typeof player.playerId === 'string' && typeof player.playerName === 'string',
+        player &&
+        typeof player.playerId === 'string' &&
+        typeof player.playerName === 'string' &&
+        (player.avatarId === null || typeof player.avatarId === 'number'),
     ) ||
     !room.players.some((player: JoinedRoom['players'][number]) => player.playerId === room.playerId)
   ) {
@@ -220,8 +352,39 @@ export async function startRoom(room: JoinedRoom): Promise<JoinedRoom> {
   return readRoom(await roomRequest(room, 'start'), room);
 }
 
-export async function leaveRoom(room: JoinedRoom): Promise<void> {
-  await roomRequest(room, 'leave');
+export async function leaveRoom(room: JoinedRoom, options?: { keepalive?: boolean }): Promise<void> {
+  await roomRequest(room, 'leave', undefined, options?.keepalive);
+}
+
+export async function selectRobot(room: JoinedRoom, avatarId: number): Promise<JoinedRoom> {
+  if (!API_BASE_URL) throw new Error('Room service is unavailable.');
+
+  const token = await getValidToken();
+  const base = `${API_BASE_URL.replace(/\/$/, '')}/games/${encodeURIComponent(room.gameId)}`;
+
+  const response = await fetch(`${base}/robot`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ avatarId }),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (response.status === 409) {
+    throw new RoomRequestError('This robot is already selected.', response.status);
+  }
+
+  if (response.status === 400) {
+    throw new RoomRequestError('Invalid robot selection.', response.status);
+  }
+
+  if (!response.ok) {
+    throw new RoomRequestError('Could not select robot.', response.status);
+  }
+
+  return readRoom(response, room);
 }
 
 export async function fetchBoardState(gameId: string, signal?: AbortSignal): Promise<BoardStateDto> {
@@ -233,4 +396,55 @@ export async function fetchBoardState(gameId: string, signal?: AbortSignal): Pro
   });
   if (!response.ok) throw new RoomRequestError('Board state request failed.', response.status);
   return response.json();
+}
+
+export async function fetchMaps(signal?: AbortSignal): Promise<MapLayoutData[]> {
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL?.replace(/\/$/, '')}/maps`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
+  });
+
+  if (!response.ok) throw new Error('Could not load maps.');
+
+  const maps: MapLayoutData[] = await response.json();
+  if (!Array.isArray(maps) || maps.some((map) => !map.id || !map.name || validateMapLayout(map).length)) {
+    throw new Error('Invalid map catalog.');
+  }
+
+  return maps;
+}
+
+export async function updateRoomSetup(
+  room: JoinedRoom,
+  action: 'map' | 'start-tile',
+  value: { mapId: string } | { position: { x: number; y: number } | null; mapId: string },
+): Promise<JoinedRoom> {
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL?.replace(/\/$/, '')}/games/${room.gameId}/${action}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(value),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (!response.ok) throw new RoomRequestError('Could not update setup.', response.status);
+
+  return readRoom(response, room);
+}
+
+/** Compatibility with rooms created using the standalone start-board API. */
+export async function selectStartTile(room: JoinedRoom, x: number, y: number): Promise<JoinedRoom> {
+  if (room.mapId) return updateRoomSetup(room, 'start-tile', { mapId: room.mapId, position: { x, y } });
+
+  const token = await getValidToken();
+  const response = await fetch(`${API_BASE_URL?.replace(/\/$/, '')}/games/${encodeURIComponent(room.gameId)}/start-tile`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ x, y }),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (!response.ok) throw new RoomRequestError('Could not select this start tile.', response.status);
+  return readRoom(response, room);
 }

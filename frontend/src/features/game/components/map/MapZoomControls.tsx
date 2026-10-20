@@ -7,7 +7,10 @@ interface MapZoomControlsProps {
 
 export function MapZoomControls({ onZoomIn, onZoomOut, canZoomIn, canZoomOut }: MapZoomControlsProps) {
   return (
-    <div className="absolute right-3 top-3 z-20 flex gap-2 rounded bg-slate-950/90 p-1">
+    <div
+      className="absolute right-3 top-3 z-20 flex gap-2 rounded bg-slate-950/90 p-1"
+      title="Use Ctrl/Cmd + mouse wheel or a trackpad pinch to zoom the board."
+    >
       <button
         aria-label="Zoom out"
         type="button"
