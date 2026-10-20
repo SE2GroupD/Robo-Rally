@@ -28,6 +28,7 @@ const before: BoardStateDto = {
   round: 1,
   lockedInPlayerIds: [],
   checkpointProgress: [],
+  totalCheckpoints: 4,
   lastResolution: null,
 };
 const after: BoardStateDto = {

@@ -57,9 +57,11 @@ function completedLabel(progress: CheckpointProgressDto) {
 function CheckpointProgress({
   players,
   progress,
+  totalCheckpoints,
 }: {
   players: JoinedRoom['players'];
   progress: readonly CheckpointProgressDto[];
+  totalCheckpoints: number;
 }) {
   const progressByPlayer = new globalThis.Map(progress.map((entry) => [entry.playerId, entry]));
 
@@ -79,7 +81,10 @@ function CheckpointProgress({
                 <span className="shrink-0 text-metal-light">Next {playerProgress?.nextCheckpoint ?? '-'}</span>
               </div>
               <p className="m-0 mt-1 text-xs text-text-muted">
-                Completed: {playerProgress ? completedLabel(playerProgress) : 'None'}
+                {playerProgress?.completedCheckpoints.length ?? 0} of {totalCheckpoints} checkpoints completed
+              </p>
+              <p className="m-0 mt-0.5 text-xs text-text-muted">
+                Claimed: {playerProgress ? completedLabel(playerProgress) : 'None'}
               </p>
             </li>
           );
@@ -381,7 +386,11 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
                 robots={mapRobots}
                 currentPlayerId={room.playerId}
               />
-              <CheckpointProgress players={room.players} progress={state.checkpointProgress} />
+              <CheckpointProgress
+                players={room.players}
+                progress={state.checkpointProgress}
+                totalCheckpoints={state.totalCheckpoints}
+              />
 
               <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex flex-col items-center gap-1">
                 {state.layout?.name && <div className="text-center text-sm font-semibold text-white">{state.layout.name}</div>}

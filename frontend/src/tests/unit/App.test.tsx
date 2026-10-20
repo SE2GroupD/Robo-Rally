@@ -99,6 +99,7 @@ beforeEach(() => {
         round: 1,
         lockedInPlayerIds: [],
         checkpointProgress: [{ playerId: 'host-id', nextCheckpoint: 1, completedCheckpoints: [] }],
+        totalCheckpoints: 4,
         lastResolution: null,
       });
     }

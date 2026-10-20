@@ -170,6 +170,7 @@ public class GameServiceImpl implements GameService {
                     session.getRound(),
                     lockedIn,
                     checkpointProgress(session),
+                    totalCheckpoints(board),
                     session.getLastResolution(),
                     board.getLayout());
         }
@@ -206,5 +207,13 @@ public class GameServiceImpl implements GameService {
                         session.getNextCheckpointFor(playerId),
                         session.getCompletedCheckpointsFor(playerId)))
                 .toList();
+    }
+
+    private int totalCheckpoints(GameBoard board) {
+        return (int) board.getSpecialTiles().stream()
+                .map(tile -> tile.checkpointNumber())
+                .filter(number -> number != null)
+                .distinct()
+                .count();
     }
 }

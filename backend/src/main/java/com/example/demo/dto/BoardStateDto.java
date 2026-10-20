@@ -21,6 +21,7 @@ public record BoardStateDto(
         int round,
         List<String> lockedInPlayerIds,
         List<CheckpointProgressDto> checkpointProgress,
+        int totalCheckpoints,
         TurnResolutionDto lastResolution,
         @JsonInclude(JsonInclude.Include.NON_NULL)
         MapLayout layout) {

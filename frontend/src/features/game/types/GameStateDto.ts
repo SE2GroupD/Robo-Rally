@@ -71,5 +71,6 @@ export interface BoardStateDto {
   round: number;
   lockedInPlayerIds: string[];
   checkpointProgress: CheckpointProgressDto[];
+  totalCheckpoints: number;
   lastResolution: TurnResolutionDto | null;
 }
