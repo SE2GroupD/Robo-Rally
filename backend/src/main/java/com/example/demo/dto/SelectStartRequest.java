@@ -21,7 +21,7 @@ public record SelectStartRequest(Position position, String mapId) {
             }
 
             var mapId = node.get("mapId");
-            if (mapId != null && !mapId.isNull() && !mapId.isTextual()) {
+            if (mapId != null && !mapId.isNull() && !mapId.isString()) {
                 return context.reportInputMismatch(SelectStartRequest.class, "Map ID must be a string.");
             }
 

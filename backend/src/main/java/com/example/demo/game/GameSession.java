@@ -25,6 +25,7 @@ public class GameSession {
     private final Map<String, ProgrammingDeck> decks = new HashMap<>();
     private final Map<String, List<CardType>> submittedRegisters = new HashMap<>();
     private final Map<String, Integer> nextCheckpointByPlayer = new HashMap<>();
+    private final Map<String, Boolean> readyPlayers = new HashMap<>();  
     private int round = 1;
     private TurnResolutionDto lastResolution;
 
@@ -121,8 +122,17 @@ public class GameSession {
     }
 
     public void finishRound(TurnResolutionDto resolution) {
+        readyPlayers.clear();
         lastResolution = resolution;
         submittedRegisters.clear();
         round++;
+    }
+
+    public boolean setPlayerReady(String playerId, boolean isReady) {
+        if (!robots.containsKey(playerId)) {
+            throw new IllegalStateException("Player " + playerId + " has no robot in this session.");
+        }
+        readyPlayers.put(playerId, isReady);
+        return true;
     }
 }

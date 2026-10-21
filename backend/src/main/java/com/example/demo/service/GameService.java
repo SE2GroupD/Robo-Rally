@@ -22,4 +22,7 @@ public interface GameService {
 
     /** The room closed. */
     void endGame(UUID gameId);
+
+    /** Marks a player as ready or not ready. */
+    void markPlayerReady(String gameId, String playerId, boolean isReady);
 }

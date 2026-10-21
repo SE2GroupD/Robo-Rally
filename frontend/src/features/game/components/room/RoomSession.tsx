@@ -20,6 +20,7 @@ import { ProgrammingPhase } from '../programming/ProgrammingPhase';
 import { RobotSelection } from './RobotSelection';
 import type { AvatarId } from '../../types/Board';
 import type { BoardStateDto } from '../../types/GameStateDto';
+import { useInGameSocket } from '../../hooks/useInGameSocket';
 
 import avatar1 from '../../../../assets/avatars/avatar1.svg';
 import avatar2 from '../../../../assets/avatars/avatar2.svg';
@@ -113,6 +114,12 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
 
   const { state, error: gameError } = useGameState(room.gameId, started && !closed);
   const { robots, isReplaying, programmingRound } = useGameReplay(state);
+
+  const { readinessState, sendReadyStatus } = useInGameSocket(
+    started && !closed ? room.gameId : undefined,
+    room.playerId,
+    state?.round,
+  );
 
   const mapRobots = robots.map((robot) => {
     const index = Math.max(
@@ -354,23 +361,42 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
               >
                 <h2 className="m-0 shrink-0 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Pilots</h2>
                 <ul className="m-0 flex min-w-0 list-none items-center gap-4 border-l border-slate-700/80 pl-3">
-                  {rosterPlayers.map((player) => (
-                    <li key={player.playerId} className="flex min-w-0 items-center gap-2">
-                      <img src={AVATAR_MAP[player.avatarId as AvatarId]} alt="" className="h-8 w-8 shrink-0 object-contain" />
-                      <span
-                        className={
-                          player.playerId === room.playerId ? 'truncate font-bold text-cyan-200' : 'truncate text-slate-200'
-                        }
+                  {rosterPlayers.map((player) => {
+                    const isReady = state?.lockedInPlayerIds.includes(player.playerId) || readinessState[player.playerId];
+
+                    return (
+                      <li
+                        key={player.playerId}
+                        className={`flex min-w-0 items-center gap-2 transition-opacity duration-300 ${isReady ? 'opacity-100' : 'opacity-40 grayscale-[50%]'}`}
                       >
-                        {player.playerId === room.playerId ? 'You' : player.playerName}
-                      </span>
-                    </li>
-                  ))}
+                        <div className="relative">
+                          <img src={AVATAR_MAP[player.avatarId as AvatarId]} alt="" className="h-8 w-8 shrink-0 object-contain" />
+                          {/* Badge overlay on the avatar */}
+                          {isReady && (
+                            <span
+                              className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow ring-2 ring-slate-900"
+                              title="Ready"
+                            >
+                              ✓
+                            </span>
+                          )}
+                        </div>
+
+                        <span
+                          className={
+                            player.playerId === room.playerId ? 'truncate font-bold text-cyan-200' : 'truncate text-slate-200'
+                          }
+                        >
+                          {player.playerId === room.playerId ? 'You' : player.playerName}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </aside>
 
               <div className="pointer-events-none absolute inset-0 z-10">
-                <ProgrammingPhase roomId={room.gameId} round={programmingRound} />
+                <ProgrammingPhase roomId={room.gameId} round={programmingRound} onCardsLocked={() => sendReadyStatus(true)} />
               </div>
             </>
           ) : (

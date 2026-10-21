@@ -207,4 +207,15 @@ public class GameServiceImpl implements GameService {
                         session.getCompletedCheckpointsFor(playerId)))
                 .toList();
     }
+
+    @Override 
+    public void markPlayerReady(String gameId, String playerId, boolean isReady) {
+        GameSession session = sessions.get(UUID.fromString(gameId));
+        if (session == null) {
+            throw new IllegalStateException("Game session not found for gameId: " + gameId);
+        }
+        synchronized (session) {
+            session.setPlayerReady(playerId, isReady);
+        }
+    }
 }
