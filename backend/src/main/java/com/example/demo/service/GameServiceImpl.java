@@ -9,6 +9,7 @@ import com.example.demo.dto.RegisterStepDto;
 import com.example.demo.dto.RobotStateDto;
 import com.example.demo.dto.RobotStepDto;
 import com.example.demo.dto.TurnResolutionDto;
+import com.example.demo.dto.WinnerDto;
 import com.example.demo.game.GameBoard;
 import com.example.demo.game.GameSession;
 import com.example.demo.game.MovementResolver;
@@ -75,6 +76,9 @@ public class GameServiceImpl implements GameService {
     public PlayerHandDto getPlayerHand(UUID gameId, String playerId) {
         GameSession session = sessionFor(gameId, playerId);
         synchronized (session) {
+            if (session.hasWinner()) {
+                throw new IllegalStateException("The match is already complete.");
+            }
             ProgrammingDeck deck = session.getDeck(playerId);
             List<CardType> hand;
             if (deck.isLockedIn()) {
@@ -102,6 +106,9 @@ public class GameServiceImpl implements GameService {
             throw new IllegalArgumentException("Exactly 5 non-null registers are required.");
         }
         synchronized (session) {
+            if (session.hasWinner()) {
+                throw new IllegalStateException("The match is already complete.");
+            }
             ProgrammingDeck deck = session.getDeck(playerId);
             if (deck.isLockedIn()) {
                 throw new IllegalStateException("Registers are already locked in for this round.");
@@ -127,7 +134,9 @@ public class GameServiceImpl implements GameService {
         AtomicReference<List<RobotStateDto>> previous = new AtomicReference<>(starting);
 
         movementResolver.resolveRound(session.getBoard(), input, (registerNumber, phase, cardsPlayed) -> {
-            session.claimCheckpointsForRobots();
+            if (phase == ResolutionPhase.GEAR) {
+                session.claimCheckpointsForRobots();
+            }
             List<RobotStateDto> now = robotStates(session);
             // Always keep the CARD phase; keep later phases only if something moved or turned.
             if (phase == ResolutionPhase.CARD || !now.equals(previous.get())) {
@@ -143,7 +152,7 @@ public class GameServiceImpl implements GameService {
                         .add(new PhaseStepDto(phase, robotSteps));
                 previous.set(now);
             }
-        });
+        }, () -> !session.hasWinner());
         phasesByRegister.forEach((registerNumber, phases) -> steps.add(new RegisterStepDto(registerNumber, phases)));
 
         // Played cards go to the discard pile here (prepareForNextRound) - and only here.
@@ -170,6 +179,8 @@ public class GameServiceImpl implements GameService {
                     session.getRound(),
                     lockedIn,
                     checkpointProgress(session),
+                    totalCheckpoints(board),
+                    winner(session),
                     session.getLastResolution(),
                     board.getLayout());
         }
@@ -217,5 +228,17 @@ public class GameServiceImpl implements GameService {
         synchronized (session) {
             session.setPlayerReady(playerId, isReady);
         }
+    }
+
+    private int totalCheckpoints(GameBoard board) {
+        return (int) board.getSpecialTiles().stream()
+                .map(tile -> tile.checkpointNumber())
+                .filter(number -> number != null)
+                .distinct()
+                .count();
+    }
+
+    private WinnerDto winner(GameSession session) {
+        return session.getWinnerPlayerId() == null ? null : new WinnerDto(session.getWinnerPlayerId());
     }
 }

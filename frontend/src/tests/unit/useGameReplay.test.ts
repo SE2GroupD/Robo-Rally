@@ -20,6 +20,7 @@ const resolution: TurnResolutionDto = {
 };
 
 const before: BoardStateDto = {
+  winner: null,
   gameId: 'g',
   width: 12,
   height: 12,
@@ -27,6 +28,8 @@ const before: BoardStateDto = {
   tiles: [],
   round: 1,
   lockedInPlayerIds: [],
+  checkpointProgress: [],
+  totalCheckpoints: 4,
   lastResolution: null,
 };
 const after: BoardStateDto = {

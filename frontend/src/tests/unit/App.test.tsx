@@ -94,10 +94,13 @@ beforeEach(() => {
         width: 13,
         height: 10,
         layout: defaultMapLayout,
+        winner: null,
         robots: [{ playerId: 'host-id', x: robotX, y: 1, direction: 'EAST' }],
         tiles: [],
         round: 1,
         lockedInPlayerIds: [],
+        checkpointProgress: [{ playerId: 'host-id', nextCheckpoint: 1, completedCheckpoints: [] }],
+        totalCheckpoints: 4,
         lastResolution: null,
       });
     }

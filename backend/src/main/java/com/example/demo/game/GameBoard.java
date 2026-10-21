@@ -166,6 +166,15 @@ public class GameBoard {
         return tile == null ? null : tile.checkpointNumber();
     }
 
+    public int finalCheckpointNumber() {
+        return specialTiles.values().stream()
+                .map(Tile::checkpointNumber)
+                .filter(number -> number != null)
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+    }
+
     /** Compiles the unrotated rectangular training definition into gameplay coordinates. */
     public static GameBoard training(MapLayout layout) {
         MapLayoutValidator.requireValid(layout);

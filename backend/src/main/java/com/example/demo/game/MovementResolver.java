@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 
 /**
  * Resolves one activation phase register by register. Walls and the board edge
@@ -28,6 +29,11 @@ public class MovementResolver {
 
     public void resolveRound(GameBoard board, Map<Robot, List<CardType>> programmedRegisters,
                              RegisterCallback callback) {
+        resolveRound(board, programmedRegisters, callback, () -> true);
+    }
+
+    public void resolveRound(GameBoard board, Map<Robot, List<CardType>> programmedRegisters,
+                             RegisterCallback callback, BooleanSupplier shouldContinue) {
         List<Robot> robots = List.copyOf(programmedRegisters.keySet());
         Map<Robot, CardType> lastEffective = new HashMap<>(); // for AGAIN
 
@@ -51,7 +57,9 @@ public class MovementResolver {
             // doBoardLasers(board, robots);    // TODO: board laser activation
             // doRobotLasers(board, robots);    // TODO: robot laser activation
             // doEnergySpaces(board, robots);   // TODO: energy space activation
-            // doCheckpoints(board, robots);    // TODO: checkpoint activation
+            if (!shouldContinue.getAsBoolean()) {
+                return;
+            }
         }
     }
 

@@ -49,6 +49,7 @@ const host: JoinedRoom = {
 };
 
 const boardState: BoardStateDto = {
+  winner: null,
   gameId: 'game-1',
   width: 12,
   height: 12,
@@ -56,6 +57,8 @@ const boardState: BoardStateDto = {
   tiles: [],
   round: 1,
   lockedInPlayerIds: [],
+  checkpointProgress: [{ playerId: 'host-1', nextCheckpoint: 1, completedCheckpoints: [] }],
+  totalCheckpoints: 4,
   lastResolution: null,
 };
 
@@ -178,6 +181,34 @@ describe('room lifecycle', () => {
     await waitFor(() => expect(screen.getByLabelText('Pilot robot legend')).toHaveTextContent('You'));
   });
 
+  it('shows checkpoint progress for every player', async () => {
+    const room = {
+      ...host,
+      status: 'STARTED' as const,
+      players: [...host.players, { playerId: 'guest-1', playerName: 'Friend', avatarId: null }],
+    };
+    vi.mocked(fetchRoom).mockResolvedValue(room);
+    vi.mocked(fetchBoardState).mockResolvedValue({
+      ...boardState,
+      checkpointProgress: [
+        { playerId: 'host-1', nextCheckpoint: 2, completedCheckpoints: [1] },
+        { playerId: 'guest-1', nextCheckpoint: 1, completedCheckpoints: [] },
+      ],
+    });
+
+    render(<RoomSession initialRoom={room} onLeft={vi.fn()} />);
+
+    expect(await screen.findByRole('region', { name: 'Checkpoint progress' })).toBeInTheDocument();
+    expect(screen.getByText('Host')).toBeInTheDocument();
+    expect(screen.getByText('Next 2')).toBeInTheDocument();
+    expect(screen.getByText('1 out of 4 checkpoints completed')).toBeInTheDocument();
+    expect(screen.getByText('Claimed: 1')).toBeInTheDocument();
+    expect(screen.getByText('Friend')).toBeInTheDocument();
+    expect(screen.getByText('Next 1')).toBeInTheDocument();
+    expect(screen.getByText('0 out of 4 checkpoints completed')).toBeInTheDocument();
+    expect(screen.getByText('Claimed: None')).toBeInTheDocument();
+  });
+
   it('only exits after leaving succeeds and allows retry after failure', async () => {
     const onLeft = vi.fn();
 
@@ -204,4 +235,24 @@ describe('room lifecycle', () => {
 
     expect(screen.queryByRole('button', { name: 'Start Battle' })).not.toBeInTheDocument();
   });
+});
+
+it('shows the winner and hides programming after the match is complete', async () => {
+  const room = {
+    ...host,
+    status: 'STARTED' as const,
+    players: [{ ...host.players[0], avatarId: 3 }],
+  };
+  vi.mocked(fetchRoom).mockResolvedValue(room);
+  vi.mocked(fetchBoardState).mockResolvedValue({
+    ...boardState,
+    winner: { playerId: 'host-1' },
+  });
+
+  render(<RoomSession initialRoom={room} onLeft={vi.fn()} />);
+
+  expect(await screen.findByRole('region', { name: 'Match winner' })).toBeInTheDocument();
+  expect(screen.getByText('Host · Robot 3')).toBeInTheDocument();
+  expect(screen.queryByText('game-1/round-1')).not.toBeInTheDocument();
+  expect(screen.queryByText('Your turn')).not.toBeInTheDocument();
 });

@@ -19,8 +19,8 @@ import { toTileData } from '../../data/serverTiles';
 import { ProgrammingPhase } from '../programming/ProgrammingPhase';
 import { RobotSelection } from './RobotSelection';
 import type { AvatarId } from '../../types/Board';
-import type { BoardStateDto } from '../../types/GameStateDto';
 import { useInGameSocket } from '../../hooks/useInGameSocket';
+import type { BoardStateDto, CheckpointProgressDto } from '../../types/GameStateDto';
 
 import avatar1 from '../../../../assets/avatars/avatar1.svg';
 import avatar2 from '../../../../assets/avatars/avatar2.svg';
@@ -51,7 +51,52 @@ interface RoundStatusProps {
   isReplaying: boolean;
 }
 
+function completedLabel(progress: CheckpointProgressDto) {
+  return progress.completedCheckpoints.length > 0 ? progress.completedCheckpoints.join(', ') : 'None';
+}
+
+function CheckpointProgress({
+  players,
+  progress,
+  totalCheckpoints,
+}: {
+  players: JoinedRoom['players'];
+  progress: readonly CheckpointProgressDto[];
+  totalCheckpoints: number;
+}) {
+  const progressByPlayer = new globalThis.Map(progress.map((entry) => [entry.playerId, entry]));
+
+  return (
+    <section
+      aria-label="Checkpoint progress"
+      className="absolute right-3 top-28 z-20 max-h-[calc(75dvh-8rem)] w-60 max-w-[calc(100%-1.5rem)] overflow-y-auto rounded border border-metal-light bg-slate-950/90 p-3 text-sm text-white shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
+    >
+      <h2 className="m-0 text-sm font-bold text-metal-light">Checkpoint progress</h2>
+      <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0">
+        {players.map((player) => {
+          const playerProgress = progressByPlayer.get(player.playerId);
+          return (
+            <li key={player.playerId} className="border-t border-white/10 pt-2 first:border-t-0 first:pt-0">
+              <div className="flex items-center justify-between gap-3">
+                <span className="truncate font-bold">{player.playerName}</span>
+                <span className="shrink-0 text-metal-light">Next {playerProgress?.nextCheckpoint ?? '-'}</span>
+              </div>
+              <p className="m-0 mt-1 text-xs text-text-muted">
+                {playerProgress?.completedCheckpoints.length ?? 0} out of {totalCheckpoints} checkpoints completed
+              </p>
+              <p className="m-0 mt-0.5 text-xs text-text-muted">
+                Claimed: {playerProgress ? completedLabel(playerProgress) : 'None'}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 function RoundStatus({ state, players, currentPlayerId, isReplaying }: RoundStatusProps) {
+  if (state.winner) return null;
   if (isReplaying) {
     return (
       <section
@@ -90,6 +135,12 @@ function RoundStatus({ state, players, currentPlayerId, isReplaying }: RoundStat
       )}
     </section>
   );
+}
+
+function winnerLabel(state: BoardStateDto, players: JoinedRoom['players']) {
+  if (!state.winner) return null;
+  const winner = players.find((player) => player.playerId === state.winner?.playerId);
+  return `${winner?.playerName ?? 'Unknown player'}${winner?.avatarId ? ` · Robot ${winner.avatarId}` : ''}`;
 }
 
 export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionProps) {
@@ -349,6 +400,11 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
                 robots={mapRobots}
                 currentPlayerId={room.playerId}
               />
+              <CheckpointProgress
+                players={room.players}
+                progress={state.checkpointProgress}
+                totalCheckpoints={state.totalCheckpoints}
+              />
 
               <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex flex-col items-center gap-1">
                 {state.layout?.name && <div className="text-center text-sm font-semibold text-white">{state.layout.name}</div>}
@@ -394,10 +450,19 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
                   })}
                 </ul>
               </aside>
-
-              <div className="pointer-events-none absolute inset-0 z-10">
-                <ProgrammingPhase roomId={room.gameId} round={programmingRound} onCardsLocked={() => sendReadyStatus(true)} />
-              </div>
+              {state.winner ? (
+                <section
+                  aria-label="Match winner"
+                  className="absolute inset-x-3 top-28 z-30 mx-auto max-w-sm rounded border border-metal-light bg-slate-950/95 p-4 text-center text-white shadow-[0_16px_40px_rgba(0,0,0,0.55)]"
+                >
+                  <h2 className="m-0 text-sm font-bold text-metal-light">Winner</h2>
+                  <p className="m-0 mt-2 text-xl font-bold">{winnerLabel(state, room.players)}</p>
+                </section>
+              ) : (
+                <div className="pointer-events-none absolute inset-0 z-10">
+                  <ProgrammingPhase roomId={room.gameId} round={programmingRound} onCardsLocked={() => sendReadyStatus(true)} />
+                </div>
+              )}
             </>
           ) : (
             <output className="absolute inset-0 flex items-center justify-center text-white">Loading game…</output>
