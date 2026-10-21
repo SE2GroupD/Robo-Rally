@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useGlobalSocket } from '../../../app/WebSocketProvider';
+import { useGlobalSocket } from '../../../app/WebSocketContext';
 
 export function useInGameSocket(gameId: string | undefined, currentPlayerId: string, currentRound: number | undefined) {
   const [readinessState, setReadinessState] = useState<Record<string, boolean>>({});
