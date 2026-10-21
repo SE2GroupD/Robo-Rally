@@ -29,7 +29,7 @@ export function useInGameSocket(gameId: string | undefined, currentPlayerId: str
         destination: `/app/game/${gameId}/player-ready`,
         body: JSON.stringify({ playerId: currentPlayerId, isReady }),
       });
-      setReadinessState(prev => ({...prev, [currentPlayerId]: isReady}));
+      setReadinessState((prev) => ({ ...prev, [currentPlayerId]: isReady }));
     }
   };
 
