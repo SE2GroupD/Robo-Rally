@@ -27,7 +27,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       },
 
       onConnect: () => {
-        console.log('Global STOMP Client Connected');
         setStompClient(client);
       },
       onDisconnect: () => setStompClient(null),

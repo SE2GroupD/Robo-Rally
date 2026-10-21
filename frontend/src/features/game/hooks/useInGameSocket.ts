@@ -3,12 +3,14 @@ import { useGlobalSocket } from '../../../app/WebSocketProvider';
 
 export function useInGameSocket(gameId: string | undefined, currentPlayerId: string, currentRound: number | undefined) {
   const [readinessState, setReadinessState] = useState<Record<string, boolean>>({});
-  const client = useGlobalSocket();
+  const [prevRound, setPrevRound] = useState(currentRound);
 
-  // Clear readiness state when a new round starts
-  useEffect(() => {
+  if (currentRound !== prevRound) {
+    setPrevRound(currentRound);
     setReadinessState({});
-  }, [currentRound]);
+  }
+
+  const client = useGlobalSocket();
 
   useEffect(() => {
     if (!gameId || !client?.connected) return;
