@@ -62,6 +62,7 @@ export interface TileDto {
 }
 
 export interface BoardStateDto {
+  winner: WinnerDto | null;
   layout?: MapLayoutData;
   gameId: string;
   width: number;
@@ -73,4 +74,8 @@ export interface BoardStateDto {
   checkpointProgress: CheckpointProgressDto[];
   totalCheckpoints: number;
   lastResolution: TurnResolutionDto | null;
+}
+
+export interface WinnerDto {
+  playerId: string;
 }

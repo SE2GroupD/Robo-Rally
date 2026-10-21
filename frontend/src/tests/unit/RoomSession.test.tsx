@@ -49,6 +49,7 @@ const host: JoinedRoom = {
 };
 
 const boardState: BoardStateDto = {
+  winner: null,
   gameId: 'game-1',
   width: 12,
   height: 12,
@@ -234,4 +235,24 @@ describe('room lifecycle', () => {
 
     expect(screen.queryByRole('button', { name: 'Start Battle' })).not.toBeInTheDocument();
   });
+});
+
+it('shows the winner and hides programming after the match is complete', async () => {
+  const room = {
+    ...host,
+    status: 'STARTED' as const,
+    players: [{ ...host.players[0], avatarId: 3 }],
+  };
+  vi.mocked(fetchRoom).mockResolvedValue(room);
+  vi.mocked(fetchBoardState).mockResolvedValue({
+    ...boardState,
+    winner: { playerId: 'host-1' },
+  });
+
+  render(<RoomSession initialRoom={room} onLeft={vi.fn()} />);
+
+  expect(await screen.findByRole('region', { name: 'Match winner' })).toBeInTheDocument();
+  expect(screen.getByText('Host · Robot 3')).toBeInTheDocument();
+  expect(screen.queryByText('game-1/round-1')).not.toBeInTheDocument();
+  expect(screen.queryByText('Your turn')).not.toBeInTheDocument();
 });

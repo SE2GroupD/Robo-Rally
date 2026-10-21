@@ -20,6 +20,7 @@ const resolution: TurnResolutionDto = {
 };
 
 const before: BoardStateDto = {
+  winner: null,
   gameId: 'g',
   width: 12,
   height: 12,

@@ -94,6 +94,7 @@ beforeEach(() => {
         width: 13,
         height: 10,
         layout: defaultMapLayout,
+        winner: null,
         robots: [{ playerId: 'host-id', x: robotX, y: 1, direction: 'EAST' }],
         tiles: [],
         round: 1,

@@ -95,6 +95,7 @@ function CheckpointProgress({
 }
 
 function RoundStatus({ state, players, currentPlayerId, isReplaying }: RoundStatusProps) {
+  if (state.winner) return null;
   if (isReplaying) {
     return (
       <section
@@ -133,6 +134,12 @@ function RoundStatus({ state, players, currentPlayerId, isReplaying }: RoundStat
       )}
     </section>
   );
+}
+
+function winnerLabel(state: BoardStateDto, players: JoinedRoom['players']) {
+  if (!state.winner) return null;
+  const winner = players.find((player) => player.playerId === state.winner?.playerId);
+  return `${winner?.playerName ?? 'Unknown player'}${winner?.avatarId ? ` · Robot ${winner.avatarId}` : ''}`;
 }
 
 export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionProps) {
@@ -418,9 +425,19 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
                 </ul>
               </aside>
 
-              <div className="pointer-events-none absolute inset-0 z-10">
-                <ProgrammingPhase roomId={room.gameId} round={programmingRound} />
-              </div>
+              {state.winner ? (
+                <section
+                  aria-label="Match winner"
+                  className="absolute inset-x-3 top-28 z-30 mx-auto max-w-sm rounded border border-metal-light bg-slate-950/95 p-4 text-center text-white shadow-[0_16px_40px_rgba(0,0,0,0.55)]"
+                >
+                  <h2 className="m-0 text-sm font-bold text-metal-light">Winner</h2>
+                  <p className="m-0 mt-2 text-xl font-bold">{winnerLabel(state, room.players)}</p>
+                </section>
+              ) : (
+                <div className="pointer-events-none absolute inset-0 z-10">
+                  <ProgrammingPhase roomId={room.gameId} round={programmingRound} />
+                </div>
+              )}
             </>
           ) : (
             <output className="absolute inset-0 flex items-center justify-center text-white">Loading game…</output>
