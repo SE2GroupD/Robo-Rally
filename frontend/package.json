@@ -18,11 +18,14 @@
   },
   "dependencies": {
     "@neondatabase/neon-js": "^0.7.0-beta",
+    "@stomp/stompjs": "^7.5.0",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/sockjs-client": "^1.5.4",
     "clsx": "^2.1.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.4",
+    "sockjs-client": "^1.6.1",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3"
   },

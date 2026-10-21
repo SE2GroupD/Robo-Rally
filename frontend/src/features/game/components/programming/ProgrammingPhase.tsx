@@ -7,14 +7,17 @@ import { useProgramming } from '../../hooks/useProgramming';
 interface ProgrammingPhaseProps {
   roomId: string;
   round: number | null;
+  onCardsLocked?: () => void; // Made optional
 }
 
-export function ProgrammingPhase({ roomId, round }: ProgrammingPhaseProps) {
+export function ProgrammingPhase({ roomId, round, onCardsLocked }: ProgrammingPhaseProps) {
   const root = useRef<HTMLDivElement>(null);
   const { hand, registers, isLockedIn, isSubmitting, placeCardInRegister, returnCardToHand, clearProgram, submitProgram } =
     useProgramming(roomId, round);
+
   const isDisabled = isLockedIn || isSubmitting;
   const selectedCount = registers.filter(Boolean).length;
+
   const restoreFocus = (action: () => void) => {
     const keyboard = document.activeElement?.matches(':focus-visible');
     action();
@@ -26,6 +29,11 @@ export function ProgrammingPhase({ roomId, round }: ProgrammingPhaseProps) {
           )
           ?.focus();
       });
+  };
+
+  const handleSubmit = () => {
+    submitProgram();
+    onCardsLocked?.(); // Safe optional call
   };
 
   return (
@@ -46,7 +54,7 @@ export function ProgrammingPhase({ roomId, round }: ProgrammingPhaseProps) {
         </div>
         <div className="col-start-3 row-start-1 mr-2 mb-2 w-32 justify-self-end">
           <RegisterButtons
-            onSubmit={submitProgram}
+            onSubmit={handleSubmit}
             onClear={clearProgram}
             selectedCount={selectedCount}
             isSubmitting={isSubmitting}
