@@ -33,6 +33,12 @@ export interface TurnResolutionDto {
   steps: RegisterStepDto[];
 }
 
+export interface CheckpointProgressDto {
+  playerId: string;
+  nextCheckpoint: number;
+  completedCheckpoints: number[];
+}
+
 // Mirrors the Java Tile record's JSON (null fields are omitted by the server).
 export interface TileDto {
   x: number;
@@ -64,5 +70,7 @@ export interface BoardStateDto {
   tiles: TileDto[];
   round: number;
   lockedInPlayerIds: string[];
+  checkpointProgress: CheckpointProgressDto[];
+  totalCheckpoints: number;
   lastResolution: TurnResolutionDto | null;
 }

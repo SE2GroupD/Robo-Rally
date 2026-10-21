@@ -27,6 +27,7 @@ class TrainingMapTests {
         assertEquals(13, state.width());
         assertEquals(10, state.height());
         assertEquals(layouts.getDefaultLayout(), state.layout());
+        assertEquals(4, state.totalCheckpoints());
         assertEquals(1, state.robots().getFirst().x());
         assertEquals(1, state.robots().getFirst().y());
         assertTrue(state.tiles().stream().anyMatch(tile -> tile.x() == 10 && tile.y() == 2 && Integer.valueOf(1).equals(tile.checkpointNumber())));
