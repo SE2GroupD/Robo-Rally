@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { neon } from '../features/auth/lib/neon';
-import { WebSocketContext } from '../features/game/WebSocketContext';
+import { WebSocketContext } from '../features/game/hooks/useGlobalSocket';
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const [stompClient, setStompClient] = useState<Client | null>(null);
