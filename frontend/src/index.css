@@ -37,3 +37,24 @@ html {
 body {
   margin: 0;
 }
+
+@keyframes results-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.match-results-dialog[open] {
+  animation: results-enter 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .match-results-dialog[open] {
+    animation: none;
+  }
+}

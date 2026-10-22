@@ -21,7 +21,16 @@ export function RoundStatus({ state, players, currentPlayerId, isReplaying }: Ro
     );
   }
 
-  if (state.winner) return null;
+  if (state.winner) {
+    return (
+      <section
+        aria-live="polite"
+        className="rounded border border-metal-light bg-slate-950/90 px-4 py-1.5 text-sm text-metal-light"
+      >
+        Match complete
+      </section>
+    );
+  }
 
   const waitingFor = players.filter((player) => !state.lockedInPlayerIds.includes(player.playerId));
   const isYourTurn = waitingFor.some((player) => player.playerId === currentPlayerId);

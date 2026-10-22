@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useRoomSession } from '../hooks/useRoomSession';
 import { useGameState } from '../hooks/useGameState';
 import { useGameReplay } from '../hooks/useGameReplay';
@@ -9,7 +10,8 @@ import { ProgrammingPhase } from '../components/programming/ProgrammingPhase';
 import { CheckpointProgress } from '../components/gameplay/CheckpointProgress';
 import { RoundStatus } from '../components/gameplay/RoundStatus';
 import { PilotLegend } from '../components/gameplay/PilotLegend';
-import { MatchWinner } from '../components/gameplay/MatchWinner';
+import { MatchResultsDialog } from '../components/gameplay/match-results/MatchResultsDialog';
+import { useMatchResults } from '../hooks/useMatchResults';
 import { RoomUnavailable } from '../components/room/RoomUnavailable';
 import { Navigate } from 'react-router-dom';
 import { Button } from '../../../foundation/components/button/Button';
@@ -53,6 +55,8 @@ function ActiveGame({ initialRoom, onLeft }: { initialRoom: JoinedRoom; onLeft: 
   const started = room.status === 'STARTED';
   const { state, error: gameError } = useGameState(room.gameId, started && !closed);
   const { robots, isReplaying, programmingRound } = useGameReplay(state);
+  const showResultsRef = useRef<HTMLButtonElement>(null);
+  const results = useMatchResults(state, room.players, isReplaying);
 
   const { readinessState, sendReadyStatus } = useInGameSocket(
     started && !closed ? room.gameId : undefined,
@@ -104,6 +108,18 @@ function ActiveGame({ initialRoom, onLeft }: { initialRoom: JoinedRoom; onLeft: 
           {gameError}
         </p>
       )}
+      {results.results && (
+        <MatchResultsDialog
+          results={results.results}
+          currentPlayerId={room.playerId}
+          open={results.open}
+          busy={busy}
+          error={error}
+          returnFocusRef={showResultsRef}
+          onDismiss={results.dismiss}
+          onLeave={leave}
+        />
+      )}
       <div className="relative flex-1 min-h-0 overflow-hidden bg-slate-950">
         {state ? (
           <>
@@ -132,22 +148,30 @@ function ActiveGame({ initialRoom, onLeft }: { initialRoom: JoinedRoom; onLeft: 
               lockedInPlayerIds={state.lockedInPlayerIds}
               readinessState={readinessState}
             />
-            {state.winner && !isReplaying ? (
-              <MatchWinner state={state} players={room.players} />
-            ) : !state.winner ? (
-              <div className="pointer-events-none absolute inset-0 z-10">
-                <ProgrammingPhase roomId={room.gameId} round={programmingRound} onCardsLocked={() => sendReadyStatus(true)} />
-              </div>
-            ) : null}
+            <div className="pointer-events-none absolute inset-0 z-10">
+              <ProgrammingPhase
+                roomId={room.gameId}
+                round={state.winner ? null : programmingRound}
+                completed={Boolean(state.winner) && !isReplaying}
+                onCardsLocked={() => sendReadyStatus(true)}
+              />
+            </div>
           </>
         ) : (
           <output className="absolute inset-0 flex items-center justify-center text-white">Loading game…</output>
         )}
       </div>
 
-      <Button disabled={busy} onClick={leave} variant="secondary">
-        Leave Room
-      </Button>
+      <div className="flex gap-3">
+        {results.available && (
+          <Button ref={showResultsRef} className="flex-1" disabled={busy} onClick={results.show}>
+            Show results
+          </Button>
+        )}
+        <Button className="flex-1" disabled={busy} onClick={leave} variant="secondary">
+          Leave Room
+        </Button>
+      </div>
     </div>
   );
 }

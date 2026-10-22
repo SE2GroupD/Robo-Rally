@@ -131,7 +131,7 @@ describe('active game', () => {
     expect(screen.getByText('Claimed: None')).toBeInTheDocument();
   });
 
-  it('shows the winner and hides programming after the match is complete', async () => {
+  it('shows the result while keeping the board and final program visible', async () => {
     const room = {
       ...host,
       status: 'STARTED' as const,
@@ -141,14 +141,20 @@ describe('active game', () => {
     vi.mocked(fetchBoardState).mockResolvedValue({
       ...boardState,
       winner: { playerId: 'host-1' },
+      checkpointProgress: [{ playerId: 'host-1', nextCheckpoint: 5, completedCheckpoints: [1, 2, 3, 4] }],
     });
 
     render(<GamePage room={room} isStarting={false} error="" onRetry={vi.fn()} onBack={vi.fn()} />);
 
-    expect(await screen.findByRole('region', { name: 'Match winner' })).toBeInTheDocument();
-    expect(screen.getByText('Host · Robot 3')).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: 'You won!' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'You won!' })).toBeInTheDocument();
+    expect(screen.getAllByText('Host').length).toBeGreaterThan(0);
+    expect(screen.getByText('Game board')).toBeInTheDocument();
+    expect(screen.getByText('game-1/round-null')).toBeInTheDocument();
     expect(screen.queryByText('game-1/round-1')).not.toBeInTheDocument();
     expect(screen.queryByText('Your turn')).not.toBeInTheDocument();
+    expect(screen.getByText('Finished')).toBeInTheDocument();
+    expect(screen.queryByText('Next 5')).not.toBeInTheDocument();
   });
 });
 
@@ -252,7 +258,7 @@ it('waits for every register to replay before showing the winner', async () => {
   });
 
   expect(screen.getByText('Resolving moves…')).toBeInTheDocument();
-  expect(screen.queryByRole('region', { name: 'Match winner' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('dialog', { name: 'You won!' })).not.toBeInTheDocument();
   expect(screen.queryByText('game-1/round-2')).not.toBeInTheDocument();
 
   await act(async () => {
@@ -260,13 +266,56 @@ it('waits for every register to replay before showing the winner', async () => {
   });
 
   expect(screen.getByText('Resolving moves…')).toBeInTheDocument();
-  expect(screen.queryByRole('region', { name: 'Match winner' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('dialog', { name: 'You won!' })).not.toBeInTheDocument();
 
   await act(async () => {
     await vi.advanceTimersByTimeAsync(350);
   });
 
-  expect(screen.getByRole('region', { name: 'Match winner' })).toBeInTheDocument();
-  expect(screen.getByText('Host · Robot 3')).toBeInTheDocument();
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(20);
+  });
+  expect(screen.getByRole('dialog', { name: 'You won!' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'You won!' })).toBeInTheDocument();
+  expect(screen.getAllByText('Host').length).toBeGreaterThan(0);
+  expect(screen.getByText('Game board')).toBeInTheDocument();
+  expect(screen.getByText('game-1/round-null')).toBeInTheDocument();
   expect(screen.queryByText('Resolving moves…')).not.toBeInTheDocument();
+});
+
+it('dismisses and reopens frozen results and only leaves after a successful request', async () => {
+  const user = userEvent.setup();
+  const room = {
+    ...host,
+    status: 'STARTED' as const,
+    players: [
+      { ...host.players[0], avatarId: 3 },
+      { playerId: 'guest', playerName: 'Guest', avatarId: 2 },
+    ],
+  };
+  vi.mocked(fetchRoom).mockResolvedValue(room);
+  vi.mocked(fetchBoardState).mockResolvedValue({ ...boardState, winner: { playerId: 'host-1' } });
+  vi.mocked(leaveRoom).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(undefined);
+  const onBack = vi.fn();
+  render(<GamePage room={room} isStarting={false} error="" onRetry={vi.fn()} onBack={onBack} />);
+  const dialog = await screen.findByRole('dialog', { name: 'You won!' });
+  expect(screen.getByRole('heading', { name: 'You won!' })).toHaveFocus();
+  await user.click(screen.getByRole('button', { name: 'View board' }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Show results' })).toHaveFocus();
+  vi.mocked(fetchRoom).mockResolvedValue({ ...room, players: [{ ...room.players[0], playerName: 'Renamed' }] });
+  await waitFor(() => expect(fetchRoom).toHaveBeenCalledTimes(2), { timeout: 3000 });
+  await user.click(screen.getByRole('button', { name: 'Show results' }));
+  expect(dialog).toHaveTextContent('Guest');
+  expect(dialog).not.toHaveTextContent('Renamed');
+  await act(async () => {
+    dialog.dispatchEvent(new Event('cancel', { cancelable: true }));
+  });
+  expect(screen.getByRole('button', { name: 'Show results' })).toHaveFocus();
+  await user.click(screen.getByRole('button', { name: 'Show results' }));
+  await user.click(screen.getByRole('button', { name: 'Back to menu' }));
+  expect(dialog).toHaveTextContent('Could not leave. Please try again.');
+  expect(onBack).not.toHaveBeenCalled();
+  await user.click(screen.getByRole('button', { name: 'Back to menu' }));
+  await waitFor(() => expect(onBack).toHaveBeenCalledOnce());
 });

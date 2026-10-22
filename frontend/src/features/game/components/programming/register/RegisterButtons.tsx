@@ -1,4 +1,5 @@
 interface RegisterButtonsProps {
+  completed?: boolean;
   onSubmit: () => void;
   onClear: () => void;
   selectedCount: number;
@@ -6,14 +7,27 @@ interface RegisterButtonsProps {
   isLockedIn: boolean;
 }
 
-export function RegisterButtons({ onSubmit, onClear, selectedCount, isSubmitting, isLockedIn }: RegisterButtonsProps) {
-  const isSubmitDisabled = isSubmitting || isLockedIn || selectedCount < 5;
-  const isClearDisabled = isSubmitting || isLockedIn || selectedCount === 0;
+export function RegisterButtons({
+  completed = false,
+  onSubmit,
+  onClear,
+  selectedCount,
+  isSubmitting,
+  isLockedIn,
+}: RegisterButtonsProps) {
+  const isSubmitDisabled = completed || isSubmitting || isLockedIn || selectedCount < 5;
+  const isClearDisabled = completed || isSubmitting || isLockedIn || selectedCount === 0;
 
   return (
     <fieldset aria-label="Program actions" className="pointer-events-auto grid min-w-0 gap-2 border-0 p-0">
       <p aria-live="polite" className="rounded bg-slate-950/90 px-2 py-1 text-center text-xs text-slate-300 tabular-nums">
-        {isSubmitting ? 'Submitting program' : isLockedIn ? 'Program locked in' : `${selectedCount}/5 cards selected`}
+        {completed
+          ? 'Final program'
+          : isSubmitting
+            ? 'Submitting program'
+            : isLockedIn
+              ? 'Program locked in'
+              : `${selectedCount}/5 cards selected`}
       </p>
       <button
         data-ready
@@ -23,7 +37,7 @@ export function RegisterButtons({ onSubmit, onClear, selectedCount, isSubmitting
         aria-busy={isSubmitting}
         className="min-h-11 cursor-pointer rounded-lg border border-emerald-400/60 bg-emerald-500 px-3 text-sm font-bold text-slate-950 shadow-sm transition-colors enabled:hover:bg-emerald-400 enabled:active:bg-emerald-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-800 disabled:text-slate-400 disabled:shadow-none motion-reduce:transition-none"
       >
-        {isSubmitting ? 'Submitting…' : isLockedIn ? 'Ready ✓' : 'Ready'}
+        {completed ? 'Match complete' : isSubmitting ? 'Submitting…' : isLockedIn ? 'Ready ✓' : 'Ready'}
       </button>
       <button
         type="button"

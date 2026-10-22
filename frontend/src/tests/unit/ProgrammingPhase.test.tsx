@@ -137,3 +137,21 @@ it('stays idle without a round and refetches the hand when the round changes', a
   await waitFor(() => expect(fetchPlayerHand).toHaveBeenCalledTimes(2));
   expect(screen.getByRole('button', { name: 'Ready' })).toBeDisabled();
 });
+
+it('retains the final hand and registers as read-only without fetching another hand', async () => {
+  const user = userEvent.setup();
+  const { rerender } = render(<ProgrammingPhase roomId="room" round={1} />);
+  await handSlot(1).findByRole('button');
+  await user.click(handSlot(1).getByRole('button'));
+  expect(programSlot(1).getByRole('button', { name: 'Move 1' })).toBeInTheDocument();
+
+  rerender(<ProgrammingPhase roomId="room" round={2} completed />);
+  expect(programSlot(1).getByRole('button', { name: 'Move 1' })).toBeDisabled();
+  expect(handSlot(2).getByRole('button', { name: 'Move 1' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Match complete' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Clear' })).toBeDisabled();
+  expect(screen.getByText('Final program')).toBeInTheDocument();
+  expect(fetchPlayerHand).toHaveBeenCalledTimes(1);
+  await user.click(screen.getByRole('button', { name: 'Match complete' }));
+  expect(submitProgramRegister).not.toHaveBeenCalled();
+});

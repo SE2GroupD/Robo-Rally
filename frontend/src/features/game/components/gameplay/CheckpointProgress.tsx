@@ -28,7 +28,11 @@ export function CheckpointProgress({
             <li key={player.playerId} className="border-t border-white/10 pt-2 first:border-t-0 first:pt-0">
               <div className="flex items-center justify-between gap-3">
                 <span className="truncate font-bold">{player.playerName}</span>
-                <span className="shrink-0 text-metal-light">Next {playerProgress?.nextCheckpoint ?? '-'}</span>
+                <span className="shrink-0 text-metal-light">
+                  {totalCheckpoints > 0 && (playerProgress?.completedCheckpoints.length ?? 0) >= totalCheckpoints
+                    ? 'Finished'
+                    : `Next ${playerProgress?.nextCheckpoint ?? '-'}`}
+                </span>
               </div>
               <p className="m-0 mt-1 text-xs text-text-muted">
                 {playerProgress?.completedCheckpoints.length ?? 0} out of {totalCheckpoints} checkpoints completed

@@ -80,3 +80,9 @@ and the shared mutation lock and revision guard. `hooks/useRoomSetup.ts` owns
 lobby setup mutations through that guard. Shared robot artwork belongs in
 `data/avatars.ts`. Room lifecycle feedback can be reused by the lobby and game
 without putting gameplay back into RoomSession.
+
+Final race results live in `components/gameplay/match-results/`: the accessible
+dialog composes the podium, standings, and robot artwork. `data/matchResults.ts`
+ranks checkpoint progress with shared competition places; `hooks/useMatchResults.ts`
+freezes the final snapshot and owns reveal/dismiss/reopen state. Results appear
+after replay, while the board and disabled final program remain mounted.
