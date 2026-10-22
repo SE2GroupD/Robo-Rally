@@ -79,7 +79,7 @@ export function Map({ width, height, tiles, robots, layout, currentPlayerId }: M
         aria-label="Game map"
         tabIndex={0}
         className={cn(
-          '@container-size absolute inset-x-0 bottom-0 top-9 touch-none overflow-auto bg-factory-bg focus-visible:outline-2 focus-visible:outline-cyan-300',
+          '@container-size absolute inset-x-0 bottom-0 top-0 touch-none overflow-auto bg-factory-bg focus-visible:outline-2 focus-visible:outline-cyan-300',
           isDragging ? 'cursor-grabbing' : 'cursor-grab',
         )}
         onKeyDown={onKeyDown}
