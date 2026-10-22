@@ -114,11 +114,6 @@ export function useRoomManager({ username, pathname, navigate }: UseRoomManagerO
     clearRooms();
   }
 
-  function hostPublicRoom(room: CreatedRoom) {
-    setHostRoom(room);
-    navigate('/host-battle');
-  }
-
   function joinPublicRoom(room: JoinedRoom) {
     setJoinedRoom(room);
     navigate('/join-battle');
@@ -138,7 +133,6 @@ export function useRoomManager({ username, pathname, navigate }: UseRoomManagerO
     hostBattle,
     returnToMenu,
     leaveActiveRoom,
-    hostPublicRoom,
     joinPublicRoom,
   };
 }

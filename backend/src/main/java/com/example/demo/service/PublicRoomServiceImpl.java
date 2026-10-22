@@ -40,6 +40,31 @@ public class PublicRoomServiceImpl implements PublicRoomService {
     }
 
     @Override
+    public synchronized GameRoom setVisibility(UUID gameId, String playerId, boolean publicRoom) {
+        GameRoom room = roomService.getRoom(gameId, playerId);
+        if (!room.hostPlayerId().equals(playerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can change room visibility.");
+        }
+        if (room.status() != RoomStatus.WAITING || room.training()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only waiting battle rooms can change visibility.");
+        }
+        if (publicRoom) {
+            String hostName = room.players().stream()
+                    .filter(player -> player.playerId().equals(playerId))
+                    .findFirst().orElseThrow().playerName();
+            roomNamesByGameId.putIfAbsent(gameId, hostName + "'s battle room");
+        } else {
+            roomNamesByGameId.remove(gameId);
+        }
+        return room;
+    }
+
+    @Override
+    public synchronized boolean isPublic(UUID gameId) {
+        return roomNamesByGameId.containsKey(gameId);
+    }
+
+    @Override
     public synchronized List<PublicRoom> listPublicRooms() {
         List<PublicRoom> publicRooms = new ArrayList<>();
         for (Map.Entry<UUID, String> entry : roomNamesByGameId.entrySet()) {

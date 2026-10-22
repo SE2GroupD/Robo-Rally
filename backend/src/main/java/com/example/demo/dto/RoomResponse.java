@@ -15,13 +15,18 @@ public record RoomResponse(
         String status,
         List<RoomPlayer> players,
         String mapId,
-        List<Tile> startBoardConfig) {
+        List<Tile> startBoardConfig,
+        boolean publicRoom) {
 
     public static RoomResponse forPlayer(GameRoom room, String securePlayerId) {
         return forPlayer(room, securePlayerId, List.of());
     }
 
     public static RoomResponse forPlayer(GameRoom room, String securePlayerId, List<Tile> startBoardConfig) {
+        return forPlayer(room, securePlayerId, startBoardConfig, false);
+    }
+
+    public static RoomResponse forPlayer(GameRoom room, String securePlayerId, List<Tile> startBoardConfig, boolean publicRoom) {
         return new RoomResponse(
                 room.gameId(),
                 room.roomCode(),
@@ -30,6 +35,7 @@ public record RoomResponse(
                 room.status().name(),
                 room.players(),
                 room.mapId(),
-                startBoardConfig);
+                startBoardConfig,
+                publicRoom);
     }
 }

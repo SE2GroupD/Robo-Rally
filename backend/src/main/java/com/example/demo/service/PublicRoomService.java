@@ -11,6 +11,10 @@ public interface PublicRoomService {
 
     GameRoom createPublicRoom(String playerName, String playerId, String roomName);
 
+    GameRoom setVisibility(UUID gameId, String playerId, boolean publicRoom);
+
+    boolean isPublic(UUID gameId);
+
     List<PublicRoom> listPublicRooms();
 
     GameRoom joinPublicRoom(UUID gameId, String playerName, String playerId);

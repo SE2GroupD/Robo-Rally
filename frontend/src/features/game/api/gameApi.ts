@@ -33,6 +33,7 @@ export interface CreatedRoom {
   status: 'WAITING' | 'STARTED';
   mapId?: string;
   startBoardConfig?: TileData[];
+  publicRoom?: boolean;
   players: { playerId: string; playerName: string; avatarId: number | null; startPosition?: { x: number; y: number } | null }[];
 }
 
@@ -88,6 +89,7 @@ export interface JoinedRoom {
   status: 'WAITING' | 'STARTED';
   mapId?: string;
   startBoardConfig?: TileData[];
+  publicRoom?: boolean;
   players: { playerId: string; playerName: string; avatarId: number | null; startPosition?: { x: number; y: number } | null }[];
 }
 
@@ -219,21 +221,19 @@ export async function listPublicRooms(signal?: AbortSignal): Promise<PublicRoom[
   return rooms;
 }
 
-export async function createPublicRoom(roomName: string, playerName: string): Promise<CreatedRoom> {
+export async function setRoomVisibility(room: JoinedRoom, publicRoom: boolean): Promise<JoinedRoom> {
   if (!API_BASE_URL) throw new Error('Room service is unavailable. Please try again later.');
-
   const token = await getValidToken();
-  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/games/public`, {
-    method: 'POST',
+  const response = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/games/${encodeURIComponent(room.gameId)}/visibility`, {
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ roomName: roomName.trim(), playerName }),
+    body: JSON.stringify({ publicRoom }),
     signal: AbortSignal.timeout(15000),
   });
-  if (!response.ok) throw publicRoomError(response.status);
-
-  const room = await response.json();
-  if (!validateRoom(room)) throw new Error('The room service returned an unexpected response.');
-  return room;
+  if (!response.ok) throw new Error('Could not change room visibility. Please try again.');
+  const updated = await response.json();
+  if (!validateRoom(updated)) throw new Error('The room service returned an unexpected response.');
+  return updated;
 }
 
 export async function joinPublicRoom(gameId: string, playerName: string): Promise<JoinedRoom> {

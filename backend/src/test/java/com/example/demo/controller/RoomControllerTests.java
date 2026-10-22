@@ -20,6 +20,7 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class RoomControllerTests {
@@ -225,6 +226,29 @@ class RoomControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.players[0].startPosition.x").value(1))
                 .andExpect(jsonPath("$.players[0].startPosition.y").value(1));
+    }
+
+    @Test
+    void visibilityIsSavedAndIncludedInRoomResponses() throws Exception {
+        var room = service.createRoom("Host", hostId);
+        currentMockSubject = hostId;
+        mvc.perform(get("/api/games/" + room.gameId()))
+                .andExpect(jsonPath("$.publicRoom").value(false));
+        mvc.perform(put("/api/games/" + room.gameId() + "/visibility")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"publicRoom\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.publicRoom").value(true))
+                .andExpect(jsonPath("$.roomCode").value(room.roomCode()));
+        mvc.perform(get("/api/games/" + room.gameId()))
+                .andExpect(jsonPath("$.publicRoom").value(true));
+        mvc.perform(put("/api/games/" + room.gameId() + "/visibility")
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(put("/api/games/" + room.gameId() + "/visibility")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"publicRoom\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.publicRoom").value(false));
+        mvc.perform(get("/api/games/public")).andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
