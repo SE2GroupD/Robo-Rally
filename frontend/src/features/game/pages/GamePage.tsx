@@ -5,12 +5,10 @@ import { useGameState } from '../hooks/useGameState';
 import { useGameReplay } from '../hooks/useGameReplay';
 import { useInGameSocket } from '../hooks/useInGameSocket';
 import { toTileData } from '../data/serverTiles';
-import type { AvatarId } from '../types/Board';
 import { Map } from '../components/map/Map';
 import { ProgrammingPhase } from '../components/programming/ProgrammingPhase';
-import { CheckpointProgress } from '../components/gameplay/CheckpointProgress';
+import { RaceProgress } from '../components/gameplay/race-progress/RaceProgress';
 import { RoundStatus } from '../components/gameplay/RoundStatus';
-import { PilotLegend } from '../components/gameplay/PilotLegend';
 import { MatchResultsDialog } from '../components/gameplay/match-results/MatchResultsDialog';
 import { useMatchResults } from '../hooks/useMatchResults';
 import { RoomUnavailable } from '../components/room/RoomUnavailable';
@@ -33,7 +31,7 @@ export function GamePage({ room, isStarting, error, onRetry, onBack }: GamePageP
   if (!room && !isStarting && !error) return <Navigate to="/main-menu" replace />;
 
   return (
-    <div className="flex h-dvh flex-col gap-3 bg-slate-950 p-3 text-white">
+    <div className="flex h-dvh flex-col bg-factory-bg text-white">
       {isStarting && <output className="m-0">Starting game…</output>}
       {error && (
         <>
@@ -55,7 +53,7 @@ function ActiveGame({ initialRoom, onLeft }: { initialRoom: JoinedRoom; onLeft: 
   const { room, busy, error, closed, leave } = useRoomSession({ initialRoom, onLeft });
   const started = room.status === 'STARTED';
   const { state, error: gameError } = useGameState(room.gameId, started && !closed);
-  const { robots, isReplaying, programmingRound } = useGameReplay(state);
+  const { robots, progressState, isReplaying, programmingRound } = useGameReplay(state);
   const showResultsRef = useRef<HTMLButtonElement>(null);
   const results = useMatchResults(state, room.players, isReplaying);
 
@@ -78,17 +76,9 @@ function ActiveGame({ initialRoom, onLeft }: { initialRoom: JoinedRoom; onLeft: 
     };
   });
 
-  const rosterPlayers = mapRobots
-    .map((robot) => {
-      const player = room.players.find((roomPlayer) => roomPlayer.playerId === robot.playerId);
-      return player ? { ...player, avatarId: robot.avatarId } : null;
-    })
-    .filter((player): player is JoinedRoom['players'][number] & { avatarId: AvatarId } => player !== null)
-    .sort((first, second) => Number(second.playerId === room.playerId) - Number(first.playerId === room.playerId));
-
   if (closed) return <RoomUnavailable onLeft={onLeft} />;
   return (
-    <div className="relative flex flex-1 flex-col min-h-0 gap-3">
+    <div className="relative flex flex-1 flex-col min-h-0">
       {busy && (
         <div className="pointer-events-none absolute top-2 right-2 z-30 flex items-center gap-2 rounded bg-slate-900/90 px-3 py-1 text-xs text-text-muted border border-metal-light shadow-md backdrop-blur-sm">
           <span className="inline-block h-2 w-2 animate-ping rounded-full bg-hazard" />
@@ -119,57 +109,62 @@ function ActiveGame({ initialRoom, onLeft }: { initialRoom: JoinedRoom; onLeft: 
           onLeave={leave}
         />
       )}
-      <div className="relative flex-1 min-h-0 overflow-hidden bg-slate-950">
-        {state ? (
-          <>
-            <Map
-              layout={state.layout}
-              width={state.width}
-              height={state.height}
-              tiles={state.tiles.map(toTileData)}
-              robots={mapRobots}
-              currentPlayerId={room.playerId}
-            />
-            <CheckpointProgress
-              players={room.players}
-              progress={state.checkpointProgress}
-              totalCheckpoints={state.totalCheckpoints}
-            />
-
-            <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex flex-col items-center gap-1">
-              {state.layout?.name && <div className="text-center text-sm font-semibold text-white">{state.layout.name}</div>}
-              <RoundStatus state={state} players={room.players} currentPlayerId={room.playerId} isReplaying={isReplaying} />
-            </div>
-
-            <PilotLegend
-              rosterPlayers={rosterPlayers}
-              currentPlayerId={room.playerId}
-              lockedInPlayerIds={state.lockedInPlayerIds}
-              readinessState={readinessState}
-            />
-            <div className="pointer-events-none absolute inset-0 z-10">
-              <ProgrammingPhase
-                roomId={room.gameId}
-                round={state.winner ? null : programmingRound}
-                completed={Boolean(state.winner) && !isReplaying}
-                onCardsLocked={() => sendReadyStatus(true)}
-              />
-            </div>
-          </>
-        ) : (
-          <output className="absolute inset-0 flex items-center justify-center text-white">Loading game…</output>
+      <header className="flex min-h-16 shrink-0 items-center gap-4 border-b border-metal-dark/60 bg-[#161d23] px-5">
+        <div className="shrink-0 border-r border-metal-dark/60 pr-4 font-bold">
+          ROBO <span className="ml-2 text-hazard">RALLY</span>
+        </div>
+        <p className="m-0 min-w-0 flex-1 truncate text-sm font-semibold text-white" title={state?.layout?.name}>
+          {state?.layout?.name}
+        </p>
+        {state && (
+          <div className="min-w-0 max-w-sm">
+            <RoundStatus state={state} players={room.players} currentPlayerId={room.playerId} isReplaying={isReplaying} />
+          </div>
         )}
-      </div>
-
-      <div className="flex gap-3">
         {results.available && (
-          <Button ref={showResultsRef} className="flex-1" disabled={busy} onClick={results.show}>
+          <Button ref={showResultsRef} size="small" className="shrink-0" disabled={busy} onClick={results.show}>
             Show results
           </Button>
         )}
-        <Button className="flex-1" disabled={busy} onClick={leave} variant="secondary">
+        <Button size="small" className="shrink-0" disabled={busy} onClick={leave} variant="secondary">
           Leave Room
         </Button>
+      </header>
+      <div className="grid min-h-0 min-w-0 flex-1 grid-cols-[176px_minmax(0,1fr)] xl:grid-cols-[216px_minmax(0,1fr)]">
+        <aside aria-label="Race standings" className="min-h-0 overflow-y-auto border-r border-metal-dark/40 bg-[#161d23] p-4">
+          <h2 className="mb-3 text-[10px] uppercase tracking-wide text-metal-light">Players · {room.players.length}</h2>
+          {state && (
+            <RaceProgress
+              players={room.players}
+              progress={progressState?.checkpointProgress ?? []}
+              totalCheckpoints={progressState?.totalCheckpoints ?? state.totalCheckpoints}
+              currentPlayerId={room.playerId}
+              winnerId={progressState?.winner?.playerId}
+              lockedInPlayerIds={state.lockedInPlayerIds}
+              readinessState={readinessState}
+            />
+          )}
+        </aside>
+        {state ? (
+          <ProgrammingPhase
+            roomId={room.gameId}
+            round={state.winner ? null : programmingRound}
+            completed={Boolean(state.winner) && !isReplaying}
+            onCardsLocked={() => sendReadyStatus(true)}
+            board={
+              <Map
+                layout={state.layout}
+                width={state.width}
+                height={state.height}
+                tiles={state.tiles.map(toTileData)}
+                robots={mapRobots}
+                currentPlayerId={room.playerId}
+              />
+            }
+          />
+        ) : (
+          <output className="flex items-center justify-center text-white">Loading game…</output>
+        )}
       </div>
     </div>
   );

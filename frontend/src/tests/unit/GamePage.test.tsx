@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import userEvent from '@testing-library/user-event';
 import type * as RoomApi from '../../features/game/api/gameApi';
 import { act, render, screen, waitFor, cleanup, within } from '@testing-library/react';
@@ -19,7 +20,12 @@ vi.mock('../../features/game/components/map/Map', () => ({
 }));
 
 vi.mock('../../features/game/components/programming/ProgrammingPhase', () => ({
-  ProgrammingPhase: ({ roomId, round }: { roomId: string; round: number | null }) => <div>{`${roomId}/round-${round}`}</div>,
+  ProgrammingPhase: ({ roomId, round, board }: { roomId: string; round: number | null; board?: ReactNode }) => (
+    <div>
+      {board}
+      {`${roomId}/round-${round}`}
+    </div>
+  ),
 }));
 
 vi.mock('@neondatabase/neon-js/auth', () => ({
@@ -100,7 +106,7 @@ describe('active game', () => {
 
     render(<GamePage room={{ ...host, status: 'STARTED' }} isStarting={false} error="" onRetry={vi.fn()} onBack={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByLabelText('Pilot robot legend')).toHaveTextContent('You'));
+    expect(await screen.findByRole('button', { name: /Host \(You\), place 1/ })).toContainHTML('<img');
   });
 
   it('shows checkpoint progress for every player', async () => {
@@ -120,15 +126,17 @@ describe('active game', () => {
 
     render(<GamePage room={room} isStarting={false} error="" onRetry={vi.fn()} onBack={vi.fn()} />);
 
-    expect(await screen.findByRole('region', { name: 'Checkpoint progress' })).toBeInTheDocument();
-    expect(screen.getByText('Host')).toBeInTheDocument();
-    expect(screen.getByText('Next 2')).toBeInTheDocument();
-    expect(screen.getByText('1 out of 4 checkpoints completed')).toBeInTheDocument();
-    expect(screen.getByText('Claimed: 1')).toBeInTheDocument();
-    expect(screen.getByText('Friend')).toBeInTheDocument();
-    expect(screen.getByText('Next 1')).toBeInTheDocument();
-    expect(screen.getByText('0 out of 4 checkpoints completed')).toBeInTheDocument();
-    expect(screen.getByText('Claimed: None')).toBeInTheDocument();
+    const positions = await screen.findByRole('region', { name: 'Race positions' });
+    await waitFor(() =>
+      expect(
+        within(positions)
+          .getAllByRole('button')
+          .map((button) => button.getAttribute('aria-label')),
+      ).toEqual([
+        'Host (You), place 1, 1 of 4 checkpoints completed, Not ready',
+        'Friend, place 2, 0 of 4 checkpoints completed, Not ready',
+      ]),
+    );
   });
 
   it('shows the result while keeping the board and final program visible', async () => {
@@ -153,7 +161,7 @@ describe('active game', () => {
     expect(screen.getByText('game-1/round-null')).toBeInTheDocument();
     expect(screen.queryByText('game-1/round-1')).not.toBeInTheDocument();
     expect(screen.queryByText('Your turn')).not.toBeInTheDocument();
-    expect(screen.getByText('Finished')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Host \(You\), place 1, 4 of 4/ })).toBeInTheDocument();
     expect(screen.queryByText('Next 5')).not.toBeInTheDocument();
   });
 });
@@ -174,6 +182,7 @@ it('preserves replay status and resumes programming after resolution', async () 
   await act(async () => {
     await vi.advanceTimersByTimeAsync(1000);
   });
+  expect(screen.getByRole('button', { name: /Host \(You\), place 1, 0 of 4/ })).toBeInTheDocument();
   expect(screen.getByText('Resolving moves…')).toBeInTheDocument();
   expect(screen.getByText('game-1/round-null')).toBeInTheDocument();
   await act(async () => {
@@ -232,6 +241,7 @@ it('waits for every register to replay before showing the winner', async () => {
   const robot = { playerId: 'host-1', x: 1, y: 1, direction: 'NORTH' as const };
   const winningState: BoardStateDto = {
     ...boardState,
+    checkpointProgress: [{ playerId: 'host-1', nextCheckpoint: 5, completedCheckpoints: [1, 2, 3, 4] }],
     winner: { playerId: 'host-1' },
     robots: [robot],
     round: 2,
@@ -257,6 +267,7 @@ it('waits for every register to replay before showing the winner', async () => {
     await vi.advanceTimersByTimeAsync(1000);
   });
 
+  expect(screen.getByRole('button', { name: /Host \(You\), place 1, 0 of 4/ })).toBeInTheDocument();
   expect(screen.getByText('Resolving moves…')).toBeInTheDocument();
   expect(screen.queryByRole('dialog', { name: 'You won!' })).not.toBeInTheDocument();
   expect(screen.queryByText('game-1/round-2')).not.toBeInTheDocument();
@@ -265,6 +276,7 @@ it('waits for every register to replay before showing the winner', async () => {
     await vi.advanceTimersByTimeAsync(1750);
   });
 
+  expect(screen.getByRole('button', { name: /Host \(You\), place 1, 0 of 4/ })).toBeInTheDocument();
   expect(screen.getByText('Resolving moves…')).toBeInTheDocument();
   expect(screen.queryByRole('dialog', { name: 'You won!' })).not.toBeInTheDocument();
 
@@ -275,6 +287,7 @@ it('waits for every register to replay before showing the winner', async () => {
   await act(async () => {
     await vi.advanceTimersByTimeAsync(20);
   });
+  expect(screen.getByRole('button', { name: /Host \(You\), place 1, 4 of 4/ })).toBeInTheDocument();
   expect(screen.getByRole('dialog', { name: 'You won!' })).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'You won!' })).toBeInTheDocument();
   expect(screen.getAllByText('Host').length).toBeGreaterThan(0);

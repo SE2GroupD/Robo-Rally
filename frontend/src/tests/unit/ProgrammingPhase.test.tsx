@@ -155,3 +155,40 @@ it('retains the final hand and registers as read-only without fetching another h
   await user.click(screen.getByRole('button', { name: 'Match complete' }));
   expect(submitProgramRegister).not.toHaveBeenCalled();
 });
+
+it('keeps the board mounted and restores keyboard focus to the hand after selection', async () => {
+  const user = userEvent.setup();
+  render(<ProgrammingPhase roomId="room" round={1} board={<div data-testid="board">Board content</div>} />);
+  const board = screen.getByTestId('board');
+  const firstCard = await handSlot(1).findByRole('button');
+  act(() => firstCard.focus());
+  await user.keyboard('{Enter}');
+  expect(programSlot(1).getByRole('button')).toBeInTheDocument();
+  await waitFor(() => expect(handSlot(2).getByRole('button')).toHaveFocus());
+  expect(screen.getByTestId('board')).toBe(board);
+  expect(fetchPlayerHand).toHaveBeenCalledTimes(1);
+});
+
+it('shows server draw/discard counts beside the hand and refreshes them with the next round', async () => {
+  const user = userEvent.setup();
+  const { rerender } = render(<ProgrammingPhase roomId="room" round={1} />);
+  await handSlot(1).findByRole('button');
+  expect(within(screen.getByRole('region', { name: 'Draw pile' })).getByText('10 cards')).toBeInTheDocument();
+  expect(within(screen.getByRole('region', { name: 'Discard pile' })).getByText('0 cards')).toBeInTheDocument();
+  await user.click(handSlot(1).getByRole('button'));
+  expect(screen.getByText('8 cards · Select to fill a register')).toBeInTheDocument();
+  expect(within(screen.getByRole('region', { name: 'Draw pile' })).getByText('10 cards')).toBeInTheDocument();
+  vi.mocked(fetchPlayerHand).mockResolvedValueOnce({
+    cards,
+    playerId: '',
+    lockedRegisters: [],
+    isLockedIn: false,
+    drawPileCount: 1,
+    discardPileCount: 9,
+  });
+  rerender(<ProgrammingPhase roomId="room" round={2} />);
+  await waitFor(() =>
+    expect(within(screen.getByRole('region', { name: 'Discard pile' })).getByText('9 cards')).toBeInTheDocument(),
+  );
+  expect(within(screen.getByRole('region', { name: 'Draw pile' })).getByText('1 card')).toBeInTheDocument();
+});

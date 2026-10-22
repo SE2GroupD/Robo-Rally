@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react';
 import { type CardType } from '../../types/CardType'; // Adjust path as needed
 import { cn } from '../../../../utils/cn';
 import againImage from '../../../../assets/cards/again.png';
@@ -12,7 +13,7 @@ import uTurnImage from '../../../../assets/cards/uturn.png';
 
 interface ProgrammingCardProps {
   type: CardType;
-  onClick?: () => void;
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
   disabled?: boolean;
   variant?: 'hand' | 'program';
 }
@@ -59,11 +60,11 @@ export function ProgrammingCard({ type, onClick, disabled, variant = 'program' }
       disabled={disabled}
       aria-label={label}
       className={cn(
-        'pointer-events-auto flex h-full w-full min-h-0 min-w-0 flex-col items-center justify-center overflow-hidden rounded-md shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300',
-        image ? 'bg-[#a9a9a9] p-1' : 'border-2 p-2 text-center font-bold',
+        'pointer-events-auto flex h-full w-full min-h-0 min-w-0 flex-col items-center justify-center overflow-hidden rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300',
+        image ? 'bg-transparent p-1' : 'border-2 p-2 text-center font-bold',
         !image && (isDamage ? 'border-red-600 bg-red-100 text-red-800' : 'border-blue-600 bg-slate-100 text-blue-900'),
         'relative transition-transform duration-150 motion-reduce:transition-none enabled:hover:scale-120 enabled:focus-visible:scale-120',
-        variant === 'hand' ? 'origin-left' : 'origin-bottom',
+        variant === 'hand' ? 'origin-center' : 'origin-bottom',
         disabled && 'cursor-not-allowed opacity-50',
       )}
     >

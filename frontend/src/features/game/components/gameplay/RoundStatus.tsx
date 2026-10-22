@@ -38,7 +38,7 @@ export function RoundStatus({ state, players, currentPlayerId, isReplaying }: Ro
   return (
     <section
       aria-live="polite"
-      className="flex items-center gap-2 rounded-xl border border-slate-700/80 bg-slate-950/85 px-3 py-1.5 text-sm text-slate-200 shadow-lg backdrop-blur-sm"
+      className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-700/80 bg-slate-950/85 px-3 py-1.5 text-sm text-slate-200 shadow-lg backdrop-blur-sm"
     >
       <span className="font-black text-cyan-300">Round {state.round}</span>
       <span className="text-slate-500">•</span>
@@ -50,7 +50,9 @@ export function RoundStatus({ state, players, currentPlayerId, isReplaying }: Ro
       ) : waitingFor.length > 0 ? (
         <>
           <span className="text-slate-300">Waiting for</span>
-          <span className="font-medium text-white">{waitingFor.map((player) => player.playerName).join(', ')}</span>
+          <span className="min-w-0 break-words font-medium text-white">
+            {waitingFor.map((player) => player.playerName).join(', ')}
+          </span>
         </>
       ) : (
         <span className="text-slate-300">All players are ready</span>

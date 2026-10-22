@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useRef, useState, type DragEvent, type PointerEvent, type WheelEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type DragEvent,
+  type KeyboardEvent,
+  type PointerEvent,
+  type WheelEvent,
+} from 'react';
 
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 2;
@@ -23,43 +32,74 @@ type ZoomWheelEvent = Pick<
   'clientX' | 'clientY' | 'ctrlKey' | 'metaKey' | 'deltaY' | 'deltaMode' | 'preventDefault' | 'currentTarget'
 >;
 
-export function useMapViewport() {
+export function useMapViewport(boardSize?: { width: number; height: number }) {
+  const initialBoardSize = useRef(boardSize);
   const viewportRef = useRef<HTMLElement>(null);
   const [scale, setScale] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const scaleRef = useRef(1);
   const drag = useRef<DragPosition | null>(null);
+  const manualView = useRef(false);
   const scrollFrame = useRef<number | null>(null);
   const wheelFrame = useRef<number | null>(null);
   const pendingWheelDelta = useRef(0);
   const pendingWheelFocalPoint = useRef<FocalPoint | null>(null);
 
   useEffect(() => {
-    const element = viewportRef.current;
-    if (element) {
-      element.scrollLeft = element.clientWidth / 2 - 100;
-      element.scrollTop = element.clientHeight / 2 - 60;
-    }
-    return () => {
+    const cancelFrames = () => {
       if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
       if (wheelFrame.current !== null) cancelAnimationFrame(wheelFrame.current);
+    };
+    const element = viewportRef.current;
+    if (!element) return cancelFrames;
+    const board = initialBoardSize.current;
+    const fitBoard = () => {
+      if (manualView.current) return;
+      if (!board) {
+        element.scrollLeft = (element.scrollWidth - element.clientWidth) / 2;
+        element.scrollTop = (element.scrollHeight - element.clientHeight) / 2;
+        return;
+      }
+      if (!element.clientWidth || !element.clientHeight) return;
+      const fit = Math.max(
+        MIN_SCALE,
+        Math.min(MAX_SCALE, (element.clientWidth - 32) / board.width, element.clientHeight / board.height),
+      );
+      scaleRef.current = fit;
+      setScale(fit);
+      if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
+      scrollFrame.current = requestAnimationFrame(() => {
+        if (!manualView.current) {
+          element.scrollLeft = (board.width * fit) / 2;
+          element.scrollTop = (board.height * fit) / 2;
+        }
+        scrollFrame.current = null;
+      });
+    };
+    fitBoard();
+    const observer = board && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fitBoard) : undefined;
+    observer?.observe(element);
+    return () => {
+      observer?.disconnect();
+      cancelFrames();
     };
   }, []);
 
   const setZoom = useCallback((requestedScale: number, focalPoint?: FocalPoint) => {
+    manualView.current = true;
     const previous = scaleRef.current;
     const next = Math.max(MIN_SCALE, Math.min(MAX_SCALE, Math.round(requestedScale * 1000) / 1000));
     const element = viewportRef.current;
     if (!element || next === previous) return;
     if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
     const focal = focalPoint ?? { x: element.clientWidth / 2, y: element.clientHeight / 2 };
-    const x = (element.scrollLeft + focal.x) / previous;
-    const y = (element.scrollTop + focal.y) / previous;
+    const x = (element.scrollLeft + focal.x - element.clientWidth / 2) / previous;
+    const y = (element.scrollTop + focal.y - element.clientHeight / 2) / previous;
     scaleRef.current = next;
     setScale(next);
     scrollFrame.current = requestAnimationFrame(() => {
-      element.scrollLeft = x * next - focal.x;
-      element.scrollTop = y * next - focal.y;
+      element.scrollLeft = x * next + element.clientWidth / 2 - focal.x;
+      element.scrollTop = y * next + element.clientHeight / 2 - focal.y;
       scrollFrame.current = null;
     });
   }, []);
@@ -68,6 +108,7 @@ export function useMapViewport() {
 
   const onWheel = useCallback(
     (event: ZoomWheelEvent) => {
+      if (event.deltaY !== 0) manualView.current = true;
       // Ctrl/Cmd + wheel is deliberate mouse zoom; browsers also expose trackpad
       // pinch gestures as ctrl-wheel events. Plain wheel input remains available
       // for scrolling around the board.
@@ -120,6 +161,7 @@ export function useMapViewport() {
 
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
     if (event.button !== 0 || !event.isPrimary || drag.current) return;
+    manualView.current = true;
     const element = event.currentTarget;
     drag.current = {
       pointerId: event.pointerId,
@@ -147,6 +189,11 @@ export function useMapViewport() {
     }
   };
 
+  const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key))
+      manualView.current = true;
+  };
+
   const onDragStart = (event: DragEvent<HTMLElement>) => event.preventDefault();
 
   return {
@@ -158,6 +205,7 @@ export function useMapViewport() {
     onZoomIn: () => zoom(ZOOM_STEP),
     onZoomOut: () => zoom(-ZOOM_STEP),
     onWheel,
+    onKeyDown,
     onPointerDown,
     onPointerMove,
     onPointerUp: endDrag,
