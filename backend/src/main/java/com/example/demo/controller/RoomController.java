@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.CreatePublicRoomRequest;
 import com.example.demo.dto.CreateRoomRequest;
+import com.example.demo.dto.RoomVisibilityRequest;
 import com.example.demo.dto.JoinPublicRoomRequest;
 import com.example.demo.dto.PublicRoomResponse;
 import com.example.demo.dto.JoinRoomRequest;
@@ -68,6 +69,17 @@ public class RoomController {
         String playerId = jwt.getSubject();
         GameRoom room = publicRoomService.joinPublicRoom(gameId, request.playerName(), playerId);
         return ResponseEntity.ok(responseFor(room, playerId));
+    }
+
+    @PutMapping("/{gameId}/visibility")
+    public RoomResponse setVisibility(
+            @PathVariable UUID gameId,
+            @RequestBody RoomVisibilityRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        if (request.publicRoom() == null) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "Room visibility is required.");
+        }
+        return responseFor(publicRoomService.setVisibility(gameId, jwt.getSubject(), request.publicRoom()), jwt.getSubject());
     }
 
     @PostMapping("/join")
@@ -151,6 +163,6 @@ public class RoomController {
                 roomService.selectMap(gameId, jwt.getSubject(), request.mapId()), jwt.getSubject());
     }
     private RoomResponse responseFor(GameRoom room, String playerId) {
-        return RoomResponse.forPlayer(room, playerId, roomService.startTiles(room));
+        return RoomResponse.forPlayer(room, playerId, roomService.startTiles(room), publicRoomService.isPublic(room.gameId()));
     }
 }

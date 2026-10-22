@@ -133,7 +133,6 @@ function App() {
             <StartPlatformPage
               username={playerInfo.username}
               onBack={roomManager.returnToMenu}
-              onCreated={roomManager.hostPublicRoom}
               onJoined={roomManager.joinPublicRoom}
             />
           ) : (

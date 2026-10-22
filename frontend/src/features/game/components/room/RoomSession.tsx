@@ -3,6 +3,7 @@ import { MapSelection } from './map-selection/MapSelection';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import {
   updateRoomSetup,
+  setRoomVisibility,
   selectStartTile,
   fetchRoom,
   leaveRoom,
@@ -18,6 +19,7 @@ import { useGameReplay } from '../../hooks/useGameReplay';
 import { toTileData } from '../../data/serverTiles';
 import { ProgrammingPhase } from '../programming/ProgrammingPhase';
 import { RobotSelection } from './RobotSelection';
+import { RoomVisibility } from './RoomVisibility';
 import type { AvatarId } from '../../types/Board';
 import { useInGameSocket } from '../../hooks/useInGameSocket';
 import type { BoardStateDto, CheckpointProgressDto } from '../../types/GameStateDto';
@@ -270,6 +272,24 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
     }
   }
 
+  async function handleVisibility(publicRoom: boolean) {
+    if (actionPending.current || publicRoom === Boolean(room.publicRoom)) return;
+    actionPending.current = true;
+    revision.current += 1;
+    setBusy(true);
+    setError('');
+    try {
+      const updated = await setRoomVisibility(room, publicRoom);
+      setRoom(updated);
+      onRoomChange?.(updated);
+    } catch {
+      setError('Could not change room visibility. Please try again.');
+    } finally {
+      actionPending.current = false;
+      setBusy(false);
+    }
+  }
+
   async function handleLegacyStart(x: number, y: number) {
     if (actionPending.current) return;
 
@@ -470,18 +490,24 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
         </div>
       ) : (
         <>
-          <section className="rounded border border-metal-light p-4 text-center">
-            <h2 className="m-0 text-sm font-bold text-text-muted">Room code</h2>
-            <p className="my-3 select-text text-3xl font-bold tracking-widest">{room.roomCode}</p>
+          <section className="rounded border border-metal-light p-4">
+            <div>
+              <h2 className="m-0 text-lg font-bold">Room code</h2>
+              <p className="mb-0 mt-1 text-sm text-text-muted">Share with friends to invite them.</p>
+            </div>
 
-            <Button className="w-full" onClick={copyCode} variant="secondary">
-              Copy Code
-            </Button>
-
-            <p className="mb-0 mt-3 text-sm text-text-muted">Share this code so friends can join.</p>
-
-            <output className="mb-0 mt-2 text-sm">{copyMessage}</output>
+            <div className="mt-3 flex flex-col items-start gap-1">
+              <div className="flex items-center gap-3 rounded border border-dotted border-metal px-3 py-2">
+                <span className="select-text text-2xl font-bold tracking-widest">{room.roomCode}</span>
+                <Button onClick={copyCode} size="small" variant="secondary">
+                  Copy Code
+                </Button>
+              </div>
+              <output className="min-h-5 text-xs text-text-muted">{copyMessage}</output>
+            </div>
           </section>
+
+          {isHost && <RoomVisibility publicRoom={Boolean(room.publicRoom)} disabled={busy} onChange={handleVisibility} />}
 
           {room.mapId || !room.startBoardConfig ? (
             <MapSelection

@@ -145,6 +145,9 @@ beforeEach(() => {
       },
     ];
 
+    if (endpoint.endsWith('/visibility')) {
+      return createResponse({ ...hostRoom, publicRoom: JSON.parse(String(init?.body)).publicRoom });
+    }
     if (endpoint.includes('/start-tile')) {
       const body = init?.body ? JSON.parse(String(init.body)) : { x: 0, y: 1 };
       hostRoom.players[0].startPosition = { x: body.x, y: body.y };
@@ -280,22 +283,22 @@ describe('room routes after the navigation merge', () => {
     );
   });
 
-  it('creates a named public room from the Start Platform', async () => {
+  it('changes the hosted Battle Room from private to public and back', async () => {
     window.history.replaceState(null, '', '/main-menu');
     const user = userEvent.setup();
     renderApp();
 
-    await user.click(screen.getByRole('button', { name: 'Public Rooms' }));
-    await screen.findByText('Friday factory race');
-    await user.type(screen.getByLabelText('Room name'), 'Robot Rush');
-    await user.click(screen.getByRole('button', { name: 'Create public room' }));
-
-    await expectPath('/host-battle');
-    expect(await screen.findByText('ABC234')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Host Battle' }));
+    await screen.findByText('ABC234');
+    expect(screen.getByRole('button', { name: 'Private' })).toHaveAttribute('aria-pressed', 'true');
+    await user.click(screen.getByRole('button', { name: 'Public' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Public' })).toHaveAttribute('aria-pressed', 'true'));
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/games/public'),
-      expect.objectContaining({ method: 'POST', body: JSON.stringify({ roomName: 'Robot Rush', playerName: 'pilot' }) }),
+      expect.stringContaining('/games/real-room/visibility'),
+      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ publicRoom: true }) }),
     );
+    await user.click(screen.getByRole('button', { name: 'Private' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Private' })).toHaveAttribute('aria-pressed', 'true'));
   });
 
   it('leaves a hosted room when browser navigation returns to the menu', async () => {

@@ -27,6 +27,25 @@ class RoomServiceTests {
     }
 
     @Test
+    void hostCanPublishAndHideTheSameRoom() {
+        PublicRoomService publicRooms = new PublicRoomServiceImpl(service);
+        GameRoom room = service.createRoom("Host", hostId);
+        service.joinRoom(room.roomCode(), "Guest", guestId);
+        assertFalse(publicRooms.isPublic(room.gameId()));
+        assertEquals(403, assertThrows(ResponseStatusException.class,
+                () -> publicRooms.setVisibility(room.gameId(), guestId, true)).getStatusCode().value());
+        GameRoom published = publicRooms.setVisibility(room.gameId(), hostId, true);
+        assertEquals(room.roomCode(), published.roomCode());
+        assertEquals(2, published.players().size());
+        assertTrue(publicRooms.isPublic(room.gameId()));
+        assertEquals(room.gameId(), publicRooms.listPublicRooms().getFirst().room().gameId());
+        publicRooms.setVisibility(room.gameId(), hostId, false);
+        assertTrue(publicRooms.listPublicRooms().isEmpty());
+        assertEquals(404, assertThrows(ResponseStatusException.class,
+                () -> publicRooms.joinPublicRoom(room.gameId(), "Other", "other")).getStatusCode().value());
+    }
+
+    @Test
     void hostStartsAloneAndRepeatedStartIsSafe() {
         GameRoom room = service.createRoom("Host", hostId, "classic_start");
         assertEquals(com.example.demo.model.RoomStatus.STARTED,
