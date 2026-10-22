@@ -55,3 +55,19 @@ describe('final standings', () => {
     });
   });
 });
+
+it('uses the board robot fallback in room order even when podium order differs', () => {
+  const { state, players } = race([1, 4], 'p1');
+  const unselected = players.map((player) => ({ ...player, avatarId: null }));
+  const results = createMatchResults(state, unselected)!;
+  expect(results.standings.map((player) => [player.playerId, player.avatarId])).toEqual([
+    ['p1', 2],
+    ['p0', 1],
+  ]);
+});
+
+it('keeps an explicitly selected robot instead of using the fallback', () => {
+  const { state, players } = race([4, 1]);
+  players[0].avatarId = 6;
+  expect(createMatchResults(state, players)!.standings[0].avatarId).toBe(6);
+});

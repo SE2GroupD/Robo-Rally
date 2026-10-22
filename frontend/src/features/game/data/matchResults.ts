@@ -1,3 +1,4 @@
+import { playerAvatar } from './avatars';
 import type { JoinedRoom } from '../api/gameApi';
 import type { BoardStateDto } from '../types/GameStateDto';
 import type { MatchResults } from '../types/MatchResults';
@@ -13,7 +14,7 @@ export function createMatchResults(state: BoardStateDto, players: JoinedRoom['pl
     .map((player) => ({
       playerId: player.playerId,
       playerName: player.playerName,
-      avatarId: player.avatarId,
+      avatarId: playerAvatar(player.playerId, players),
       completedCheckpoints: progress.get(player.playerId) ?? 0,
     }))
     .sort((a, b) => {

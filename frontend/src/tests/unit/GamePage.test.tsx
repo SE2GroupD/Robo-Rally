@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event';
 import type * as RoomApi from '../../features/game/api/gameApi';
-import { act, render, screen, waitFor, cleanup } from '@testing-library/react';
+import { act, render, screen, waitFor, cleanup, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GamePage } from '../../features/game/pages/GamePage';
 import { fetchRoom, fetchBoardState, leaveRoom, RoomRequestError, type JoinedRoom } from '../../features/game/api/gameApi';
@@ -318,4 +318,19 @@ it('dismisses and reopens frozen results and only leaves after a successful requ
   expect(onBack).not.toHaveBeenCalled();
   await user.click(screen.getByRole('button', { name: 'Back to menu' }));
   await waitFor(() => expect(onBack).toHaveBeenCalledOnce());
+});
+
+it('shows fallback board robots in both the podium and standings when no robot was selected', async () => {
+  const room = {
+    ...host,
+    status: 'STARTED' as const,
+    players: [...host.players, { playerId: 'guest', playerName: 'Guest', avatarId: null }],
+  };
+  vi.mocked(fetchRoom).mockResolvedValue(room);
+  vi.mocked(fetchBoardState).mockResolvedValue({ ...boardState, winner: { playerId: 'guest' } });
+  render(<GamePage room={room} isStarting={false} error="" onRetry={vi.fn()} onBack={vi.fn()} />);
+  const dialog = await screen.findByRole('dialog', { name: 'Guest wins!' });
+  expect(within(dialog).getAllByRole('img', { name: 'Robot 2' })).toHaveLength(2);
+  expect(within(dialog).getAllByRole('img', { name: 'Robot 1' })).toHaveLength(2);
+  expect(within(dialog).queryByLabelText('Robot unavailable')).not.toBeInTheDocument();
 });

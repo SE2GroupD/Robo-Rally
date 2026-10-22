@@ -1,3 +1,4 @@
+import { playerAvatar } from '../data/avatars';
 import { useRef } from 'react';
 import { useRoomSession } from '../hooks/useRoomSession';
 import { useGameState } from '../hooks/useGameState';
@@ -70,11 +71,9 @@ function ActiveGame({ initialRoom, onLeft }: { initialRoom: JoinedRoom; onLeft: 
       room.players.findIndex((player) => player.playerId === robot.playerId),
     );
 
-    const player = room.players.find((roomPlayer) => roomPlayer.playerId === robot.playerId);
-
     return {
       ...robot,
-      avatarId: (player?.avatarId ?? (index % 6) + 1) as AvatarId,
+      avatarId: playerAvatar(robot.playerId, room.players) ?? 1,
       hue: index * 60,
     };
   });

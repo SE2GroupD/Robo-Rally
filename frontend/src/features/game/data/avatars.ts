@@ -1,3 +1,5 @@
+import type { JoinedRoom } from '../api/gameApi';
+import type { AvatarId } from '../types/Board';
 import avatar1 from '../../../assets/avatars/avatar1.svg';
 import avatar2 from '../../../assets/avatars/avatar2.svg';
 import avatar3 from '../../../assets/avatars/avatar3.svg';
@@ -13,3 +15,11 @@ export const AVATAR_MAP: Record<number, string> = {
   5: avatar5,
   6: avatar6,
 };
+
+// Resolve before ranking: fallback robot identity follows room order, not place.
+export function playerAvatar(playerId: string, players: JoinedRoom['players']): AvatarId | null {
+  const index = players.findIndex((player) => player.playerId === playerId);
+  if (index < 0) return null;
+  const selected = players[index].avatarId;
+  return selected !== null && AVATAR_MAP[selected] ? (selected as AvatarId) : (((index % 6) + 1) as AvatarId);
+}

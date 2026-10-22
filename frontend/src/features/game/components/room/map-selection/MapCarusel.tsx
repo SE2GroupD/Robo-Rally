@@ -89,7 +89,7 @@ export function MapCarusel({ maps, selectedId, disabled, onSelect, children }: M
         })}
       </div>
 
-      <div className="flex items-center justify-center gap-4">
+      <div className="mx-auto flex w-full max-w-sm items-center justify-center gap-3">
         {maps.length > 1 && (
           <Button
             variant="secondary"
@@ -101,8 +101,10 @@ export function MapCarusel({ maps, selectedId, disabled, onSelect, children }: M
             ←
           </Button>
         )}
-        <p aria-live="polite" className="m-0 text-center font-bold">
-          {maps[index].name}
+        <p aria-live="polite" className="m-0 flex h-12 min-w-0 flex-1 flex-col justify-center text-center font-bold">
+          <span className="block truncate" title={maps[index].name}>
+            {maps[index].name}
+          </span>
           {maps.length > 1 && (
             <span className="block text-sm font-normal text-text-muted">
               {index + 1} / {maps.length}
