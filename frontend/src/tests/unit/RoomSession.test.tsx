@@ -48,6 +48,18 @@ const host: JoinedRoom = {
   players: [{ playerId: 'host-1', playerName: 'Host', avatarId: null }],
 };
 
+const readyRoom: JoinedRoom = {
+  gameId: 'game-1',
+  roomCode: 'ABC234',
+  playerId: 'host-1',
+  hostPlayerId: 'host-1',
+  status: 'WAITING',
+  players: [
+    { playerId: 'host-1', playerName: 'Host', avatarId: 1, startPosition: { x: 0, y: 1 } },
+    { playerId: 'guest-1', playerName: 'Friend', avatarId: 2, startPosition: { x: 0, y: 2 } },
+  ],
+};
+
 const boardState: BoardStateDto = {
   winner: null,
   gameId: 'game-1',
@@ -131,17 +143,59 @@ describe('room lifecycle', () => {
     expect(signal.aborted).toBe(true);
   });
 
-  it('starts alone and passes actual identifiers to the game', async () => {
-    vi.mocked(startRoom).mockResolvedValue({ ...host, status: 'STARTED' });
+  it('starts the match when all players are ready and passes actual identifiers to the game', async () => {
+    vi.mocked(fetchRoom).mockResolvedValue(readyRoom);
+    vi.mocked(startRoom).mockResolvedValue({ ...readyRoom, status: 'STARTED' });
 
-    render(<RoomSession initialRoom={host} onLeft={vi.fn()} />);
+    render(<RoomSession initialRoom={readyRoom} onLeft={vi.fn()} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Start Battle' }));
+    expect(screen.queryByText(/Waiting for/i)).not.toBeInTheDocument();
+    const startButton = screen.getByRole('button', { name: 'Start Battle' });
+    expect(startButton).not.toBeDisabled();
+
+    await userEvent.click(startButton);
 
     expect(await screen.findByText('Game board')).toBeInTheDocument();
     expect(await screen.findByText('game-1/round-1')).toBeInTheDocument();
     expect(fetchBoardState).toHaveBeenCalledWith('game-1', expect.any(AbortSignal));
-    expect(startRoom).toHaveBeenCalledWith(host);
+    expect(startRoom).toHaveBeenCalledWith(readyRoom);
+  });
+
+  it('disables Start Battle and explains when fewer than 2 players are present', async () => {
+    render(<RoomSession initialRoom={host} onLeft={vi.fn()} />);
+
+    expect(screen.getByText('Waiting for at least 2 players to join.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start Battle' })).toBeDisabled();
+    expect(screen.getByText('No robot')).toBeInTheDocument();
+    expect(screen.getByText('No tile')).toBeInTheDocument();
+    expect(screen.getByText('Not ready')).toBeInTheDocument();
+  });
+
+  it('disables Start Battle and lists players missing robot or start tile', async () => {
+    const unreadyRoom: JoinedRoom = {
+      ...host,
+      players: [
+        { playerId: 'host-1', playerName: 'Host', avatarId: 1, startPosition: null },
+        { playerId: 'guest-1', playerName: 'Alice', avatarId: null, startPosition: { x: 0, y: 1 } },
+      ],
+    };
+    vi.mocked(fetchRoom).mockResolvedValue(unreadyRoom);
+
+    render(<RoomSession initialRoom={unreadyRoom} onLeft={vi.fn()} />);
+
+    expect(
+      screen.getByText('Waiting for Host to select a start tile, Alice to select a robot.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start Battle' })).toBeDisabled();
+  });
+
+  it('displays readiness badges for all players in the lobby', async () => {
+    render(<RoomSession initialRoom={readyRoom} onLeft={vi.fn()} />);
+
+    expect(screen.getByText('Robot 1')).toBeInTheDocument();
+    expect(screen.getByText('Robot 2')).toBeInTheDocument();
+    expect(screen.getAllByText('Tile')).toHaveLength(2);
+    expect(screen.getAllByText('Ready')).toHaveLength(2);
   });
 
   it('shows guests the same game as the host, without a start button', async () => {

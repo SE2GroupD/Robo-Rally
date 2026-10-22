@@ -61,10 +61,10 @@ export function StartTileMarkers({ layout, room, disabled, onSelect }: StartTile
   ));
 }
 
-/** Start-tile buttons and the choice to let the server assign a free tile. */
+/** Start-tile buttons and the choice to automatically pick an available tile. */
 export function StartTileSelection({ layout, room, disabled, onSelect }: StartTileSelectionProps) {
-  const currentPlayer = room.players.find((player) => player.playerId === room.playerId);
-  const automatic = !currentPlayer?.startPosition;
+  const startTiles = getStartTiles(layout, room);
+  const firstAvailableTile = startTiles.find((t) => !t.occupied)?.position;
   const locked = disabled || room.status !== 'WAITING';
 
   return (
@@ -72,7 +72,7 @@ export function StartTileSelection({ layout, room, disabled, onSelect }: StartTi
       <h3 className="mb-3 mt-0 text-lg font-bold">Choose your start tile</h3>
       <div className="space-y-3">
         <div className="grid auto-cols-[minmax(9rem,1fr)] grid-flow-col gap-2 overflow-x-auto pb-1">
-          {getStartTiles(layout, room).map(({ position, mine, occupied, label }) => (
+          {startTiles.map(({ position, mine, occupied, label }) => (
             <Button
               key={`${position.x}-${position.y}`}
               variant="secondary"
@@ -86,10 +86,17 @@ export function StartTileSelection({ layout, room, disabled, onSelect }: StartTi
             </Button>
           ))}
         </div>
-        <Button variant="secondary" disabled={locked} aria-pressed={automatic} onClick={() => onSelect(null)} className="w-full">
-          {automatic ? '✓ ' : ''}Assign me a free tile automatically
+        <Button
+          variant="secondary"
+          disabled={locked || !firstAvailableTile}
+          onClick={() => firstAvailableTile && onSelect(firstAvailableTile)}
+          className="w-full"
+        >
+          Assign me a free tile automatically
         </Button>
-        <p className="m-0 text-sm text-text-muted">Unselected players receive a free tile when the battle starts.</p>
+        <p className="m-0 text-sm text-text-muted">
+          Picks an available start tile for you automatically.
+        </p>
       </div>
     </>
   );

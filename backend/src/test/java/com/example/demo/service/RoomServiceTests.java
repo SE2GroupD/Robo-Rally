@@ -46,8 +46,18 @@ class RoomServiceTests {
     }
 
     @Test
-    void hostStartsAloneAndRepeatedStartIsSafe() {
+    void repeatedStartIsSafeWhenReadyAndRejectsAlone() {
         GameRoom room = service.createRoom("Host", hostId, "classic_start");
+        var soloError = assertThrows(ResponseStatusException.class,
+                () -> service.startRoom(room.gameId(), hostId));
+        assertEquals(409, soloError.getStatusCode().value());
+
+        service.joinRoom(room.roomCode(), "Guest", guestId);
+        service.selectRobot(room.gameId(), hostId, 1);
+        service.selectRobot(room.gameId(), guestId, 2);
+        service.selectStartTile(room.gameId(), hostId, new com.example.demo.model.Position(1, 1));
+        service.selectStartTile(room.gameId(), guestId, new com.example.demo.model.Position(1, 2));
+
         assertEquals(com.example.demo.model.RoomStatus.STARTED,
                 service.startRoom(room.gameId(), room.hostPlayerId()).status());
         assertEquals(com.example.demo.model.RoomStatus.STARTED,
@@ -71,7 +81,9 @@ class RoomServiceTests {
         assertEquals(403, assertThrows(ResponseStatusException.class,
                 () -> service.getRoom(room.gameId(), guestId)).getStatusCode().value());
 
-        service.startRoom(room.gameId(), room.hostPlayerId());
+        assertEquals(409, assertThrows(ResponseStatusException.class,
+                () -> service.startRoom(room.gameId(), room.hostPlayerId())).getStatusCode().value());
+
         service.leaveRoom(room.gameId(), room.hostPlayerId());
         assertEquals(404, assertThrows(ResponseStatusException.class,
                 () -> service.getRoom(room.gameId(), room.hostPlayerId())).getStatusCode().value());
@@ -237,8 +249,12 @@ class RoomServiceTests {
     @Test
     void standaloneGameplayUsesTheReservedSpawnAndCombinedBoards() {
         var room = service.createRoom("Host", hostId, "classic_start");
+        service.joinRoom(room.roomCode(), "Guest", guestId);
+        service.selectRobot(room.gameId(), hostId, 1);
+        service.selectRobot(room.gameId(), guestId, 2);
         var spawn = new com.example.demo.model.Position(1, 2);
         service.selectStartTile(room.gameId(), hostId, spawn);
+        service.selectStartTile(room.gameId(), guestId, new com.example.demo.model.Position(1, 1));
         service.startRoom(room.gameId(), hostId);
 
         var state = new GameServiceImpl(service).getBoardState(room.gameId(), hostId);
@@ -247,6 +263,46 @@ class RoomServiceTests {
         assertEquals(spawn.x(), state.robots().getFirst().x());
         assertEquals(spawn.y(), state.robots().getFirst().y());
         assertNull(state.layout());
+    }
+
+    @Test
+    void startRoomRejectsWhenLessThanTwoPlayers() {
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
+        service.selectRobot(room.gameId(), hostId, 1);
+        service.selectStartTile(room.gameId(), hostId, new com.example.demo.model.Position(1, 1));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> service.startRoom(room.gameId(), hostId));
+        assertEquals(409, ex.getStatusCode().value());
+    }
+
+    @Test
+    void startRoomRejectsWhenSetupIsIncomplete() {
+        GameRoom room = service.createRoom("Host", hostId, "classic_start");
+        service.joinRoom(room.roomCode(), "Guest", guestId);
+
+        assertEquals(409, assertThrows(ResponseStatusException.class,
+                () -> service.startRoom(room.gameId(), hostId)).getStatusCode().value());
+
+        service.selectRobot(room.gameId(), hostId, 1);
+        service.selectStartTile(room.gameId(), hostId, new com.example.demo.model.Position(1, 1));
+        service.selectRobot(room.gameId(), guestId, 2);
+
+        assertEquals(409, assertThrows(ResponseStatusException.class,
+                () -> service.startRoom(room.gameId(), hostId)).getStatusCode().value());
+
+        service.selectStartTile(room.gameId(), guestId, new com.example.demo.model.Position(1, 2));
+        assertEquals(com.example.demo.model.RoomStatus.STARTED,
+                service.startRoom(room.gameId(), hostId).status());
+    }
+
+    @Test
+    void startRoomAllowsSoloForTrainingRun() {
+        GameRoom trainingRoom = service.createRoom("SoloPilot", hostId, true);
+        GameRoom started = service.startRoom(trainingRoom.gameId(), hostId);
+        assertEquals(com.example.demo.model.RoomStatus.STARTED, started.status());
+        assertNotNull(started.players().getFirst().avatarId());
+        assertNotNull(started.players().getFirst().startPosition());
     }
     @Test
     void listsOnlyWaitingPublicRoomsWithAvailableSpace() {
