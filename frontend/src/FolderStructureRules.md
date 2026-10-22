@@ -65,3 +65,18 @@ The checker enforces dependency direction. Reviewers must also enforce semantic 
 The hand keeps nine positions before and after fetching. Selected cards leave empty hand slots; removing or clearing returns each card to its original position. `useProgramming` owns selection and submission; layout components receive card values and index callbacks. Backend submission contains only the five ordered card types.
 
 The game page owns the full-viewport map and transparent programming overlay. The hand uses a full-height left column; the program and actions share a footer capped at `20dvh`. Slot/card variants share artwork while sizing for their role. Empty overlay gaps pass pointer input to the map; card previews support keyboard focus and Escape dismissal.
+
+## Lobby and active game ownership
+
+`components/room/RoomSession.tsx` composes the waiting lobby only. Its room code,
+player list, robot selection, and visibility widgets live in `room/sections/`;
+map and start-tile selection remain in `room/map-selection/`.
+`pages/GamePage.tsx` composes the active map, programming interface, and
+`components/gameplay/` overlays (checkpoint progress, round status, pilot legend,
+and match winner). Display-only formatting helpers stay with their owning overlay.
+
+`hooks/useRoomSession.ts` owns room polling, membership/closure, leave actions,
+and the shared mutation lock and revision guard. `hooks/useRoomSetup.ts` owns
+lobby setup mutations through that guard. Shared robot artwork belongs in
+`data/avatars.ts`. Room lifecycle feedback can be reused by the lobby and game
+without putting gameplay back into RoomSession.

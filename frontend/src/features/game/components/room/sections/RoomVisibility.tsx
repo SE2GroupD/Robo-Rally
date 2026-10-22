@@ -1,4 +1,4 @@
-import { Button } from '../../../../foundation/components/button/Button';
+import { Button } from '../../../../../foundation/components/button/Button';
 
 interface RoomVisibilityProps {
   publicRoom: boolean;
