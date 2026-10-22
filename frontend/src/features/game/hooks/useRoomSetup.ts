@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { startRoom, setRoomVisibility, selectRobot, selectStartTile, updateRoomSetup, RoomRequestError } from '../api/gameApi';
+import { startRoom, setRoomVisibility, selectRobot, updateRoomSetup, RoomRequestError } from '../api/gameApi';
 import type { useRoomSession } from './useRoomSession';
 
 export function useRoomSetup(session: ReturnType<typeof useRoomSession>) {
@@ -33,13 +33,6 @@ export function useRoomSetup(session: ReturnType<typeof useRoomSession>) {
         );
       },
     );
-  const chooseLegacyStart = (x: number, y: number) => {
-    setSetupError('');
-    return runAction(
-      () => selectStartTile(room, x, y),
-      () => setSetupError('Could not select this start tile. Refresh and choose an available tile.'),
-    );
-  };
   const updateSetup = (
     action: 'map' | 'start-tile',
     value: { mapId: string } | { mapId: string; position: { x: number; y: number } | null },
@@ -64,7 +57,6 @@ export function useRoomSetup(session: ReturnType<typeof useRoomSession>) {
     start,
     changeVisibility,
     chooseRobot,
-    chooseLegacyStart,
     updateSetup,
   };
 }

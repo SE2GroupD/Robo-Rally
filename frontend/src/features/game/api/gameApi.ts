@@ -432,19 +432,3 @@ export async function updateRoomSetup(
 
   return readRoom(response, room);
 }
-
-/** Compatibility with rooms created using the standalone start-board API. */
-export async function selectStartTile(room: JoinedRoom, x: number, y: number): Promise<JoinedRoom> {
-  if (room.mapId) return updateRoomSetup(room, 'start-tile', { mapId: room.mapId, position: { x, y } });
-
-  const token = await getValidToken();
-  const response = await fetch(`${API_BASE_URL?.replace(/\/$/, '')}/games/${encodeURIComponent(room.gameId)}/start-tile`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ x, y }),
-    signal: AbortSignal.timeout(10000),
-  });
-
-  if (!response.ok) throw new RoomRequestError('Could not select this start tile.', response.status);
-  return readRoom(response, room);
-}

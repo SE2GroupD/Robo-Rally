@@ -3,12 +3,11 @@ import type { JoinedRoom } from '../../api/gameApi';
 import { useRoomSession } from '../../hooks/useRoomSession';
 import { useRoomSetup } from '../../hooks/useRoomSetup';
 import { RoomUnavailable } from './RoomUnavailable';
-import { RoomCode } from './sections/RoomCode';
-import { PlayerSection } from './sections/PlayerSection';
-import { RobotSelection } from './sections/RobotSelection';
-import { RoomVisibility } from './sections/RoomVisibility';
+import { RoomCode } from './room-code/RoomCode';
+import { PlayerSection } from './player-section/PlayerSection';
+import { RobotSelection } from './robot-section/RobotSelection';
+import { RoomVisibility } from './room-visability/RoomVisibility';
 import { MapSelection } from './map-selection/MapSelection';
-import { LegacyStartSelection } from './map-selection/LegacyStartSelection';
 
 interface RoomSessionProps {
   initialRoom: JoinedRoom;
@@ -40,17 +39,13 @@ export function RoomSession(props: RoomSessionProps) {
       <RoomCode roomCode={room.roomCode} />
       {isHost && <RoomVisibility publicRoom={Boolean(room.publicRoom)} disabled={busy} onChange={setup.changeVisibility} />}
       <PlayerSection room={room} />
-      {room.mapId || !room.startBoardConfig ? (
-        <MapSelection
-          room={room}
-          disabled={busy}
-          error={setupError}
-          onMap={(mapId) => setup.updateSetup('map', { mapId })}
-          onStart={(position) => setup.updateSetup('start-tile', { mapId: room.mapId!, position })}
-        />
-      ) : (
-        <LegacyStartSelection room={room} disabled={busy} onSelect={setup.chooseLegacyStart} error={setupError} />
-      )}
+      <MapSelection
+        room={room}
+        disabled={busy}
+        error={setupError}
+        onMap={(mapId) => setup.updateSetup('map', { mapId })}
+        onStart={(position) => setup.updateSetup('start-tile', { mapId: room.mapId!, position })}
+      />
 
       <RobotSelection
         selectedAvatarId={selectedAvatarId}

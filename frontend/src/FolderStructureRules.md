@@ -68,9 +68,9 @@ The game page owns the full-viewport map and transparent programming overlay. Th
 
 ## Lobby and active game ownership
 
-`components/room/RoomSession.tsx` composes the waiting lobby only. Its room code,
-player list, robot selection, and visibility widgets live in `room/sections/`;
-map and start-tile selection remain in `room/map-selection/`.
+`components/room/RoomSession.tsx` composes the waiting lobby only. Its widgets are grouped in sibling folders under `room/`: `room-code/`,
+`player-section/`, `robot-section/`, `room-visability/`, and `map-selection/`.
+Each folder contains its section component and any supporting components.
 `pages/GamePage.tsx` composes the active map, programming interface, and
 `components/gameplay/` overlays (checkpoint progress, round status, pilot legend,
 and match winner). Display-only formatting helpers stay with their owning overlay.
