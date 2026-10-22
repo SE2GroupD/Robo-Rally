@@ -374,9 +374,7 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
     if (room.players.length < 2) {
       return 'Waiting for at least 2 players to join.';
     }
-    const unready = room.players.filter(
-      (player) => player.avatarId == null || player.startPosition == null,
-    );
+    const unready = room.players.filter((player) => player.avatarId == null || player.startPosition == null);
     if (unready.length > 0) {
       const details = unready.map((player) => {
         const missing: string[] = [];
@@ -623,24 +621,14 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
             </ul>
           </section>
 
-          {!isHost && (
-            <output className="m-0 text-center text-text-muted">
-              Waiting for the host to start the battle.
-            </output>
-          )}
+          {!isHost && <output className="m-0 text-center text-text-muted">Waiting for the host to start the battle.</output>}
 
           {isHost && (
             <div className="flex flex-col gap-2">
               {startBlockReason && (
-                <output className="m-0 text-center text-sm font-medium text-amber-400">
-                  {startBlockReason}
-                </output>
+                <output className="m-0 text-center text-sm font-medium text-amber-400">{startBlockReason}</output>
               )}
-              <Button
-                size="large"
-                disabled={busy || !canStart}
-                onClick={() => handleAction('start')}
-              >
+              <Button size="large" disabled={busy || !canStart} onClick={() => handleAction('start')}>
                 Start Battle
               </Button>
             </div>

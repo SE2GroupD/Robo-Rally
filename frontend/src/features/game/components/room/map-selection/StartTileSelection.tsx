@@ -94,9 +94,7 @@ export function StartTileSelection({ layout, room, disabled, onSelect }: StartTi
         >
           Assign me a free tile automatically
         </Button>
-        <p className="m-0 text-sm text-text-muted">
-          Picks an available start tile for you automatically.
-        </p>
+        <p className="m-0 text-sm text-text-muted">Picks an available start tile for you automatically.</p>
       </div>
     </>
   );

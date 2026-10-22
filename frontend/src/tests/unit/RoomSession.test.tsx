@@ -183,9 +183,7 @@ describe('room lifecycle', () => {
 
     render(<RoomSession initialRoom={unreadyRoom} onLeft={vi.fn()} />);
 
-    expect(
-      screen.getByText('Waiting for Host to select a start tile, Alice to select a robot.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Waiting for Host to select a start tile, Alice to select a robot.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start Battle' })).toBeDisabled();
   });
 
