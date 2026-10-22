@@ -55,6 +55,18 @@ const host: JoinedRoom = {
   players: [{ playerId: 'host-1', playerName: 'Host', avatarId: null }],
 };
 
+const readyRoom: JoinedRoom = {
+  gameId: 'game-1',
+  roomCode: 'ABC234',
+  playerId: 'host-1',
+  hostPlayerId: 'host-1',
+  status: 'WAITING',
+  players: [
+    { playerId: 'host-1', playerName: 'Host', avatarId: 1, startPosition: { x: 0, y: 1 } },
+    { playerId: 'guest-1', playerName: 'Friend', avatarId: 2, startPosition: { x: 0, y: 2 } },
+  ],
+};
+
 const boardState: BoardStateDto = {
   winner: null,
   gameId: 'game-1',
@@ -138,16 +150,52 @@ describe('room lifecycle', () => {
     expect(signal.aborted).toBe(true);
   });
 
-  it('starts alone and reports the started room without rendering gameplay', async () => {
-    const started = { ...host, status: 'STARTED' as const };
+  it('starts a ready match and reports the started room without rendering gameplay', async () => {
+    const started = { ...readyRoom, status: 'STARTED' as const };
+    vi.mocked(fetchRoom).mockResolvedValue(readyRoom);
     const onRoomChange = vi.fn();
     vi.mocked(startRoom).mockResolvedValue(started);
-    render(<RoomSession initialRoom={host} onLeft={vi.fn()} onRoomChange={onRoomChange} />);
+    render(<RoomSession initialRoom={readyRoom} onLeft={vi.fn()} onRoomChange={onRoomChange} />);
     await userEvent.click(screen.getByRole('button', { name: 'Start Battle' }));
     await waitFor(() => expect(onRoomChange).toHaveBeenCalledWith(started));
-    expect(startRoom).toHaveBeenCalledWith(host);
+    expect(startRoom).toHaveBeenCalledWith(readyRoom);
     expect(fetchBoardState).not.toHaveBeenCalled();
     expect(screen.queryByText('Game board')).not.toBeInTheDocument();
+  });
+
+  it('disables Start Battle and explains when fewer than 2 players are present', async () => {
+    render(<RoomSession initialRoom={host} onLeft={vi.fn()} />);
+
+    expect(screen.getByText('Waiting for at least 2 players to join.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start Battle' })).toBeDisabled();
+    expect(screen.getByText('No robot')).toBeInTheDocument();
+    expect(screen.getByText('No tile')).toBeInTheDocument();
+    expect(screen.getByText('Not ready')).toBeInTheDocument();
+  });
+
+  it('disables Start Battle and lists players missing robot or start tile', async () => {
+    const unreadyRoom: JoinedRoom = {
+      ...host,
+      players: [
+        { playerId: 'host-1', playerName: 'Host', avatarId: 1, startPosition: null },
+        { playerId: 'guest-1', playerName: 'Alice', avatarId: null, startPosition: { x: 0, y: 1 } },
+      ],
+    };
+    vi.mocked(fetchRoom).mockResolvedValue(unreadyRoom);
+
+    render(<RoomSession initialRoom={unreadyRoom} onLeft={vi.fn()} />);
+
+    expect(screen.getByText('Waiting for Host to select a start tile, Alice to select a robot.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start Battle' })).toBeDisabled();
+  });
+
+  it('displays readiness badges for all players in the lobby', async () => {
+    render(<RoomSession initialRoom={readyRoom} onLeft={vi.fn()} />);
+
+    expect(screen.getByText('Robot 1')).toBeInTheDocument();
+    expect(screen.getByText('Robot 2')).toBeInTheDocument();
+    expect(screen.getAllByText('Tile')).toHaveLength(2);
+    expect(screen.getAllByText('Ready')).toHaveLength(2);
   });
 
   it('only exits after leaving succeeds and allows retry after failure', async () => {
@@ -202,11 +250,12 @@ it('locks other room actions while a visibility change is pending', async () => 
         finish = resolve;
       }),
   );
-  render(<RoomSession initialRoom={host} onLeft={vi.fn()} />);
+  vi.mocked(fetchRoom).mockResolvedValue(readyRoom);
+  render(<RoomSession initialRoom={readyRoom} onLeft={vi.fn()} />);
   await userEvent.click(screen.getByRole('button', { name: 'Public' }));
   expect(screen.getByRole('button', { name: 'Start Battle' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Leave Room' })).toBeDisabled();
-  await act(async () => finish({ ...host, publicRoom: true }));
+  await act(async () => finish({ ...readyRoom, publicRoom: true }));
   expect(screen.getByRole('button', { name: 'Start Battle' })).toBeEnabled();
 });
 
@@ -263,4 +312,22 @@ it.each(['host', 'guest'])('navigates the %s lobby to the game when the room sta
     </MemoryRouter>,
   );
   expect(await screen.findByText('Active game route')).toBeInTheDocument();
+});
+
+it('updates readiness from polling and disables starting again after a player loses their selection', async () => {
+  vi.useFakeTimers();
+  vi.mocked(fetchRoom)
+    .mockResolvedValueOnce(readyRoom)
+    .mockResolvedValueOnce({ ...readyRoom, players: readyRoom.players.map((player) => ({ ...player, startPosition: null })) });
+  render(<RoomSession initialRoom={host} onLeft={vi.fn()} />);
+  expect(screen.getByRole('button', { name: 'Start Battle' })).toBeDisabled();
+  await act(async () => {});
+  expect(screen.getByRole('button', { name: 'Start Battle' })).toBeEnabled();
+  expect(screen.getAllByText('Ready')).toHaveLength(2);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+  expect(screen.getByRole('button', { name: 'Start Battle' })).toBeDisabled();
+  expect(screen.getAllByText('No tile')).toHaveLength(2);
+  expect(startRoom).not.toHaveBeenCalled();
 });

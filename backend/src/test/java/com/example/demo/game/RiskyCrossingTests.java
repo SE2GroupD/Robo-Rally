@@ -70,7 +70,7 @@ class RiskyCrossingTests {
     void catalogSelectionStartsTheActualCourseAndRequiresCheckpointsInOrder() {
         var catalog = new MapLayoutService();
         var rooms = new RoomServiceImpl(catalog);
-        var room = rooms.createRoom("Pilot", "pilot");
+        var room = rooms.createRoom("Pilot", "pilot", true);
         rooms.selectMap(room.gameId(), "pilot", "risky-crossing");
         rooms.startRoom(room.gameId(), "pilot");
 

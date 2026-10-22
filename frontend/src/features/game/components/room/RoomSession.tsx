@@ -19,7 +19,7 @@ export function RoomSession(props: RoomSessionProps) {
   const session = useRoomSession(props);
   const setup = useRoomSetup(session);
   const { room, busy, error, closed } = session;
-  const { isHost, selectedAvatarId, takenAvatarIds, setupError } = setup;
+  const { isHost, selectedAvatarId, takenAvatarIds, setupError, startBlockReason } = setup;
   if (closed) return <RoomUnavailable onLeft={props.onLeft} />;
   return (
     <div className="relative flex flex-1 flex-col min-h-0 gap-3">
@@ -57,9 +57,12 @@ export function RoomSession(props: RoomSessionProps) {
       {!isHost && <output className="m-0 text-center text-text-muted">Waiting for the host to start the battle.</output>}
 
       {isHost && (
-        <Button size="large" disabled={busy} onClick={setup.start}>
-          Start Battle
-        </Button>
+        <div className="flex flex-col gap-2">
+          {startBlockReason && <output className="m-0 text-center text-sm font-medium text-amber-400">{startBlockReason}</output>}
+          <Button size="large" disabled={busy || Boolean(startBlockReason)} onClick={setup.start}>
+            Start Battle
+          </Button>
+        </div>
       )}
 
       {isHost && <p className="m-0 text-sm text-text-muted">Leaving closes this room for everyone.</p>}

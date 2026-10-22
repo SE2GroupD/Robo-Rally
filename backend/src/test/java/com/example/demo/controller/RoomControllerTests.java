@@ -112,6 +112,11 @@ class RoomControllerTests {
         @Test
         void roomLifecycleEndpointsReturnUpdatedState() throws Exception {
                 var room = service.createRoom("Host", hostId);
+                service.joinRoom(room.roomCode(), "Guest", guestId);
+                service.selectRobot(room.gameId(), hostId, 1);
+                service.selectRobot(room.gameId(), guestId, 2);
+                service.selectStart(room.gameId(), hostId, new com.example.demo.model.Position(1, 8), room.mapId());
+                service.selectStart(room.gameId(), guestId, new com.example.demo.model.Position(1, 1), room.mapId());
 
                 currentMockSubject = hostId;
 
@@ -132,6 +137,15 @@ class RoomControllerTests {
 
                 mvc.perform(get("/api/games/" + room.gameId()))
                         .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void startRoomRejectsWhenLobbyNotReady() throws Exception {
+                var room = service.createRoom("Host", hostId);
+                currentMockSubject = hostId;
+
+                mvc.perform(post("/api/games/" + room.gameId() + "/start"))
+                        .andExpect(status().isConflict());
         }
 
         @Test

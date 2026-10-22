@@ -77,7 +77,7 @@ and match winner). Display-only formatting helpers stay with their owning overla
 
 `hooks/useRoomSession.ts` owns room polling, membership/closure, leave actions,
 and the shared mutation lock and revision guard. `hooks/useRoomSetup.ts` owns
-lobby setup mutations through that guard. Shared robot artwork belongs in
+lobby setup mutations through that guard. `data/roomReadiness.ts` computes the multiplayer start-block reason (at least two players, each with a robot and start tile); `PlayerSection` renders selection/readiness badges. Training startup remains owned by the solo flow and backend defaults. Shared robot artwork belongs in
 `data/avatars.ts`. Room lifecycle feedback can be reused by the lobby and game
 without putting gameplay back into RoomSession.
 

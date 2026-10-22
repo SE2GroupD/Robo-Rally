@@ -33,6 +33,11 @@ class TrainingMapTests {
         assertTrue(state.tiles().stream().anyMatch(tile -> tile.x() == 10 && tile.y() == 2 && Integer.valueOf(1).equals(tile.checkpointNumber())));
 
         var multiplayer = rooms.createRoom("Host", "host");
+        rooms.joinRoom(multiplayer.roomCode(), "Guest", "guest");
+        rooms.selectRobot(multiplayer.gameId(), "host", 1);
+        rooms.selectRobot(multiplayer.gameId(), "guest", 2);
+        rooms.selectStart(multiplayer.gameId(), "host", new Position(1, 1), multiplayer.mapId());
+        rooms.selectStart(multiplayer.gameId(), "guest", new Position(1, 8), multiplayer.mapId());
         rooms.startRoom(multiplayer.gameId(), "host");
         var classic = games.getBoardState(multiplayer.gameId(), "host");
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { roomStartBlockReason } from '../data/roomReadiness';
 import { startRoom, setRoomVisibility, selectRobot, updateRoomSetup, RoomRequestError } from '../api/gameApi';
 import type { useRoomSession } from './useRoomSession';
 
@@ -10,11 +11,14 @@ export function useRoomSetup(session: ReturnType<typeof useRoomSession>) {
   const takenAvatarIds = room.players
     .filter((player) => player.playerId !== room.playerId && player.avatarId !== null)
     .map((player) => player.avatarId as number);
-  const start = () =>
-    runAction(
+  const startBlockReason = roomStartBlockReason(room.players);
+  const start = () => {
+    if (!isHost || startBlockReason) return;
+    return runAction(
       () => startRoom(room),
       () => setError('Could not start. Please try again.'),
     );
+  };
   const changeVisibility = (publicRoom: boolean) => {
     if (publicRoom === Boolean(room.publicRoom)) return;
     return runAction(
@@ -54,6 +58,7 @@ export function useRoomSetup(session: ReturnType<typeof useRoomSession>) {
     selectedAvatarId,
     takenAvatarIds,
     setupError,
+    startBlockReason,
     start,
     changeVisibility,
     chooseRobot,

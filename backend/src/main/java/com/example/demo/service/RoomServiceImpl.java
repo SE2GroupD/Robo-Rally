@@ -186,12 +186,27 @@ public class RoomServiceImpl implements RoomService {
             return room;
         }
 
-        var available = new ArrayList<>(spawnPositions(room));
-        room.players().stream().map(RoomPlayer::startPosition).forEach(available::remove);
-
-        var players = room.players().stream().map(player -> player.startPosition() != null ? player
-                : new RoomPlayer(player.playerId(), player.playerName(), player.avatarId(), available.removeFirst()))
-                .toList();
+        List<RoomPlayer> players;
+        if (room.training()) {
+            var available = new ArrayList<>(spawnPositions(room));
+            room.players().stream().map(RoomPlayer::startPosition).forEach(available::remove);
+            players = room.players().stream().map(player -> new RoomPlayer(
+                    player.playerId(),
+                    player.playerName(),
+                    player.avatarId() != null ? player.avatarId() : 1,
+                    player.startPosition() != null ? player.startPosition() : available.removeFirst()
+            )).toList();
+        } else {
+            if (room.players().size() < 2) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "At least 2 players are required to start the battle.");
+            }
+            boolean unready = room.players().stream()
+                    .anyMatch(player -> player.avatarId() == null || player.startPosition() == null);
+            if (unready) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "All players must select a robot and a start position before starting.");
+            }
+            players = room.players();
+        }
 
         GameRoom started = new GameRoom(room.gameId(), room.roomCode(), room.hostPlayerId(), players,
                 RoomStatus.STARTED, room.training(), room.mapId(), room.startBoardId());
