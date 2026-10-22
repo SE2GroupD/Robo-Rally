@@ -8,7 +8,6 @@ interface RoundStatusProps {
 }
 
 export function RoundStatus({ state, players, currentPlayerId, isReplaying }: RoundStatusProps) {
-  if (state.winner) return null;
   if (isReplaying) {
     return (
       <section
@@ -21,6 +20,8 @@ export function RoundStatus({ state, players, currentPlayerId, isReplaying }: Ro
       </section>
     );
   }
+
+  if (state.winner) return null;
 
   const waitingFor = players.filter((player) => !state.lockedInPlayerIds.includes(player.playerId));
   const isYourTurn = waitingFor.some((player) => player.playerId === currentPlayerId);

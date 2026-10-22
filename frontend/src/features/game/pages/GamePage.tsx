@@ -132,13 +132,13 @@ function ActiveGame({ initialRoom, onLeft }: { initialRoom: JoinedRoom; onLeft: 
               lockedInPlayerIds={state.lockedInPlayerIds}
               readinessState={readinessState}
             />
-            {state.winner ? (
+            {state.winner && !isReplaying ? (
               <MatchWinner state={state} players={room.players} />
-            ) : (
+            ) : !state.winner ? (
               <div className="pointer-events-none absolute inset-0 z-10">
                 <ProgrammingPhase roomId={room.gameId} round={programmingRound} onCardsLocked={() => sendReadyStatus(true)} />
               </div>
-            )}
+            ) : null}
           </>
         ) : (
           <output className="absolute inset-0 flex items-center justify-center text-white">Loading game…</output>
