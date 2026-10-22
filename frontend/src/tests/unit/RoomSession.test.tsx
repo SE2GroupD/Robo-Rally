@@ -256,3 +256,59 @@ it('shows the winner and hides programming after the match is complete', async (
   expect(screen.queryByText('game-1/round-1')).not.toBeInTheDocument();
   expect(screen.queryByText('Your turn')).not.toBeInTheDocument();
 });
+
+it('waits for every register to replay before showing the winner', async () => {
+  vi.useFakeTimers();
+
+  const room = {
+    ...host,
+    status: 'STARTED' as const,
+    players: [{ ...host.players[0], avatarId: 3 }],
+  };
+  const robot = { playerId: 'host-1', x: 1, y: 1, direction: 'NORTH' as const };
+  const winningState: BoardStateDto = {
+    ...boardState,
+    winner: { playerId: 'host-1' },
+    robots: [robot],
+    round: 2,
+    lastResolution: {
+      round: 1,
+      startingRobots: [robot],
+      steps: Array.from({ length: 5 }, (_, index) => ({
+        registerNumber: index + 1,
+        phases: [{ phase: 'CARD' as const, robots: [{ ...robot, card: 'TURN_LEFT' as const }] }],
+      })),
+    },
+  };
+
+  vi.mocked(fetchRoom).mockResolvedValue(room);
+  vi.mocked(fetchBoardState)
+    .mockResolvedValueOnce({ ...boardState, robots: [robot] })
+    .mockResolvedValue(winningState);
+
+  render(<RoomSession initialRoom={room} onLeft={vi.fn()} />);
+  await act(async () => {});
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1000);
+  });
+
+  expect(screen.getByText('Resolving moves…')).toBeInTheDocument();
+  expect(screen.queryByRole('region', { name: 'Match winner' })).not.toBeInTheDocument();
+  expect(screen.queryByText('game-1/round-2')).not.toBeInTheDocument();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1750);
+  });
+
+  expect(screen.getByText('Resolving moves…')).toBeInTheDocument();
+  expect(screen.queryByRole('region', { name: 'Match winner' })).not.toBeInTheDocument();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(350);
+  });
+
+  expect(screen.getByRole('region', { name: 'Match winner' })).toBeInTheDocument();
+  expect(screen.getByText('Host · Robot 3')).toBeInTheDocument();
+  expect(screen.queryByText('Resolving moves…')).not.toBeInTheDocument();
+});

@@ -96,7 +96,6 @@ function CheckpointProgress({
 }
 
 function RoundStatus({ state, players, currentPlayerId, isReplaying }: RoundStatusProps) {
-  if (state.winner) return null;
   if (isReplaying) {
     return (
       <section
@@ -109,6 +108,7 @@ function RoundStatus({ state, players, currentPlayerId, isReplaying }: RoundStat
       </section>
     );
   }
+  if (state.winner) return null;
 
   const waitingFor = players.filter((player) => !state.lockedInPlayerIds.includes(player.playerId));
   const isYourTurn = waitingFor.some((player) => player.playerId === currentPlayerId);
@@ -450,7 +450,7 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
                   })}
                 </ul>
               </aside>
-              {state.winner ? (
+              {state.winner && !isReplaying ? (
                 <section
                   aria-label="Match winner"
                   className="absolute inset-x-3 top-28 z-30 mx-auto max-w-sm rounded border border-metal-light bg-slate-950/95 p-4 text-center text-white shadow-[0_16px_40px_rgba(0,0,0,0.55)]"
@@ -458,11 +458,11 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
                   <h2 className="m-0 text-sm font-bold text-metal-light">Winner</h2>
                   <p className="m-0 mt-2 text-xl font-bold">{winnerLabel(state, room.players)}</p>
                 </section>
-              ) : (
+              ) : !state.winner ? (
                 <div className="pointer-events-none absolute inset-0 z-10">
                   <ProgrammingPhase roomId={room.gameId} round={programmingRound} onCardsLocked={() => sendReadyStatus(true)} />
                 </div>
-              )}
+              ) : null}
             </>
           ) : (
             <output className="absolute inset-0 flex items-center justify-center text-white">Loading game…</output>
