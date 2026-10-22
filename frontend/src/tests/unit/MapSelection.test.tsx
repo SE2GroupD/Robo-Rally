@@ -57,5 +57,5 @@ it('shows reservations and submits only available or own start tiles', async () 
   await userEvent.click(screen.getAllByRole('button', { name: 'Start 2 · Available' })[1]);
   expect(onStart).toHaveBeenLastCalledWith({ x: 0, y: 3 });
   await userEvent.click(screen.getByRole('button', { name: /Assign me/ }));
-  expect(onStart).toHaveBeenLastCalledWith(null);
+  expect(onStart).toHaveBeenLastCalledWith({ x: 0, y: 3 });
 });

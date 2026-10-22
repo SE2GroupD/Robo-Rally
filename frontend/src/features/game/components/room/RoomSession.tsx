@@ -370,6 +370,26 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
     }
   }
 
+  function getStartBlockReason(): string | null {
+    if (room.players.length < 2) {
+      return 'Waiting for at least 2 players to join.';
+    }
+    const unready = room.players.filter((player) => player.avatarId == null || player.startPosition == null);
+    if (unready.length > 0) {
+      const details = unready.map((player) => {
+        const missing: string[] = [];
+        if (player.avatarId == null) missing.push('a robot');
+        if (player.startPosition == null) missing.push('a start tile');
+        return `${player.playerName} to select ${missing.join(' and ')}`;
+      });
+      return `Waiting for ${details.join(', ')}.`;
+    }
+    return null;
+  }
+
+  const startBlockReason = getStartBlockReason();
+  const canStart = !startBlockReason;
+
   if (closed) {
     return (
       <section className="mx-auto flex w-full max-w-xl flex-col items-center gap-5 rounded border border-metal-light bg-black/25 px-6 py-10 text-center shadow-lg">
@@ -532,41 +552,86 @@ export function RoomSession({ initialRoom, onLeft, onRoomChange }: RoomSessionPr
             <h2 className="mb-3 mt-0 text-lg font-bold">Players</h2>
 
             <ul className="m-0 flex list-none flex-col gap-2 p-0">
-              {room.players.map((player) => (
-                <li key={player.playerId} className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    {player.avatarId && AVATAR_MAP[player.avatarId] ? (
-                      <img
-                        src={AVATAR_MAP[player.avatarId]}
-                        alt={`Robot ${player.avatarId}`}
-                        className="h-7 w-7 rounded border border-metal-light bg-slate-800 p-0.5 object-contain"
-                      />
-                    ) : (
-                      <div
-                        className="flex h-7 w-7 items-center justify-center rounded border border-dashed border-metal-light bg-slate-900 text-xs text-text-muted"
-                        title="No robot selected"
-                      >
-                        ?
-                      </div>
-                    )}
-                    <span>{player.playerName}</span>
-                  </div>
+              {room.players.map((player) => {
+                const hasRobot = player.avatarId !== null && player.avatarId !== undefined;
+                const hasPosition = player.startPosition !== null && player.startPosition !== undefined;
+                const isReady = hasRobot && hasPosition;
 
-                  <span>
-                    {player.playerId === room.hostPlayerId ? 'Host' : 'Guest'}
-                    {player.playerId === room.playerId ? ' · You' : ''}
-                  </span>
-                </li>
-              ))}
+                return (
+                  <li
+                    key={player.playerId}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded border border-white/5 bg-slate-900/40 p-2.5"
+                  >
+                    <div className="flex items-center gap-2">
+                      {player.avatarId && AVATAR_MAP[player.avatarId] ? (
+                        <img
+                          src={AVATAR_MAP[player.avatarId]}
+                          alt={`Robot ${player.avatarId}`}
+                          className="h-7 w-7 rounded border border-metal-light bg-slate-800 p-0.5 object-contain"
+                        />
+                      ) : (
+                        <div
+                          className="flex h-7 w-7 items-center justify-center rounded border border-dashed border-metal-light bg-slate-900 text-xs text-text-muted"
+                          title="No robot selected"
+                        >
+                          ?
+                        </div>
+                      )}
+                      <span className="font-medium text-white">{player.playerName}</span>
+                      <span className="text-xs text-text-muted">
+                        {player.playerId === room.hostPlayerId ? 'Host' : 'Guest'}
+                        {player.playerId === room.playerId ? ' · You' : ''}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {hasRobot ? (
+                        <span className="rounded border border-emerald-500/40 bg-emerald-950/70 px-2 py-0.5 text-xs text-emerald-300">
+                          Robot {player.avatarId}
+                        </span>
+                      ) : (
+                        <span className="rounded border border-amber-500/40 bg-amber-950/70 px-2 py-0.5 text-xs text-amber-300">
+                          No robot
+                        </span>
+                      )}
+
+                      {hasPosition ? (
+                        <span className="rounded border border-emerald-500/40 bg-emerald-950/70 px-2 py-0.5 text-xs text-emerald-300">
+                          Tile
+                        </span>
+                      ) : (
+                        <span className="rounded border border-amber-500/40 bg-amber-950/70 px-2 py-0.5 text-xs text-amber-300">
+                          No tile
+                        </span>
+                      )}
+
+                      {isReady ? (
+                        <span className="rounded-full border border-emerald-500/50 bg-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-300">
+                          Ready
+                        </span>
+                      ) : (
+                        <span className="rounded-full border border-amber-500/50 bg-amber-500/20 px-2.5 py-0.5 text-xs font-semibold text-amber-300">
+                          Not ready
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </section>
 
           {!isHost && <output className="m-0 text-center text-text-muted">Waiting for the host to start the battle.</output>}
 
           {isHost && (
-            <Button size="large" disabled={busy} onClick={() => handleAction('start')}>
-              Start Battle
-            </Button>
+            <div className="flex flex-col gap-2">
+              {startBlockReason && (
+                <output className="m-0 text-center text-sm font-medium text-amber-400">{startBlockReason}</output>
+              )}
+              <Button size="large" disabled={busy || !canStart} onClick={() => handleAction('start')}>
+                Start Battle
+              </Button>
+            </div>
           )}
         </>
       )}

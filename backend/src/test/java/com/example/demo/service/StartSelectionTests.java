@@ -31,6 +31,8 @@ class StartSelectionTests {
         rooms.selectStart(room.gameId(), "guest", null, room.mapId());
         rooms.selectStart(room.gameId(), "guest", position, room.mapId());
         rooms.selectRobot(room.gameId(), "guest", 2);
+        rooms.selectStart(room.gameId(), "host", new Position(1, 1), room.mapId());
+        rooms.selectRobot(room.gameId(), "host", 1);
 
         var started = rooms.startRoom(room.gameId(), "host");
         assertEquals(new Position(1, 1), started.players().getFirst().startPosition());
@@ -63,7 +65,13 @@ class StartSelectionTests {
         rooms.leaveRoom(room.gameId(), "guest");
         rooms.selectStart(room.gameId(), "host", new Position(1, 1), room.mapId());
 
-        for (int i = 0; i < 5; i++) rooms.joinRoom(room.roomCode(), "Player", "p" + i);
+        var otherSpawns = List.of(new Position(0, 3), new Position(1, 4), new Position(1, 5), new Position(0, 6), new Position(1, 8));
+        for (int i = 0; i < 5; i++) {
+            rooms.joinRoom(room.roomCode(), "Player", "p" + i);
+            rooms.selectRobot(room.gameId(), "p" + i, (i % 6) + 2);
+            rooms.selectStart(room.gameId(), "p" + i, otherSpawns.get(i), room.mapId());
+        }
+        rooms.selectRobot(room.gameId(), "host", 1);
         assertStatus(409, () -> rooms.joinRoom(room.roomCode(), "Seventh", "extra"));
         var started = rooms.startRoom(room.gameId(), "host");
         assertEquals(6, started.players().stream().map(player -> player.startPosition()).distinct().count());
@@ -80,7 +88,7 @@ class StartSelectionTests {
             }
         };
         var rooms = new RoomServiceImpl(catalog);
-        var room = rooms.createRoom("Host", "host");
+        var room = rooms.createRoom("Host", "host", true);
         rooms.selectStart(room.gameId(), "host", new Position(1, 8), room.mapId());
 
         var changed = rooms.selectMap(room.gameId(), "host", "test-map");
