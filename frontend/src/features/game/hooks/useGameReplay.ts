@@ -26,6 +26,7 @@ function tilesBetween(from: { x: number; y: number }, to: { x: number; y: number
  * game rules.
  */
 export function useGameReplay(state: BoardStateDto | null) {
+  const [progressState, setProgressState] = useState<BoardStateDto | null>(null);
   const [robots, setRobots] = useState<RobotStateDto[]>([]);
   const [isReplaying, setIsReplaying] = useState(false);
   const animatedRound = useRef<number | null>(null);
@@ -49,6 +50,7 @@ export function useGameReplay(state: BoardStateDto | null) {
     if (animatedRound.current === null) {
       animatedRound.current = resolution?.round ?? 0;
       setRobots(state.robots);
+      setProgressState(state);
       return;
     }
 
@@ -60,12 +62,14 @@ export function useGameReplay(state: BoardStateDto | null) {
         replaying.current = false;
         if (!mounted.current) return;
         setRobots(latestState.current?.robots ?? []); // settle on the server's final state
+        setProgressState(latestState.current);
         setIsReplaying(false);
       });
       return;
     }
 
     setRobots(state.robots);
+    setProgressState(state);
 
     async function replay(played: TurnResolutionDto) {
       const current = new Map(played.startingRobots.map((r) => [r.playerId, { ...r }]));
@@ -95,6 +99,7 @@ export function useGameReplay(state: BoardStateDto | null) {
 
   return {
     robots,
+    progressState,
     isReplaying,
     /** The round the player may program now, or null while a replay is playing. */
     programmingRound: isReplaying || !state ? null : state.round,

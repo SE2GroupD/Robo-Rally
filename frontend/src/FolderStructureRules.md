@@ -64,4 +64,27 @@ The checker enforces dependency direction. Reviewers must also enforce semantic 
 
 The hand keeps nine positions before and after fetching. Selected cards leave empty hand slots; removing or clearing returns each card to its original position. `useProgramming` owns selection and submission; layout components receive card values and index callbacks. Backend submission contains only the five ordered card types.
 
-The game page owns the full-viewport map and transparent programming overlay. The hand uses a full-height left column; the program and actions share a footer capped at `20dvh`. Slot/card variants share artwork while sizing for their role. Empty overlay gaps pass pointer input to the map; card previews support keyboard focus and Escape dismissal.
+The game page owns the desktop/tablet top bar, vertical player sidebar, and main game region. `ProgrammingPhase` keeps one `useProgramming` instance and accepts a `board` content slot. The board occupies the area above a 240px bottom panel. That panel separates program registers/actions on the left from the scrolling hand and card piles on the right, using gold and cyan accents. All five registers remain visible; hand positions stay fixed when selected. `CardPiles` displays the draw/discard counts returned by `useProgramming`, without estimating them from local selection. Existing steel-slot and card artwork is shared. Map fitting responds to the actual board container until manual pan/zoom; it never overlaps programming controls.
+
+## Lobby and active game ownership
+
+`components/room/RoomSession.tsx` composes the waiting lobby only. Its widgets are grouped in sibling folders under `room/`: `room-code/`,
+`player-section/`, `robot-section/`, `room-visability/`, and `map-selection/`.
+Each folder contains its section component and any supporting components.
+`pages/GamePage.tsx` composes the active map, programming interface, and
+`components/gameplay/` components (race progress, round status,
+and match winner). Display-only formatting helpers stay with their owning overlay.
+
+`hooks/useRoomSession.ts` owns room polling, membership/closure, leave actions,
+and the shared mutation lock and revision guard. `hooks/useRoomSetup.ts` owns
+lobby setup mutations through that guard. `data/roomReadiness.ts` computes the multiplayer start-block reason (at least two players, each with a robot and start tile); `PlayerSection` renders selection/readiness badges. Training startup remains owned by the solo flow and backend defaults. Shared robot artwork belongs in
+`data/avatars.ts`. Room lifecycle feedback can be reused by the lobby and game
+without putting gameplay back into RoomSession.
+
+Final race results live in `components/gameplay/match-results/`: the accessible
+dialog composes the podium, standings, and robot artwork. `data/matchResults.ts`
+uses `data/raceStandings.ts` to rank checkpoint progress with shared competition places; `hooks/useMatchResults.ts`
+freezes the final snapshot and owns reveal/dismiss/reopen state. Results appear
+after replay, while the board and disabled final program remain mounted.
+
+Live race widgets live in `components/gameplay/race-progress/`. They share ranking and robot artwork with final results. `useGameReplay` holds displayed progress until replay finishes; readiness remains live. GamePage places the leaderboard in the left sidebar.

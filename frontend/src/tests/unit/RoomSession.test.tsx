@@ -1,3 +1,6 @@
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { HostBattlePage } from '../../features/game/pages/HostBattlePage';
+import { JoinBattlePage } from '../../features/game/pages/JoinBattlePage';
 import { useState } from 'react';
 import type * as RoomApi from '../../features/game/api/gameApi';
 import { act, render, screen, waitFor, cleanup } from '@testing-library/react';
@@ -8,6 +11,8 @@ import {
   fetchRoom,
   fetchBoardState,
   startRoom,
+  setRoomVisibility,
+  selectRobot,
   leaveRoom,
   RoomRequestError,
   type JoinedRoom,
@@ -19,6 +24,8 @@ vi.mock('../../features/game/api/gameApi', async (original) => ({
   fetchRoom: vi.fn(),
   fetchBoardState: vi.fn(),
   startRoom: vi.fn(),
+  setRoomVisibility: vi.fn(),
+  selectRobot: vi.fn(),
   leaveRoom: vi.fn(),
 }));
 
@@ -143,22 +150,17 @@ describe('room lifecycle', () => {
     expect(signal.aborted).toBe(true);
   });
 
-  it('starts the match when all players are ready and passes actual identifiers to the game', async () => {
+  it('starts a ready match and reports the started room without rendering gameplay', async () => {
+    const started = { ...readyRoom, status: 'STARTED' as const };
     vi.mocked(fetchRoom).mockResolvedValue(readyRoom);
-    vi.mocked(startRoom).mockResolvedValue({ ...readyRoom, status: 'STARTED' });
-
-    render(<RoomSession initialRoom={readyRoom} onLeft={vi.fn()} />);
-
-    expect(screen.queryByText(/Waiting for/i)).not.toBeInTheDocument();
-    const startButton = screen.getByRole('button', { name: 'Start Battle' });
-    expect(startButton).not.toBeDisabled();
-
-    await userEvent.click(startButton);
-
-    expect(await screen.findByText('Game board')).toBeInTheDocument();
-    expect(await screen.findByText('game-1/round-1')).toBeInTheDocument();
-    expect(fetchBoardState).toHaveBeenCalledWith('game-1', expect.any(AbortSignal));
+    const onRoomChange = vi.fn();
+    vi.mocked(startRoom).mockResolvedValue(started);
+    render(<RoomSession initialRoom={readyRoom} onLeft={vi.fn()} onRoomChange={onRoomChange} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Start Battle' }));
+    await waitFor(() => expect(onRoomChange).toHaveBeenCalledWith(started));
     expect(startRoom).toHaveBeenCalledWith(readyRoom);
+    expect(fetchBoardState).not.toHaveBeenCalled();
+    expect(screen.queryByText('Game board')).not.toBeInTheDocument();
   });
 
   it('disables Start Battle and explains when fewer than 2 players are present', async () => {
@@ -196,71 +198,6 @@ describe('room lifecycle', () => {
     expect(screen.getAllByText('Ready')).toHaveLength(2);
   });
 
-  it('shows guests the same game as the host, without a start button', async () => {
-    const guest = {
-      ...host,
-      playerId: 'guest',
-      players: [...host.players, { playerId: 'guest', playerName: 'Friend', avatarId: null }],
-    };
-
-    vi.mocked(fetchRoom).mockResolvedValue({ ...guest, status: 'STARTED' });
-
-    render(<RoomSession initialRoom={guest} onLeft={vi.fn()} />);
-
-    expect(await screen.findByText('Game board')).toBeInTheDocument();
-    expect(screen.getByText('game-1/round-1')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Start Battle' })).not.toBeInTheDocument();
-  });
-
-  it('shows the current player when it is their turn', async () => {
-    vi.mocked(fetchRoom).mockResolvedValue({ ...host, status: 'STARTED' });
-
-    render(<RoomSession initialRoom={{ ...host, status: 'STARTED' }} onLeft={vi.fn()} />);
-
-    expect(await screen.findByText('Your turn')).toBeInTheDocument();
-    expect(screen.getByText('Choose 5 cards')).toBeInTheDocument();
-  });
-
-  it('shows pilots from live robot assignments even when room avatars are unavailable', async () => {
-    vi.mocked(fetchRoom).mockResolvedValue({ ...host, status: 'STARTED' });
-    vi.mocked(fetchBoardState).mockResolvedValue({
-      ...boardState,
-      robots: [{ playerId: 'host-1', x: 1, y: 1, direction: 'NORTH' }],
-    });
-
-    render(<RoomSession initialRoom={{ ...host, status: 'STARTED' }} onLeft={vi.fn()} />);
-
-    await waitFor(() => expect(screen.getByLabelText('Pilot robot legend')).toHaveTextContent('You'));
-  });
-
-  it('shows checkpoint progress for every player', async () => {
-    const room = {
-      ...host,
-      status: 'STARTED' as const,
-      players: [...host.players, { playerId: 'guest-1', playerName: 'Friend', avatarId: null }],
-    };
-    vi.mocked(fetchRoom).mockResolvedValue(room);
-    vi.mocked(fetchBoardState).mockResolvedValue({
-      ...boardState,
-      checkpointProgress: [
-        { playerId: 'host-1', nextCheckpoint: 2, completedCheckpoints: [1] },
-        { playerId: 'guest-1', nextCheckpoint: 1, completedCheckpoints: [] },
-      ],
-    });
-
-    render(<RoomSession initialRoom={room} onLeft={vi.fn()} />);
-
-    expect(await screen.findByRole('region', { name: 'Checkpoint progress' })).toBeInTheDocument();
-    expect(screen.getByText('Host')).toBeInTheDocument();
-    expect(screen.getByText('Next 2')).toBeInTheDocument();
-    expect(screen.getByText('1 out of 4 checkpoints completed')).toBeInTheDocument();
-    expect(screen.getByText('Claimed: 1')).toBeInTheDocument();
-    expect(screen.getByText('Friend')).toBeInTheDocument();
-    expect(screen.getByText('Next 1')).toBeInTheDocument();
-    expect(screen.getByText('0 out of 4 checkpoints completed')).toBeInTheDocument();
-    expect(screen.getByText('Claimed: None')).toBeInTheDocument();
-  });
-
   it('only exits after leaving succeeds and allows retry after failure', async () => {
     const onLeft = vi.fn();
 
@@ -289,78 +226,108 @@ describe('room lifecycle', () => {
   });
 });
 
-it('shows the winner and hides programming after the match is complete', async () => {
-  const room = {
-    ...host,
-    status: 'STARTED' as const,
-    players: [{ ...host.players[0], avatarId: 3 }],
-  };
-  vi.mocked(fetchRoom).mockResolvedValue(room);
-  vi.mocked(fetchBoardState).mockResolvedValue({
-    ...boardState,
-    winner: { playerId: 'host-1' },
-  });
-
-  render(<RoomSession initialRoom={room} onLeft={vi.fn()} />);
-
-  expect(await screen.findByRole('region', { name: 'Match winner' })).toBeInTheDocument();
-  expect(screen.getByText('Host · Robot 3')).toBeInTheDocument();
-  expect(screen.queryByText('game-1/round-1')).not.toBeInTheDocument();
-  expect(screen.queryByText('Your turn')).not.toBeInTheDocument();
+it('keeps the mutation result when an older room poll completes later', async () => {
+  let finishPoll!: (room: JoinedRoom) => void;
+  vi.mocked(fetchRoom).mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finishPoll = resolve;
+      }),
+  );
+  vi.mocked(setRoomVisibility).mockResolvedValue({ ...host, publicRoom: true });
+  render(<RoomSession initialRoom={host} onLeft={vi.fn()} />);
+  await userEvent.click(screen.getByRole('button', { name: 'Public' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Public' })).toHaveAttribute('aria-pressed', 'true'));
+  await act(async () => finishPoll({ ...host, publicRoom: false }));
+  expect(screen.getByRole('button', { name: 'Public' })).toHaveAttribute('aria-pressed', 'true');
 });
 
-it('waits for every register to replay before showing the winner', async () => {
+it('locks other room actions while a visibility change is pending', async () => {
+  let finish!: (room: JoinedRoom) => void;
+  vi.mocked(setRoomVisibility).mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  vi.mocked(fetchRoom).mockResolvedValue(readyRoom);
+  render(<RoomSession initialRoom={readyRoom} onLeft={vi.fn()} />);
+  await userEvent.click(screen.getByRole('button', { name: 'Public' }));
+  expect(screen.getByRole('button', { name: 'Start Battle' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Leave Room' })).toBeDisabled();
+  await act(async () => finish({ ...readyRoom, publicRoom: true }));
+  expect(screen.getByRole('button', { name: 'Start Battle' })).toBeEnabled();
+});
+
+it('copies the room code and reports clipboard failure', async () => {
+  const user = userEvent.setup();
+  const copy = vi
+    .spyOn(navigator.clipboard, 'writeText')
+    .mockResolvedValueOnce(undefined)
+    .mockRejectedValueOnce(new Error('blocked'));
+  render(<RoomSession initialRoom={host} onLeft={vi.fn()} />);
+  await user.click(screen.getByRole('button', { name: 'Copy Code' }));
+  expect(copy).toHaveBeenCalledWith('ABC234');
+  expect(screen.getByText('Room code copied.')).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Copy Code' }));
+  expect(screen.getByText('Could not copy. Select and copy the code manually.')).toBeInTheDocument();
+});
+
+it('updates the player section after choosing a robot', async () => {
+  vi.mocked(selectRobot).mockResolvedValue({ ...host, players: [{ ...host.players[0], avatarId: 2 }] });
+  render(<RoomSession initialRoom={host} onLeft={vi.fn()} />);
+  await userEvent.click(screen.getByRole('button', { name: /Robot 2/i }));
+  await waitFor(() => expect(selectRobot).toHaveBeenCalledWith(host, 2));
+  expect(screen.getByRole('button', { name: /Robot 2/i })).toHaveAttribute('aria-pressed', 'true');
+});
+
+it.each(['host', 'guest'])('navigates the %s lobby to the game when the room starts', async (role) => {
+  const initial =
+    role === 'host'
+      ? host
+      : { ...host, playerId: 'guest', players: [...host.players, { playerId: 'guest', playerName: 'Guest', avatarId: null }] };
+  vi.mocked(fetchRoom).mockResolvedValue({ ...initial, status: 'STARTED' });
+  function Lobby() {
+    const [room, setRoom] = useState(initial);
+    return role === 'host' ? (
+      <HostBattlePage
+        username="Host"
+        room={room}
+        isCreating={false}
+        error=""
+        onRetry={vi.fn()}
+        onBack={vi.fn()}
+        onRoomChange={setRoom}
+      />
+    ) : (
+      <JoinBattlePage username="Guest" room={room} onJoined={setRoom} onBack={vi.fn()} onRoomChange={setRoom} />
+    );
+  }
+  render(
+    <MemoryRouter initialEntries={['/lobby']}>
+      <Routes>
+        <Route path="/lobby" element={<Lobby />} />
+        <Route path="/game" element={<div>Active game route</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+  expect(await screen.findByText('Active game route')).toBeInTheDocument();
+});
+
+it('updates readiness from polling and disables starting again after a player loses their selection', async () => {
   vi.useFakeTimers();
-
-  const room = {
-    ...host,
-    status: 'STARTED' as const,
-    players: [{ ...host.players[0], avatarId: 3 }],
-  };
-  const robot = { playerId: 'host-1', x: 1, y: 1, direction: 'NORTH' as const };
-  const winningState: BoardStateDto = {
-    ...boardState,
-    winner: { playerId: 'host-1' },
-    robots: [robot],
-    round: 2,
-    lastResolution: {
-      round: 1,
-      startingRobots: [robot],
-      steps: Array.from({ length: 5 }, (_, index) => ({
-        registerNumber: index + 1,
-        phases: [{ phase: 'CARD' as const, robots: [{ ...robot, card: 'TURN_LEFT' as const }] }],
-      })),
-    },
-  };
-
-  vi.mocked(fetchRoom).mockResolvedValue(room);
-  vi.mocked(fetchBoardState)
-    .mockResolvedValueOnce({ ...boardState, robots: [robot] })
-    .mockResolvedValue(winningState);
-
-  render(<RoomSession initialRoom={room} onLeft={vi.fn()} />);
+  vi.mocked(fetchRoom)
+    .mockResolvedValueOnce(readyRoom)
+    .mockResolvedValueOnce({ ...readyRoom, players: readyRoom.players.map((player) => ({ ...player, startPosition: null })) });
+  render(<RoomSession initialRoom={host} onLeft={vi.fn()} />);
+  expect(screen.getByRole('button', { name: 'Start Battle' })).toBeDisabled();
   await act(async () => {});
-
+  expect(screen.getByRole('button', { name: 'Start Battle' })).toBeEnabled();
+  expect(screen.getAllByText('Ready')).toHaveLength(2);
   await act(async () => {
-    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(2000);
   });
-
-  expect(screen.getByText('Resolving moves…')).toBeInTheDocument();
-  expect(screen.queryByRole('region', { name: 'Match winner' })).not.toBeInTheDocument();
-  expect(screen.queryByText('game-1/round-2')).not.toBeInTheDocument();
-
-  await act(async () => {
-    await vi.advanceTimersByTimeAsync(1750);
-  });
-
-  expect(screen.getByText('Resolving moves…')).toBeInTheDocument();
-  expect(screen.queryByRole('region', { name: 'Match winner' })).not.toBeInTheDocument();
-
-  await act(async () => {
-    await vi.advanceTimersByTimeAsync(350);
-  });
-
-  expect(screen.getByRole('region', { name: 'Match winner' })).toBeInTheDocument();
-  expect(screen.getByText('Host · Robot 3')).toBeInTheDocument();
-  expect(screen.queryByText('Resolving moves…')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Start Battle' })).toBeDisabled();
+  expect(screen.getAllByText('No tile')).toHaveLength(2);
+  expect(startRoom).not.toHaveBeenCalled();
 });

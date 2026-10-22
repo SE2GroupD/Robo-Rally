@@ -5,23 +5,28 @@ import type { CardType } from '../../../types/CardType';
 interface DrawRegisterProps {
   cards: readonly (CardType | null)[];
   disabled: boolean;
-  onSelectCard: (handIndex: number) => void;
+  onSelectCard: (handIndex: number, keyboard: boolean) => void;
 }
 
 export function DrawRegister({ cards, disabled, onSelectCard }: DrawRegisterProps) {
   return (
-    <div className="pointer-events-none absolute inset-y-0 left-0 w-[calc((100dvh-64px)/9*0.8+24px)] px-3 py-4">
+    <div className="min-h-0 min-w-0 flex-1 overflow-x-auto px-1">
       <h2 className="sr-only">Your Hand</h2>
-      <ol aria-label="Programming Hand" className="grid h-full grid-rows-9 gap-1">
+      <ol aria-label="Programming Hand" className="m-0 flex h-full list-none items-center gap-1 py-3">
         {Array.from({ length: 9 }, (_, index) => (
           <li
-            className="pointer-events-auto relative grid min-h-0 w-[calc((100dvh-64px)/9*2/3)] justify-items-start hover:z-20 focus-within:z-20 first:[&_button]:origin-top-left last:[&_button]:origin-bottom-left"
+            className="relative h-24 w-16 shrink-0 hover:z-20 focus-within:z-20 first:[&_button]:origin-left last:[&_button]:origin-right"
             key={index}
             aria-label={`Hand slot ${index + 1}`}
           >
             <RegisterSlot size="fill">
               {cards[index] ? (
-                <ProgrammingCard variant="hand" type={cards[index]} disabled={disabled} onClick={() => onSelectCard(index)} />
+                <ProgrammingCard
+                  variant="hand"
+                  type={cards[index]}
+                  disabled={disabled}
+                  onClick={(event) => onSelectCard(index, event.detail === 0)}
+                />
               ) : null}
             </RegisterSlot>
           </li>

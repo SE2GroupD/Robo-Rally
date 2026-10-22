@@ -57,13 +57,14 @@ export function Map({ width, height, tiles, robots, layout, currentPlayerId }: M
     onZoomOut,
     canZoomIn,
     canZoomOut,
+    onKeyDown,
     onPointerDown,
     onPointerMove,
     onPointerUp,
     onPointerCancel,
     onLostPointerCapture,
     onDragStart,
-  } = useMapViewport();
+  } = useMapViewport({ width: width * CELL_PX, height: height * CELL_PX });
 
   const robotsWithCurrentPlayer = robots.map((robot) => ({
     ...robot,
@@ -78,9 +79,10 @@ export function Map({ width, height, tiles, robots, layout, currentPlayerId }: M
         aria-label="Game map"
         tabIndex={0}
         className={cn(
-          'absolute inset-0 touch-none overflow-auto bg-slate-950 focus-visible:outline-2 focus-visible:outline-cyan-300',
+          '@container-size absolute inset-x-0 bottom-0 top-9 touch-none overflow-auto bg-factory-bg focus-visible:outline-2 focus-visible:outline-cyan-300',
           isDragging ? 'cursor-grabbing' : 'cursor-grab',
         )}
+        onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -97,7 +99,7 @@ export function Map({ width, height, tiles, robots, layout, currentPlayerId }: M
         >
           <div
             className="absolute min-w-max origin-top-left"
-            style={{ left: '50vw', top: '50dvh', transform: `scale(${scale})` }}
+            style={{ left: '50cqw', top: '50cqh', transform: `scale(${scale})` }}
           >
             {layout ? (
               <MapLayout layout={layout} robots={robotsWithCurrentPlayer} />
