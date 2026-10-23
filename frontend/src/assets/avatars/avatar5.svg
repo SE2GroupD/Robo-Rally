@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="200" height="200">
+  <!-- Directional Drop Base (Pointing South) -->
+  <path d="M 50,95 Q 10,75 10,45 A 40,40 0 1,1 90,45 Q 90,75 50,95 Z" fill="#7A6608" stroke="#F1C40F" stroke-width="3"/>
+  
+  <!-- Segmented Silver Arms (Left & Right) -->
+  <path d="M40,30 C15,30 15,65 35,68" stroke="#BDC3C7" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <path d="M60,30 C85,30 85,65 65,68" stroke="#BDC3C7" stroke-width="10" fill="none" stroke-linecap="round"/>
+  
+  <!-- Heavy Fists -->
+  <circle cx="35" cy="68" r="7" fill="#7F8C8D" />
+  <circle cx="65" cy="68" r="7" fill="#7F8C8D" />
+
+  <!-- Yellow Central Body -->
+  <rect x="36" y="25" width="28" height="30" rx="3" fill="#F1C40F" />
+  
+  <!-- Red Visor Eye -->
+  <rect x="40" y="45" width="20" height="6" rx="2" fill="#E74C3C" />
+</svg>

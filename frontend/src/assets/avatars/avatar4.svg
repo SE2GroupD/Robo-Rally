@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="200" height="200">
+  <!-- Directional Drop Base (Pointing South) -->
+  <path d="M 50,95 Q 10,75 10,45 A 40,40 0 1,1 90,45 Q 90,75 50,95 Z" fill="#145A32" stroke="#2ECC71" stroke-width="3"/>
+  
+  <!-- Rear Engine/Exhausts (North) -->
+  <rect x="35" y="15" width="30" height="15" rx="2" fill="#7F8C8D" />
+  <line x1="40" y1="15" x2="40" y2="8" stroke="#BDC3C7" stroke-width="3"/>
+  <line x1="50" y1="15" x2="50" y2="8" stroke="#BDC3C7" stroke-width="3"/>
+  <line x1="60" y1="15" x2="60" y2="8" stroke="#BDC3C7" stroke-width="3"/>
+  
+  <!-- Wheels -->
+  <rect x="24" y="35" width="8" height="22" rx="3" fill="#111111" />
+  <rect x="68" y="35" width="8" height="22" rx="3" fill="#111111" />
+
+  <!-- Green Car Body -->
+  <path d="M30,30 L70,30 L60,65 L40,65 Z" fill="#27AE60" />
+  
+  <!-- Front Eyes (South) -->
+  <circle cx="43" cy="58" r="5" fill="#FFFFFF"/>
+  <circle cx="43" cy="60" r="2" fill="#111111"/>
+  <circle cx="57" cy="58" r="5" fill="#FFFFFF"/>
+  <circle cx="57" cy="60" r="2" fill="#111111"/>
+</svg>

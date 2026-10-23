@@ -5,8 +5,10 @@ import { defineConfig } from 'vitest/config';
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [tailwindcss(), react()],
+  envDir: '../',
   test: {
     environment: 'jsdom',
+    pool: 'vmThreads',
     globals: true,
     setupFiles: './src/tests/setup.ts',
   },

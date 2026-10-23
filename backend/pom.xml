@@ -42,7 +42,10 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-websocket</artifactId>
 		</dependency>
-
+		<dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
@@ -62,6 +65,22 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-websocket-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<!-- Automatically fetches Neon's public keys and verifies the tokens for us -->
+		<dependency>
+    		<groupId>org.springframework.boot</groupId>
+    		<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+		</dependency>
+		<!-- Google Tink for Ed25519 Cryptography -->
+		<dependency>
+    		<groupId>com.google.crypto.tink</groupId>
+    		<artifactId>tink</artifactId>
+    		<version>1.15.0</version>
+		</dependency>
+		<dependency>
+    		<groupId>com.h2database</groupId>
+    		<artifactId>h2</artifactId>
+    		<scope>test</scope>
 		</dependency>
 	</dependencies>
 

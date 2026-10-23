@@ -1,0 +1,41 @@
+export type AvatarId = 1 | 2 | 3 | 4 | 5 | 6;
+
+export type Direction = 'NORTH' | 'EAST' | 'SOUTH' | 'WEST';
+
+export type WallConfig = {
+  north?: boolean;
+  east?: boolean;
+  south?: boolean;
+  west?: boolean;
+};
+
+export type TileData = {
+  x: number;
+  y: number;
+  robot?: {
+    avatarId?: AvatarId;
+    hue: number;
+    direction: Direction;
+    isCurrentPlayer?: boolean;
+  };
+  checkpointNumber?: number;
+  walls?: WallConfig;
+  hasPit?: boolean;
+  hasAntenna?: boolean;
+  isSpawnPoint?: boolean;
+  occupyingPlayerId?: string;
+  gear?: 'CLOCKWISE' | 'COUNTERCLOCKWISE' | 'COUNTER_CLOCKWISE';
+  conveyor?: { direction: Direction; isExpress?: boolean };
+  pushPanel?: { direction: Direction; activeRegisters: number[] };
+};
+
+export type BoardId = 'start' | 'game1' | 'game2' | 'game3';
+
+export interface RobotState {
+  board: BoardId;
+  x: number;
+  y: number;
+  direction: Direction;
+  hue: number;
+  avatarId?: AvatarId;
+}

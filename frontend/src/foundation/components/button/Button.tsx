@@ -1,15 +1,12 @@
-import type { ReactNode } from 'react';
+import type { ButtonHTMLAttributes, Ref } from 'react';
+import { cn } from '../../../utils/cn';
 
 type ButtonVariant = 'primary' | 'secondary';
 type ButtonSize = 'small' | 'medium' | 'large';
 
-interface ButtonProps {
-  children: ReactNode;
-  className?: string;
-  disabled?: boolean;
-  onClick?: () => void;
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  ref?: Ref<HTMLButtonElement>;
   size?: ButtonSize;
-  type?: 'button' | 'submit' | 'reset';
   variant?: ButtonVariant;
 }
 
@@ -18,6 +15,7 @@ const baseClasses = [
   'font-bold tracking-normal',
   'transition-[background-color,border-color,box-shadow,color] duration-200',
   'disabled:cursor-not-allowed',
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hazard',
 ].join(' ');
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -41,6 +39,8 @@ const variantClasses: Record<ButtonVariant, string> = {
     'hover:border-metal-light hover:bg-metal-ghost hover:text-text-light',
     'focus-visible:border-metal-light focus-visible:bg-metal-ghost focus-visible:text-text-light',
     'disabled:border-metal-dark disabled:bg-black/15 disabled:text-metal-dark disabled:shadow-none',
+    'aria-pressed:border-hazard aria-pressed:bg-hazard/10 aria-pressed:text-hazard',
+    'aria-pressed:hover:border-hazard aria-pressed:focus-visible:border-hazard',
   ].join(' '),
 };
 
@@ -50,14 +50,13 @@ export function Button({
   size = 'medium',
   type = 'button',
   variant = 'primary',
-  disabled,
-  onClick,
+  ...props
 }: ButtonProps) {
-  const classNames = [baseClasses, sizeClasses[size], variantClasses[variant], className].filter(Boolean).join(' ');
+  const classNames = cn(baseClasses, sizeClasses[size], variantClasses[variant], className);
 
   if (type === 'submit') {
     return (
-      <button className={classNames} disabled={disabled} onClick={onClick} type="submit">
+      <button {...props} className={classNames} type="submit">
         {children}
       </button>
     );
@@ -65,14 +64,14 @@ export function Button({
 
   if (type === 'reset') {
     return (
-      <button className={classNames} disabled={disabled} onClick={onClick} type="reset">
+      <button {...props} className={classNames} type="reset">
         {children}
       </button>
     );
   }
 
   return (
-    <button className={classNames} disabled={disabled} onClick={onClick} type="button">
+    <button {...props} className={classNames} type="button">
       {children}
     </button>
   );
